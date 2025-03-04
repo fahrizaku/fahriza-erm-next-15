@@ -23,6 +23,10 @@ model Patient {
   phoneNumber     String?   
   createdAt       DateTime? @default(now())
   updatedAt       DateTime? @updatedAt
+
+    // Relations
+  screenings      Screening[]
+  medicalRecords  MedicalRecord[]
 }
 
 model PatientBPJS {
@@ -72,8 +76,122 @@ model DrugPrescription {
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
 
+      // Relations
+  prescriptions PrescriptionItem[]
+
   @@index([name])
   @@index([category])
   @@index([manufacturer])
   @@index([expiryDate])
+}
+
+// New models for outpatient care flow
+
+// Screening model for initial patient assessment
+model Screening {
+  id                Int           @id @default(autoincrement())
+  patientId         Int
+  patient           Patient       @relation(fields: [patientId], references: [id])
+  complaints        String        // Patient's complaints
+  temperature       Decimal?      // Body temperature
+  bloodPressure     String?       // Blood pressure (e.g., "120/80")
+  pulse             Int?          // Heart rate
+  respiratoryRate   Int?          // Breathing rate
+  weight            Decimal?      // Weight in kg
+  height            Int?          // Height in cm
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  
+  // Screening status
+  status            String        @default("waiting") // waiting, in-progress, completed
+  queueNumber       Int?
+  
+  // Relations
+  medicalRecord     MedicalRecord?
+  
+  @@index([patientId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// Queue model for managing patient queue
+model OutpatientQueue {
+  id                Int           @id @default(autoincrement())
+  screeningId       Int           @unique
+  queueNumber       Int
+  status            String        @default("waiting") // waiting, called, in-progress, completed
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  
+  @@index([status])
+  @@index([createdAt])
+}
+
+// Medical Record model for storing complete patient visit data
+model MedicalRecord {
+  id                Int           @id @default(autoincrement())
+  patientId         Int
+  patient           Patient       @relation(fields: [patientId], references: [id])
+  screeningId       Int           @unique
+  screening         Screening     @relation(fields: [screeningId], references: [id])
+  
+  // Doctor's examination
+  diagnosis         String?       // Diagnosis description
+  icdCode           String?       // ICD-10 code
+  clinicalNotes     String?       // Additional clinical notes
+  
+  // Visit metadata
+  visitType         String        @default("outpatient") // outpatient, inpatient
+  visitDate         DateTime      @default(now())
+  doctorName        String?
+  
+  // Relations
+  prescriptions     Prescription?
+  
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  
+  @@index([patientId])
+  @@index([visitDate])
+  @@index([icdCode])
+}
+
+// Prescription models
+model Prescription {
+  id                Int               @id @default(autoincrement())
+  medicalRecordId   Int               @unique
+  medicalRecord     MedicalRecord     @relation(fields: [medicalRecordId], references: [id])
+  items             PrescriptionItem[]
+  notes             String?           // Additional notes about the prescription
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+}
+
+model PrescriptionItem {
+  id                Int               @id @default(autoincrement())
+  prescriptionId    Int
+  prescription      Prescription      @relation(fields: [prescriptionId], references: [id])
+  drugId            Int?              // Optional if manual entry
+  drug              DrugPrescription?             @relation(fields: [drugId], references: [id])
+  manualDrugName    String?           // For manual entry when drug not in system
+  dosage            String            // Dosage instructions (e.g., "1 tablet 3 times a day")
+  quantity          Int
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  
+  @@index([prescriptionId])
+  @@index([drugId])
+}
+
+// ICD-10 lookup table for diagnosis codes
+model IcdCode {
+  id                Int           @id @default(autoincrement())
+  code              String        @unique
+  description       String
+  category          String?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  
+  @@index([code])
+  @@index([category])
 }

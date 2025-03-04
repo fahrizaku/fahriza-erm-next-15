@@ -11,9 +11,20 @@ import {
   User,
   UserCheck,
   Pill,
+  LayoutDashboard,
 } from "lucide-react";
 
 const menuCategories = [
+  {
+    category: "Dashboard", // Kategori baru untuk Dashboard
+    items: [
+      {
+        title: "Dashboard",
+        icon: <LayoutDashboard size={20} />, // Menggunakan ikon LayoutDashboard
+        href: "/", // Tautan ke halaman dashboard
+      },
+    ],
+  },
   {
     category: "Pasien",
     items: [
@@ -35,7 +46,7 @@ const menuCategories = [
   //     {
   //       title: "Skrining",
   //       icon: <ClipboardCheck size={20} />,
-  //       href: "/rawat-jalan/skrining",
+  //       href: "/rawat-jalan/screening",
   //     },
   //     {
   //       title: "Antrian",
