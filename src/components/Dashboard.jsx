@@ -1,9 +1,11 @@
 "use client";
 import React, { useState, useEffect } from "react";
-// Periksa impor dari lucide-react
-import { User, Activity, Package, Pill, Shield } from "lucide-react";
+import { User, Package, Pill, Shield, Loader } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 const DashboardKlinik = () => {
+  const router = useRouter();
   // State untuk data dashboard dengan default nilai string "0"
   const [data, setData] = useState({
     pasienUmum: "0",
@@ -12,7 +14,15 @@ const DashboardKlinik = () => {
     obatResep: "0",
   });
 
+  // State untuk loading halaman dashboard
   const [loading, setLoading] = useState(true);
+  // State untuk loading navigasi
+  const [navLoading, setNavLoading] = useState({
+    pasienUmum: false,
+    pasienBPJS: false,
+    produkApotek: false,
+    obatResep: false,
+  });
   const [error, setError] = useState(null);
 
   // Fetch data dari API
@@ -48,7 +58,18 @@ const DashboardKlinik = () => {
     fetchDashboardData();
   }, []);
 
-  // Loading state
+  // Handler navigasi dengan loading state
+  const handleNavigation = (path, loadingKey) => {
+    // Set loading state untuk kartu yang diklik
+    setNavLoading((prev) => ({ ...prev, [loadingKey]: true }));
+
+    // Navigasi ke halaman baru
+    setTimeout(() => {
+      router.push(path);
+    }, 100); // Sedikit delay untuk menampilkan loading state
+  };
+
+  // Loading state untuk seluruh dashboard
   if (loading) {
     return (
       <div className="max-w-6xl mx-auto pt-4 px-1 sm:p-6">
@@ -56,8 +77,11 @@ const DashboardKlinik = () => {
           <h1 className="text-xl sm:text-2xl font-semibold text-gray-800 mb-6">
             Dashboard Klinik
           </h1>
-          <div className="flex justify-center items-center h-48">
-            <div className="animate-pulse text-gray-400">Memuat data...</div>
+          <div className="flex flex-col justify-center items-center h-48">
+            <div className="mb-4">
+              <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+            <div className="text-gray-600 font-medium">Memuat data...</div>
           </div>
         </div>
       </div>
@@ -92,62 +116,100 @@ const DashboardKlinik = () => {
 
           <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Card Pasien Umum */}
-            <div className="bg-white rounded-lg p-5 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
-              <div className="flex flex-col">
-                <div className="text-blue-500 mb-3">
-                  <User size={24} />
+            <div
+              onClick={() => handleNavigation("/pasien", "pasienUmum")}
+              className="block cursor-pointer"
+            >
+              <div className="bg-white rounded-lg p-5 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+                <div className="flex flex-col">
+                  <div className="text-blue-500 mb-3">
+                    {navLoading.pasienUmum ? (
+                      <Loader size={24} className="animate-spin" />
+                    ) : (
+                      <User size={24} />
+                    )}
+                  </div>
+                  <h3 className="text-sm text-gray-500 font-medium mb-1">
+                    Pasien Umum
+                  </h3>
+                  <p className="text-2xl font-bold text-gray-800">
+                    {data.pasienUmum}
+                  </p>
                 </div>
-                <h3 className="text-sm text-gray-500 font-medium mb-1">
-                  Pasien Umum
-                </h3>
-                <p className="text-2xl font-bold text-gray-800">
-                  {data.pasienUmum}
-                </p>
               </div>
             </div>
 
             {/* Card Pasien BPJS */}
-            <div className="bg-white rounded-lg p-5 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
-              <div className="flex flex-col">
-                <div className="text-green-500 mb-3">
-                  <Shield size={24} />
+            <div
+              onClick={() => handleNavigation("/pasien", "pasienBPJS")}
+              className="block cursor-pointer"
+            >
+              <div className="bg-white rounded-lg p-5 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+                <div className="flex flex-col">
+                  <div className="text-green-500 mb-3">
+                    {navLoading.pasienBPJS ? (
+                      <Loader size={24} className="animate-spin" />
+                    ) : (
+                      <Shield size={24} />
+                    )}
+                  </div>
+                  <h3 className="text-sm text-gray-500 font-medium mb-1">
+                    Pasien BPJS
+                  </h3>
+                  <p className="text-2xl font-bold text-gray-800">
+                    {data.pasienBPJS}
+                  </p>
                 </div>
-                <h3 className="text-sm text-gray-500 font-medium mb-1">
-                  Pasien BPJS
-                </h3>
-                <p className="text-2xl font-bold text-gray-800">
-                  {data.pasienBPJS}
-                </p>
               </div>
             </div>
 
             {/* Card Semua Produk Apotek */}
-            <div className="bg-white rounded-lg p-5 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
-              <div className="flex flex-col">
-                <div className="text-purple-500 mb-3">
-                  <Package size={24} />
+            <div
+              onClick={() => handleNavigation("/apotek/produk", "produkApotek")}
+              className="block cursor-pointer"
+            >
+              <div className="bg-white rounded-lg p-5 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+                <div className="flex flex-col">
+                  <div className="text-purple-500 mb-3">
+                    {navLoading.produkApotek ? (
+                      <Loader size={24} className="animate-spin" />
+                    ) : (
+                      <Package size={24} />
+                    )}
+                  </div>
+                  <h3 className="text-sm text-gray-500 font-medium mb-1">
+                    Produk Apotek
+                  </h3>
+                  <p className="text-2xl font-bold text-gray-800">
+                    {data.produkApotek}
+                  </p>
                 </div>
-                <h3 className="text-sm text-gray-500 font-medium mb-1">
-                  Produk Apotek
-                </h3>
-                <p className="text-2xl font-bold text-gray-800">
-                  {data.produkApotek}
-                </p>
               </div>
             </div>
 
             {/* Card Obat Resep */}
-            <div className="bg-white rounded-lg p-5 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
-              <div className="flex flex-col">
-                <div className="text-amber-500 mb-3">
-                  <Pill size={24} />
+            <div
+              onClick={() =>
+                handleNavigation("/apotek/obat-resep", "obatResep")
+              }
+              className="block cursor-pointer"
+            >
+              <div className="bg-white rounded-lg p-5 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+                <div className="flex flex-col">
+                  <div className="text-amber-500 mb-3">
+                    {navLoading.obatResep ? (
+                      <Loader size={24} className="animate-spin" />
+                    ) : (
+                      <Pill size={24} />
+                    )}
+                  </div>
+                  <h3 className="text-sm text-gray-500 font-medium mb-1">
+                    Obat Resep
+                  </h3>
+                  <p className="text-2xl font-bold text-gray-800">
+                    {data.obatResep}
+                  </p>
                 </div>
-                <h3 className="text-sm text-gray-500 font-medium mb-1">
-                  Obat Resep
-                </h3>
-                <p className="text-2xl font-bold text-gray-800">
-                  {data.obatResep}
-                </p>
               </div>
             </div>
           </div>

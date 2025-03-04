@@ -315,7 +315,7 @@ export default function PatientDetailPage({ params }) {
           <div className="space-y-4 md:space-y-0 md:flex md:items-start md:justify-between">
             {/* Patient info - better stacking on mobile */}
             <div className="flex-1">
-              {/* Name container with better wrapping on mobile */}
+              {/* Name container - badge removed from here */}
               <div className="flex flex-wrap items-center gap-2 mb-3">
                 {isEditing ? (
                   <div className="w-full mb-3">
@@ -333,8 +333,19 @@ export default function PatientDetailPage({ params }) {
                     {capitalizeEachWord(patient.name)}
                   </h1>
                 )}
+              </div>
 
-                {/* Status badge with better mobile placement */}
+              {/* Medical record number with BPJS badge */}
+              <div className="flex items-center flex-wrap gap-2">
+                <div className="flex items-center">
+                  <FileText className="h-5 w-5 text-gray-500 mr-2" />
+                  <span className="text-gray-600 mr-2">No. RM:</span>
+                  <span className="font-mono px-3 py-1 rounded text-black font-bold">
+                    {patient.no_rm}
+                  </span>
+                </div>
+
+                {/* Status badge moved here */}
                 {!isEditing &&
                   (patient.isBPJS ? (
                     <div className="flex items-center gap-1.5 px-3 py-1 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-full text-sm font-medium shadow-sm">
@@ -347,15 +358,6 @@ export default function PatientDetailPage({ params }) {
                       <span>Umum</span>
                     </div>
                   ))}
-              </div>
-
-              {/* Medical record number */}
-              <div className="flex items-center">
-                <FileText className="h-5 w-5 text-gray-500 mr-2" />
-                <span className="text-gray-600 mr-2">No. RM:</span>
-                <span className="font-mono bg-blue-100 px-2 py-1 rounded text-blue-800 font-medium">
-                  {patient.no_rm}
-                </span>
               </div>
             </div>
 
@@ -468,7 +470,18 @@ export default function PatientDetailPage({ params }) {
                       </p>
                     )}
                   </div>
-                  <div className="mt-5">
+                </div>
+              </div>
+
+              {/* Right column - Identity Information */}
+              <div>
+                <div className="bg-gray-50 p-6 rounded-lg border border-gray-100 shadow-sm">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-5 flex items-center">
+                    <FileText className="h-5 w-5 mr-2 text-blue-500" />
+                    Informasi Identitas
+                  </h3>
+
+                  <div className="mb-5">
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       <div className="flex items-center">
                         <Phone className="h-4 w-4 mr-2 text-gray-500" />
@@ -518,16 +531,6 @@ export default function PatientDetailPage({ params }) {
                       </div>
                     )}
                   </div>
-                </div>
-              </div>
-
-              {/* Right column - Identity Information */}
-              <div>
-                <div className="bg-gray-50 p-6 rounded-lg border border-gray-100 shadow-sm">
-                  <h3 className="text-lg font-semibold text-gray-800 mb-5 flex items-center">
-                    <FileText className="h-5 w-5 mr-2 text-blue-500" />
-                    Informasi Identitas
-                  </h3>
 
                   {/* NIK with improved styling */}
                   <div className="mb-5">
@@ -553,17 +556,11 @@ export default function PatientDetailPage({ params }) {
                   {/* BPJS Status - read-only display with copy button */}
                   <div className="mb-5">
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Status BPJS
+                      {patient.isBPJS ? "Nomor BPJS" : "Status BPJS"}
                     </label>
                     <div>
-                      <p className="text-gray-800 font-medium mb-2">
-                        {patient.isBPJS ? "Pasien BPJS" : "Pasien Umum"}
-                      </p>
-                      {patient.isBPJS && (
+                      {patient.isBPJS ? (
                         <div>
-                          <span className="text-sm text-gray-600">
-                            Nomor BPJS:
-                          </span>
                           <div className="mt-1 flex items-center gap-2">
                             {isEditing ? (
                               <input
@@ -593,6 +590,10 @@ export default function PatientDetailPage({ params }) {
                             )}
                           </div>
                         </div>
+                      ) : (
+                        <p className="text-gray-500 italic">
+                          Tidak memiliki BPJS
+                        </p>
                       )}
                     </div>
                   </div>
