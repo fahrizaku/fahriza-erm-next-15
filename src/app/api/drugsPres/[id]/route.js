@@ -1,3 +1,4 @@
+// 2. Now let's create the API route handler for drug deletion
 // File: app/api/drugs/[id]/route.js
 
 import { NextResponse } from "next/server";
@@ -5,11 +6,10 @@ import { db } from "@/lib/db";
 
 export async function GET(request, { params }) {
   try {
-    // Await params sebelum mengakses propertinya
     const resolvedParams = await params;
     const id = parseInt(resolvedParams.id);
 
-    const drug = await db.drugStoreProduct.findUnique({
+    const drug = await db.drugPrescription.findUnique({
       where: { id },
     });
 
@@ -29,7 +29,6 @@ export async function GET(request, { params }) {
 
 export async function PUT(request, { params }) {
   try {
-    // Await params sebelum mengakses propertinya
     const resolvedParams = await params;
     const id = parseInt(resolvedParams.id);
     const data = await request.json();
@@ -54,7 +53,7 @@ export async function PUT(request, { params }) {
       );
     }
 
-    const updatedDrug = await db.drugStoreProduct.update({
+    const updatedDrug = await db.drugPrescription.update({
       where: { id },
       data: {
         name: data.name,
@@ -80,9 +79,8 @@ export async function PUT(request, { params }) {
 
 export async function DELETE(request, { params }) {
   try {
-    // Await params sebelum mengakses propertinya
     const resolvedParams = await params;
-    const id = resolvedParams.id;
+    const id = parseInt(resolvedParams.id);
 
     // Convert ID to integer since our schema uses Int for ID
     const drugId = parseInt(id, 10);
@@ -95,7 +93,7 @@ export async function DELETE(request, { params }) {
     }
 
     // Check if drug exists
-    const drug = await db.drugStoreProduct.findUnique({
+    const drug = await db.drugPrescription.findUnique({
       where: { id: drugId },
     });
 
@@ -104,7 +102,7 @@ export async function DELETE(request, { params }) {
     }
 
     // Delete the drug
-    await db.drugStoreProduct.delete({
+    await db.drugPrescription.delete({
       where: { id: drugId },
     });
 

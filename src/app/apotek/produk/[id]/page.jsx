@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, use } from "react";
 import {
   ArrowLeft,
   Package,
@@ -12,13 +12,15 @@ import {
 import Link from "next/link";
 
 const DrugDetail = ({ params }) => {
+  // Menggunakan React.use() untuk membuka Promise params
+  const resolvedParams = use(params);
   const [drug, setDrug] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchDrugDetail = async () => {
       try {
-        const response = await fetch(`/api/drugs/${params.id}`);
+        const response = await fetch(`/api/drugs/${resolvedParams.id}`);
         if (!response.ok) throw new Error("Failed to fetch drug details");
         const data = await response.json();
         setDrug(data);
@@ -29,10 +31,10 @@ const DrugDetail = ({ params }) => {
       }
     };
 
-    if (params?.id) {
+    if (resolvedParams?.id) {
       fetchDrugDetail();
     }
-  }, [params?.id]);
+  }, [resolvedParams?.id]);
 
   if (isLoading) {
     return (
@@ -62,7 +64,7 @@ const DrugDetail = ({ params }) => {
               Data obat yang Anda cari tidak tersedia
             </p>
             <Link
-              href="/apotek/obat"
+              href="/apotek/produk"
               className="mt-4 inline-block text-blue-600 hover:underline"
             >
               Kembali ke daftar obat
@@ -77,7 +79,7 @@ const DrugDetail = ({ params }) => {
     <div className="max-w-7xl mx-auto pt-4 px-4 sm:px-6 lg:px-8">
       <div className="mb-6">
         <Link
-          href="/apotek/obat"
+          href="/apotek/produk"
           className="inline-flex items-center text-gray-600 hover:text-gray-800 transition-colors"
         >
           <ArrowLeft className="w-5 h-5 mr-2" />

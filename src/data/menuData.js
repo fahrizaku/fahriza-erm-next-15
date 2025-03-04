@@ -10,6 +10,7 @@ import {
   ShoppingCart,
   User,
   UserCheck,
+  Pill,
 } from "lucide-react";
 
 const menuCategories = [
@@ -62,22 +63,27 @@ const menuCategories = [
       //   href: "/apotek/transaksi",
       // },
       {
-        title: "Data Obat",
+        title: "Produk Apotek",
         icon: <Package size={20} />,
-        href: "/apotek/obat",
+        href: "/apotek/produk",
       },
-    ],
-  },
-  {
-    category: "Vaksin",
-    items: [
       {
-        title: "Form Meningitis",
-        icon: <FileText size={20} />,
-        href: "/vaksin/meningitis-form",
+        title: "Obat Resep",
+        icon: <Pill size={20} />,
+        href: "/apotek/obat-resep",
       },
     ],
   },
+  // {
+  //   category: "Vaksin",
+  //   items: [
+  //     {
+  //       title: "Form Meningitis",
+  //       icon: <FileText size={20} />,
+  //       href: "/vaksin/meningitis-form",
+  //     },
+  //   ],
+  // },
 ];
 
 export default menuCategories;

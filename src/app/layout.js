@@ -31,7 +31,7 @@ export default function RootLayout({ children }) {
         <ToastContainer
           position="top-center"
           autoClose={2500}
-          hideProgressBar={false}
+          hideProgressBar={true}
           theme="dark"
           toastClassName="font-geist-sans"
         />

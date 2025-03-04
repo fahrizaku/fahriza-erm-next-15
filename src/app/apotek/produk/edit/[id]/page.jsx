@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Save } from "lucide-react";
 import Link from "next/link";
@@ -8,7 +8,7 @@ import { toast } from "react-toastify";
 
 export default function EditDrugPage({ params }) {
   const router = useRouter();
-  const drugId = params.id;
+  const drugId = use(params).id;
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -82,7 +82,7 @@ export default function EditDrugPage({ params }) {
       if (!response.ok) throw new Error("Failed to update drug");
 
       toast.success("Data obat berhasil diperbarui");
-      router.push("/apotek/obat/");
+      router.push("/apotek/produk/");
     } catch (error) {
       console.error("Error updating drug:", error);
       toast.error("Gagal memperbarui data obat");
@@ -112,7 +112,7 @@ export default function EditDrugPage({ params }) {
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6">
         <div className="mb-6">
           <Link
-            href="/apotek/obat"
+            href="/apotek/produk"
             className="inline-flex items-center text-gray-600 hover:text-blue-600 transition-colors mb-4"
           >
             <ArrowLeft className="w-4 h-4 mr-1" />
@@ -272,7 +272,7 @@ export default function EditDrugPage({ params }) {
 
           <div className="flex flex-col sm:flex-row justify-end pt-4 gap-4">
             <Link
-              href="/apotek/obat"
+              href="/apotek/produk"
               className="w-full sm:w-auto px-6 py-2 text-center border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all"
             >
               Batal

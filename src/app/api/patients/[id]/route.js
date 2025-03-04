@@ -4,7 +4,9 @@ import { db } from "@/lib/db";
 
 // GET handler to fetch a single patient by ID
 export async function GET(request, { params }) {
-  const { id } = params;
+  // Await params sebelum mengakses propertinya
+  const resolvedParams = await params;
+  const id = resolvedParams.id;
   const { searchParams } = new URL(request.url);
   const isBPJS = searchParams.get("isBPJS") === "true";
 
@@ -72,7 +74,9 @@ export async function GET(request, { params }) {
 
 // PUT handler to update patient data
 export async function PUT(request, { params }) {
-  const { id } = params;
+  // Await params sebelum mengakses propertinya
+  const resolvedParams = await params;
+  const id = resolvedParams.id;
 
   if (!id || isNaN(parseInt(id))) {
     return NextResponse.json(
@@ -162,7 +166,9 @@ export async function PUT(request, { params }) {
 
 // Handle DELETE request
 export async function DELETE(request, { params }) {
-  const { id } = params;
+  // Await params sebelum mengakses propertinya
+  const resolvedParams = await params;
+  const id = resolvedParams.id;
 
   // Get the query parameters
   const { searchParams } = new URL(request.url);

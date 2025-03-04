@@ -28,7 +28,7 @@ import { toast } from "react-toastify";
 
 export default function PatientDetailPage({ params }) {
   const router = useRouter();
-  const { id } = params;
+  const { id } = React.use(params);
 
   const [patient, setPatient] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
