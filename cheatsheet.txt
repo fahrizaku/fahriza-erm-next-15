@@ -1,0 +1,5 @@
+Reset Sequence Auto-Increment Setelah Impor Manual
+SELECT setval(pg_get_serial_sequence('"nama_tabel"', 'id'), (SELECT MAX(id) FROM "nama_tabel"));
+
+hapus data tabel tanpa merusak struktur
+TRUNCATE TABLE "nama_tabel" RESTART IDENTITY;

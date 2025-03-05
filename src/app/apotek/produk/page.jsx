@@ -1,4 +1,4 @@
-// 1. First, let's update the DrugData component with proper delete functionality
+// 1. First, let's update the DrugStoreProduct component with proper delete functionality
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
@@ -6,7 +6,7 @@ import { Search, Edit, Trash2, Eye, Plus, X, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "react-toastify";
 
-const DrugData = () => {
+const DrugStoreProduct = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [drugs, setDrugs] = useState([]);
@@ -399,4 +399,4 @@ const DrugData = () => {
   );
 };
 
-export default DrugData;
+export default DrugStoreProduct;

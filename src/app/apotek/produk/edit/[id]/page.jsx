@@ -2,11 +2,19 @@
 
 import React, { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Save } from "lucide-react";
+import {
+  ArrowLeft,
+  Save,
+  Package,
+  CircleDollarSign,
+  Boxes,
+  Calendar,
+  Factory,
+} from "lucide-react";
 import Link from "next/link";
 import { toast } from "react-toastify";
 
-export default function EditDrugPage({ params }) {
+export default function EditProductPage({ params }) {
   const router = useRouter();
   const drugId = use(params).id;
   const [isLoading, setIsLoading] = useState(true);
@@ -109,15 +117,18 @@ export default function EditDrugPage({ params }) {
 
   return (
     <div className="w-full max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+      <div className="mb-6">
+        <Link
+          href="/apotek/produk"
+          className="inline-flex items-center text-gray-600 hover:text-gray-800 transition-colors"
+        >
+          <ArrowLeft className="w-5 h-5 mr-2" />
+          <span>Kembali ke daftar obat</span>
+        </Link>
+      </div>
+
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6">
         <div className="mb-6">
-          <Link
-            href="/apotek/produk"
-            className="inline-flex items-center text-gray-600 hover:text-blue-600 transition-colors mb-4"
-          >
-            <ArrowLeft className="w-4 h-4 mr-1" />
-            <span>Kembali</span>
-          </Link>
           <h1 className="text-xl sm:text-2xl font-bold text-gray-800">
             Edit Data Obat
           </h1>
@@ -128,145 +139,211 @@ export default function EditDrugPage({ params }) {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-            {/* Nama Obat */}
-            <div className="col-span-1 sm:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Nama Obat <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                name="name"
-                value={formData.name}
-                onChange={handleInputChange}
-                required
-                className="w-full px-3 sm:px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Masukkan nama obat"
-              />
-            </div>
+          {/* Nama Obat */}
+          <div className="col-span-1 sm:col-span-2 mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Nama Obat <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              name="name"
+              value={formData.name}
+              onChange={handleInputChange}
+              required
+              className="w-full px-3 sm:px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Masukkan nama obat"
+            />
+          </div>
 
-            {/* Kategori */}
-            <div className="w-full">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Kategori
-              </label>
-              <select
-                name="category"
-                value={formData.category}
-                onChange={handleInputChange}
-                className="w-full px-3 sm:px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="">Pilih kategori</option>
-                <option value="Antibiotik">Antibiotik</option>
-                <option value="Analgesik">Analgesik</option>
-                <option value="Antipiretik">Antipiretik</option>
-                <option value="Antihipertensi">Antihipertensi</option>
-                <option value="Vitamin">Vitamin</option>
-                <option value="Suplemen">Suplemen</option>
-                <option value="Lainnya">Lainnya</option>
-              </select>
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Basic Information */}
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+              <div className="border-b border-gray-200 p-4">
+                <div className="flex items-center gap-2 text-lg font-semibold text-gray-800">
+                  <Package className="w-5 h-5 text-blue-600" />
+                  Informasi Dasar
+                </div>
+              </div>
+              <div className="p-4 space-y-4">
+                {/* Satuan */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Satuan <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="unit"
+                    value={formData.unit}
+                    onChange={handleInputChange}
+                    required
+                    placeholder="Masukkan satuan"
+                    className="w-full px-3 sm:px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
 
-            {/* Produsen */}
-            <div className="w-full">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Produsen
-              </label>
-              <input
-                type="text"
-                name="manufacturer"
-                value={formData.manufacturer}
-                onChange={handleInputChange}
-                className="w-full px-3 sm:px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Masukkan nama produsen"
-              />
-            </div>
+                {/* Kategori */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Kategori
+                  </label>
+                  <select
+                    name="category"
+                    value={formData.category}
+                    onChange={handleInputChange}
+                    className="w-full px-3 sm:px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="">Pilih kategori</option>
+                    <option value="Antibiotik">Antibiotik</option>
+                    <option value="Analgesik">Analgesik</option>
+                    <option value="Antipiretik">Antipiretik</option>
+                    <option value="Antihipertensi">Antihipertensi</option>
+                    <option value="Vitamin">Vitamin</option>
+                    <option value="Suplemen">Suplemen</option>
+                    <option value="Lainnya">Lainnya</option>
+                  </select>
+                </div>
 
-            {/* Harga Beli */}
-            <div className="w-full">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Harga Beli (Rp)
-              </label>
-              <div className="relative">
-                <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
-                  Rp
-                </span>
-                <input
-                  type="number"
-                  name="purchasePrice"
-                  value={formData.purchasePrice}
-                  onChange={handleInputChange}
-                  className="w-full pl-10 pr-3 sm:pr-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="0"
-                />
+                {/* Produsen */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Produsen
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Factory className="h-4 w-4 text-gray-400" />
+                    </div>
+                    <input
+                      type="text"
+                      name="manufacturer"
+                      value={formData.manufacturer}
+                      onChange={handleInputChange}
+                      className="w-full pl-10 pr-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="Masukkan nama produsen"
+                    />
+                  </div>
+                </div>
+
+                {/* Tanggal Kadaluarsa */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Tanggal Kadaluarsa
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Calendar className="h-4 w-4 text-gray-400" />
+                    </div>
+                    <input
+                      type="date"
+                      name="expiryDate"
+                      value={formData.expiryDate}
+                      onChange={handleInputChange}
+                      className="w-full pl-10 pr-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                </div>
               </div>
             </div>
 
-            {/* Harga Jual */}
-            <div className="w-full">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Harga Jual (Rp) <span className="text-red-500">*</span>
-              </label>
-              <div className="relative">
-                <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
-                  Rp
-                </span>
-                <input
-                  type="number"
-                  name="price"
-                  value={formData.price}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full pl-10 pr-3 sm:pr-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="0"
-                />
+            {/* Price Information */}
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+              <div className="border-b border-gray-200 p-4">
+                <div className="flex items-center gap-2 text-lg font-semibold text-gray-800">
+                  <CircleDollarSign className="w-5 h-5 text-green-600" />
+                  Informasi Harga
+                </div>
+              </div>
+              <div className="p-4 space-y-4">
+                {/* Harga Beli */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Harga Beli (Rp)
+                  </label>
+                  <div className="relative">
+                    <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
+                      Rp
+                    </span>
+                    <input
+                      type="number"
+                      name="purchasePrice"
+                      value={formData.purchasePrice}
+                      onChange={handleInputChange}
+                      className="w-full pl-10 pr-3 sm:pr-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="0"
+                    />
+                  </div>
+                </div>
+
+                {/* Harga Jual */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Harga Jual (Rp) <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
+                      Rp
+                    </span>
+                    <input
+                      type="number"
+                      name="price"
+                      value={formData.price}
+                      onChange={handleInputChange}
+                      required
+                      className="w-full pl-10 pr-3 sm:pr-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="0"
+                    />
+                  </div>
+                </div>
+
+                {/* Margin Preview (read-only) */}
+                {formData.purchasePrice && formData.price && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Preview Margin
+                    </label>
+                    <div className="px-3 py-2 bg-gray-50 rounded-lg border border-gray-200 text-green-600 font-medium">
+                      {(
+                        ((parseFloat(formData.price) -
+                          parseFloat(formData.purchasePrice)) /
+                          parseFloat(formData.purchasePrice)) *
+                        100
+                      ).toFixed(1)}
+                      %
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* Stok */}
-            <div className="w-full">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Stok <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="number"
-                name="stock"
-                value={formData.stock}
-                onChange={handleInputChange}
-                required
-                className="w-full px-3 sm:px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="0"
-              />
-            </div>
-
-            {/* Satuan */}
-            <div className="w-full">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Satuan <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                name="unit"
-                value={formData.unit}
-                onChange={handleInputChange}
-                required
-                placeholder="Masukkan satuan"
-                className="w-full px-3 sm:px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-
-            {/* Tanggal Kadaluarsa */}
-            <div className="w-full">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Tanggal Kadaluarsa
-              </label>
-              <input
-                type="date"
-                name="expiryDate"
-                value={formData.expiryDate}
-                onChange={handleInputChange}
-                className="w-full px-3 sm:px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
+            {/* Stock Information */}
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+              <div className="border-b border-gray-200 p-4">
+                <div className="flex items-center gap-2 text-lg font-semibold text-gray-800">
+                  <Boxes className="w-5 h-5 text-amber-600" />
+                  Informasi Stok
+                </div>
+              </div>
+              <div className="p-4 space-y-4">
+                {/* Stok */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Stok <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Boxes className="h-4 w-4 text-gray-400" />
+                    </div>
+                    <input
+                      type="number"
+                      name="stock"
+                      value={formData.stock}
+                      onChange={handleInputChange}
+                      required
+                      className="w-full pl-10 pr-3 sm:pr-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="0"
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 

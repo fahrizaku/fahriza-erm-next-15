@@ -11,14 +11,14 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
-const DrugDetail = ({ params }) => {
+const ProductDetail = ({ params }) => {
   // Menggunakan React.use() untuk membuka Promise params
   const resolvedParams = use(params);
   const [drug, setDrug] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const fetchDrugDetail = async () => {
+    const fetchProductDetail = async () => {
       try {
         const response = await fetch(`/api/drugs/${resolvedParams.id}`);
         if (!response.ok) throw new Error("Failed to fetch drug details");
@@ -32,7 +32,7 @@ const DrugDetail = ({ params }) => {
     };
 
     if (resolvedParams?.id) {
-      fetchDrugDetail();
+      fetchProductDetail();
     }
   }, [resolvedParams?.id]);
 
@@ -254,4 +254,4 @@ const DrugDetail = ({ params }) => {
   );
 };
 
-export default DrugDetail;
+export default ProductDetail;

@@ -114,18 +114,6 @@ model Screening {
   @@index([createdAt])
 }
 
-// Queue model for managing patient queue
-model OutpatientQueue {
-  id                Int           @id @default(autoincrement())
-  screeningId       Int           @unique
-  queueNumber       Int
-  status            String        @default("waiting") // waiting, called, in-progress, completed
-  createdAt         DateTime      @default(now())
-  updatedAt         DateTime      @updatedAt
-  
-  @@index([status])
-  @@index([createdAt])
-}
 
 // Medical Record model for storing complete patient visit data
 model MedicalRecord {

@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Save } from "lucide-react";
 import { toast } from "react-toastify";
 
-export default function TambahObat() {
+export default function TambahProduk() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
