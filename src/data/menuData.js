@@ -78,11 +78,6 @@ const menuCategories = [
         icon: <Package size={20} />,
         href: "/apotek/produk",
       },
-      {
-        title: "Obat Resep",
-        icon: <Pill size={20} />,
-        href: "/apotek/obat-resep",
-      },
     ],
   },
   // {
