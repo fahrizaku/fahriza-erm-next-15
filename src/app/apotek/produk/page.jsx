@@ -1,4 +1,3 @@
-// 1. First, let's update the DrugStoreProduct component with proper delete functionality
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
@@ -13,6 +12,7 @@ const DrugStoreProduct = () => {
   const [offset, setOffset] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSearching, setIsSearching] = useState(false); // New state for search loading
   const [loadingState, setLoadingState] = useState({
     drugId: null,
     linkType: null,
@@ -33,6 +33,7 @@ const DrugStoreProduct = () => {
 
   // Apply debounce to search query
   useEffect(() => {
+    setIsSearching(true); // Set searching to true when search query changes
     const timer = setTimeout(() => {
       setDebouncedSearchQuery(searchQuery);
       setOffset(0); // Reset offset when search query changes
@@ -69,6 +70,7 @@ const DrugStoreProduct = () => {
       console.error("Failed to fetch drugs:", error);
     } finally {
       setIsLoading(false);
+      setIsSearching(false); // Set searching to false when fetch is complete
     }
   }, [offset, debouncedSearchQuery, sortBy, sortOrder]);
 
@@ -184,7 +186,7 @@ const DrugStoreProduct = () => {
             >
               {addButtonLoading ? (
                 <>
-                  <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />
+                  <div className="w-4 h-4 sm:w-5 sm:h-5 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
                   <span className="text-sm sm:text-base">Loading...</span>
                 </>
               ) : (
@@ -197,7 +199,7 @@ const DrugStoreProduct = () => {
           </Link>
         </div>
 
-        {/* Search Input */}
+        {/* Search Input with Loading Spinner */}
         <div className="mb-6 sm:mb-8">
           <div className="relative">
             <input
@@ -207,7 +209,12 @@ const DrugStoreProduct = () => {
               placeholder="Cari obat..."
               className="w-full pl-10 pr-10 py-2 sm:py-3 bg-white rounded-lg border-2 border-gray-200 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 placeholder-gray-400 text-gray-700 transition-all shadow-sm text-sm sm:text-base"
             />
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
+            {/* Show spinner when searching, otherwise show search icon */}
+            {isSearching ? (
+              <div className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 animate-spin rounded-full border-2 border-cyan-500 border-t-transparent"></div>
+            ) : (
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
+            )}
             {searchQuery && (
               <button
                 onClick={handleClearSearch}
@@ -219,6 +226,14 @@ const DrugStoreProduct = () => {
             )}
           </div>
         </div>
+
+        {/* Search Status Message */}
+        {isSearching && debouncedSearchQuery && (
+          <div className="mb-4 flex items-center justify-center text-sm text-cyan-600">
+            <div className="w-4 h-4 mr-2 animate-spin rounded-full border-2 border-cyan-500 border-t-transparent"></div>
+            <span>Mencari "{debouncedSearchQuery}"...</span>
+          </div>
+        )}
 
         {renderSortingControls()}
 
@@ -240,106 +255,134 @@ const DrugStoreProduct = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {drugs.map((drug, index) => (
-                <tr
-                  key={index}
-                  className="md:hover:bg-gray-200/80 transition-colors even:bg-gray-100 odd:bg-white text-sm sm:text-base"
-                >
-                  <td className="px-4 lg:text-md sm:px-6 py-3 font-medium text-gray-900 max-md:sticky left-0 z-10 shadow-md border-r border-gray-200 bg-inherit min-w-[120px]">
-                    {drug.name}
-                    <div className="absolute right-0 top-0 h-full w-[0.5px] bg-gray-300"></div>
-                  </td>
-                  <td className="px-4 sm:px-6 py-3 text-center">
-                    <span className="px-2 py-1 rounded-full bg-blue-200 text-blue-900 whitespace-nowrap text-sm">
-                      {drug.unit}
-                    </span>
-                  </td>
-                  <td className="px-4 sm:px-6 py-3 text-center">
-                    <span className="font-semibold text-cyan-800">
-                      Rp
-                      {drug.price.toLocaleString("id-ID", {
-                        minimumFractionDigits: 0,
-                        maximumFractionDigits: 2,
-                      })}
-                    </span>
-                  </td>
-                  <td className="px-4 sm:px-6 py-3 text-center">
-                    <span
-                      className={`px-2 py-1 rounded-full whitespace-nowrap text-sm ${
-                        drug.stock > 50
-                          ? "bg-green-200 text-green-900"
-                          : "bg-amber-200 text-amber-900"
-                      }`}
-                    >
-                      {drug.stock} pcs
-                    </span>
-                  </td>
-                  <td className="px-4 sm:px-6 py-3 text-center">
-                    <div className="bg-gray-200 px-2 py-1 rounded-md text-gray-700 whitespace-nowrap text-sm inline-block">
-                      {new Date(drug.expiryDate).toLocaleDateString("id-ID", {
-                        day: "2-digit",
-                        month: "short",
-                        year: "numeric",
-                      })}
-                    </div>
-                  </td>
-                  <td className="px-4 sm:px-6 py-3">
-                    <div className="flex justify-center gap-3">
-                      <Link
-                        href={`/apotek/produk/${drug.id}`}
-                        className="text-cyan-700 hover:text-cyan-800 transition-colors p-2 sm:p-1.5 rounded-md hover:bg-blue-100 flex items-center"
-                        onClick={() => handleLinkClick(drug.id, "detail")}
-                      >
-                        {loadingState.drugId === drug.id &&
-                        loadingState.linkType === "detail" ? (
-                          <>
-                            <Loader2 className="w-5 h-5 animate-spin" />
-                            <span className="sm:hidden ml-1 text-sm">
-                              Loading...
-                            </span>
-                          </>
-                        ) : (
-                          <>
-                            <Eye className="w-5 h-5" />
-                            <span className="sm:hidden ml-1 text-sm">
-                              Detail
-                            </span>
-                          </>
-                        )}
-                      </Link>
-
-                      <Link
-                        href={`/apotek/produk/edit/${drug.id}`}
-                        className="text-blue-700 hover:text-blue-800 transition-colors p-2 sm:p-1.5 rounded-md hover:bg-blue-100 flex items-center"
-                        onClick={() => handleLinkClick(drug.id, "edit")}
-                      >
-                        {loadingState.drugId === drug.id &&
-                        loadingState.linkType === "edit" ? (
-                          <>
-                            <Loader2 className="w-5 h-5 animate-spin" />
-                            <span className="sm:hidden ml-1 text-sm">
-                              Loading...
-                            </span>
-                          </>
-                        ) : (
-                          <>
-                            <Edit className="w-5 h-5" />
-                            <span className="sm:hidden ml-1 text-sm">Edit</span>
-                          </>
-                        )}
-                      </Link>
-
-                      <button
-                        onClick={() => openDeleteConfirm(drug)}
-                        className="text-red-700 hover:text-red-800 transition-colors p-2 sm:p-1.5 rounded-md hover:bg-red-100 flex items-center"
-                      >
-                        <Trash2 className="w-5 h-5" />
-                        <span className="sm:hidden ml-1 text-sm">Hapus</span>
-                      </button>
+              {isLoading && offset === 0 ? (
+                <tr>
+                  <td colSpan="6" className="py-12">
+                    <div className="flex flex-col items-center justify-center">
+                      <div className="w-10 h-10 mb-3 animate-spin rounded-full border-4 border-cyan-500 border-t-transparent"></div>
+                      <p className="text-gray-500 text-sm sm:text-base">
+                        Memuat data...
+                      </p>
                     </div>
                   </td>
                 </tr>
-              ))}
+              ) : drugs.length === 0 ? (
+                <tr>
+                  <td colSpan="6" className="py-12">
+                    <div className="flex flex-col items-center justify-center">
+                      <p className="text-gray-500 text-sm sm:text-base mb-1">
+                        Tidak ada data yang ditemukan
+                      </p>
+                      <p className="text-gray-400 text-xs sm:text-sm">
+                        Coba ubah kriteria pencarian
+                      </p>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                drugs.map((drug, index) => (
+                  <tr
+                    key={index}
+                    className="md:hover:bg-gray-200/80 transition-colors even:bg-gray-100 odd:bg-white text-sm sm:text-base"
+                  >
+                    <td className="px-4 lg:text-md sm:px-6 py-3 font-medium text-gray-900 max-md:sticky left-0 z-10 shadow-md border-r border-gray-200 bg-inherit min-w-[120px]">
+                      {drug.name}
+                      <div className="absolute right-0 top-0 h-full w-[0.5px] bg-gray-300"></div>
+                    </td>
+                    <td className="px-4 sm:px-6 py-3 text-center">
+                      <span className="px-2 py-1 rounded-full bg-blue-200 text-blue-900 whitespace-nowrap text-sm">
+                        {drug.unit}
+                      </span>
+                    </td>
+                    <td className="px-4 sm:px-6 py-3 text-center">
+                      <span className="font-semibold text-cyan-800">
+                        Rp
+                        {drug.price.toLocaleString("id-ID", {
+                          minimumFractionDigits: 0,
+                          maximumFractionDigits: 2,
+                        })}
+                      </span>
+                    </td>
+                    <td className="px-4 sm:px-6 py-3 text-center">
+                      <span
+                        className={`px-2 py-1 rounded-full whitespace-nowrap text-sm ${
+                          drug.stock > 50
+                            ? "bg-green-200 text-green-900"
+                            : "bg-amber-200 text-amber-900"
+                        }`}
+                      >
+                        {drug.stock} pcs
+                      </span>
+                    </td>
+                    <td className="px-4 sm:px-6 py-3 text-center">
+                      <div className="bg-gray-200 px-2 py-1 rounded-md text-gray-700 whitespace-nowrap text-sm inline-block">
+                        {new Date(drug.expiryDate).toLocaleDateString("id-ID", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                        })}
+                      </div>
+                    </td>
+                    <td className="px-4 sm:px-6 py-3">
+                      <div className="flex justify-center gap-3">
+                        <Link
+                          href={`/apotek/produk/${drug.id}`}
+                          className="text-cyan-700 hover:text-cyan-800 transition-colors p-2 sm:p-1.5 rounded-md hover:bg-blue-100 flex items-center"
+                          onClick={() => handleLinkClick(drug.id, "detail")}
+                        >
+                          {loadingState.drugId === drug.id &&
+                          loadingState.linkType === "detail" ? (
+                            <>
+                              <div className="w-5 h-5 animate-spin rounded-full border-2 border-cyan-500 border-t-transparent"></div>
+                              <span className="sm:hidden ml-1 text-sm">
+                                Loading...
+                              </span>
+                            </>
+                          ) : (
+                            <>
+                              <Eye className="w-5 h-5" />
+                              <span className="sm:hidden ml-1 text-sm">
+                                Detail
+                              </span>
+                            </>
+                          )}
+                        </Link>
+
+                        <Link
+                          href={`/apotek/produk/edit/${drug.id}`}
+                          className="text-blue-700 hover:text-blue-800 transition-colors p-2 sm:p-1.5 rounded-md hover:bg-blue-100 flex items-center"
+                          onClick={() => handleLinkClick(drug.id, "edit")}
+                        >
+                          {loadingState.drugId === drug.id &&
+                          loadingState.linkType === "edit" ? (
+                            <>
+                              <div className="w-5 h-5 animate-spin rounded-full border-2 border-blue-500 border-t-transparent"></div>
+                              <span className="sm:hidden ml-1 text-sm">
+                                Loading...
+                              </span>
+                            </>
+                          ) : (
+                            <>
+                              <Edit className="w-5 h-5" />
+                              <span className="sm:hidden ml-1 text-sm">
+                                Edit
+                              </span>
+                            </>
+                          )}
+                        </Link>
+
+                        <button
+                          onClick={() => openDeleteConfirm(drug)}
+                          className="text-red-700 hover:text-red-800 transition-colors p-2 sm:p-1.5 rounded-md hover:bg-red-100 flex items-center"
+                        >
+                          <Trash2 className="w-5 h-5" />
+                          <span className="sm:hidden ml-1 text-sm">Hapus</span>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -352,8 +395,11 @@ const DrugStoreProduct = () => {
             className="px-5 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 
                       disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            {isLoading ? (
-              <span>Memuat...</span>
+            {isLoading && offset > 0 ? (
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                <span>Memuat...</span>
+              </div>
             ) : hasMore ? (
               "Muat Lebih Banyak"
             ) : (
@@ -389,7 +435,14 @@ const DrugStoreProduct = () => {
                 disabled={isDeleting}
                 className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors disabled:opacity-70 flex items-center gap-2"
               >
-                {isDeleting ? "Menghapus..." : "Hapus"}
+                {isDeleting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Menghapus...</span>
+                  </>
+                ) : (
+                  "Hapus"
+                )}
               </button>
             </div>
           </div>
