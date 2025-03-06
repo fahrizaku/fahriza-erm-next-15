@@ -28,6 +28,7 @@ const PatientRegistration = () => {
     name: "",
     gender: "",
     birthDate: "",
+    formattedBirthDate: "", // Untuk display format dd/mm/yyyy
     address: "",
     no_rm: "",
     no_bpjs: "",
@@ -66,10 +67,28 @@ const PatientRegistration = () => {
   // Handle form input changes
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData({
-      ...formData,
-      [name]: value,
-    });
+
+    // Khusus untuk input tanggal lahir
+    if (name === "birthDate" && value) {
+      // Format untuk display (dd/mm/yyyy)
+      const dateObj = new Date(value);
+      const formattedDate = dateObj.toLocaleDateString("id-ID", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      });
+
+      setFormData({
+        ...formData,
+        [name]: value,
+        formattedBirthDate: formattedDate,
+      });
+    } else {
+      setFormData({
+        ...formData,
+        [name]: value,
+      });
+    }
   };
 
   // Handle patient type change
@@ -276,16 +295,29 @@ const PatientRegistration = () => {
             >
               Tanggal Lahir
             </label>
-            <div className="relative">
+            <div className="relative max-w-xs">
               <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input
-                type="date"
-                id="birthDate"
-                name="birthDate"
-                value={formData.birthDate}
-                onChange={handleInputChange}
-                className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
+              {/* Input dengan format dd/mm/yyyy */}
+              <div className="relative">
+                <input
+                  type="text"
+                  value={formData.formattedBirthDate}
+                  className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer"
+                  placeholder="dd/mm/yyyy"
+                  readOnly
+                  onClick={() =>
+                    document.getElementById("hiddenDatePicker").showPicker()
+                  }
+                />
+                <input
+                  type="date"
+                  id="hiddenDatePicker"
+                  name="birthDate"
+                  value={formData.birthDate}
+                  onChange={handleInputChange}
+                  className="opacity-0 absolute left-0 top-0 w-0 h-0"
+                />
+              </div>
             </div>
           </div>
 

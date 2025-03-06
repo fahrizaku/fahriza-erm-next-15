@@ -442,7 +442,9 @@ export default function PatientDetailPage({ params }) {
                   <div className="font-medium text-gray-900 mb-1">
                     Rawat Jalan
                   </div>
-                  <div className="text-xs text-gray-500">Daftar pelayanan</div>
+                  <div className="text-xs text-gray-500">
+                    Daftarkan pelayanan
+                  </div>
                 </div>
               </button>
 
@@ -461,7 +463,9 @@ export default function PatientDetailPage({ params }) {
                   <div className="font-medium text-gray-900 mb-1">
                     Rawat Inap
                   </div>
-                  <div className="text-xs text-gray-500">Daftar pelayanan</div>
+                  <div className="text-xs text-gray-500">
+                    Daftarkan pelayanan
+                  </div>
                 </div>
               </button>
 

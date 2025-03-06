@@ -128,8 +128,8 @@ export default function Navigation() {
             </div>
             <div className="flex flex-col">
               <h1 className="text-xl font-semibold text-gray-800 tracking-tight">
-                <span className="text-blue-700"> 🤗🤗🤗 </span>
-                {/* <span className="text-gray-600">Apps</span> */}
+                <span className="text-blue-700">Data</span>
+                <span className="text-gray-600">TP</span>
               </h1>
             </div>
           </Link>
