@@ -422,7 +422,7 @@ export default function PatientDetailPage({ params }) {
             </div>
           </div>
 
-          <div className="mt-8 border-t pt-6">
+          {/* <div className="mt-8 border-t pt-6">
             <h3 className="text-lg font-semibold text-gray-800 mb-5">
               Tindakan Pasien
             </h3>
@@ -488,7 +488,7 @@ export default function PatientDetailPage({ params }) {
                 </div>
               </button>
             </div>
-          </div>
+          </div> */}
         </div>
       </div>
     </div>
