@@ -32,6 +32,7 @@ const Patient = () => {
   const [showTypeOptions, setShowTypeOptions] = useState(false);
   const [patientType, setPatientType] = useState("all"); // 'all', 'regular', or 'bpjs'
   const [clickedPatientId, setClickedPatientId] = useState(null); // Track which patient card is clicked
+  const [isAddingPatient, setIsAddingPatient] = useState(false); // Track if we're navigating to add patient page
 
   const ITEMS_PER_PAGE = 15;
   const DEBOUNCE_DELAY = 500; // 500ms debounce delay
@@ -203,6 +204,12 @@ const Patient = () => {
     router.push(`/pasien/${patientId}?isBPJS=${isBPJS}`);
   };
 
+  // Handle add new patient click
+  const handleAddNewPatient = () => {
+    setIsAddingPatient(true);
+    router.push("/pasien/tambah-cepat");
+  };
+
   const BPJSBadge = () => (
     <div className="flex items-center gap-1.5 px-3 py-1 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-full text-sm font-medium shadow-sm">
       <Shield className="h-4 w-4" strokeWidth={2.5} />
@@ -249,13 +256,23 @@ const Patient = () => {
                 {totalPatients} pasien ditemukan
               </p>
             </div>
-            <Link
-              href="/pasien/tambah"
-              className="px-5 py-3 bg-gradient-to-r from-blue-600 to-cyan-500 text-white rounded-xl hover:shadow-lg transition-all font-medium flex items-center gap-2"
+            <button
+              onClick={handleAddNewPatient}
+              disabled={isAddingPatient}
+              className="px-5 py-3 bg-gradient-to-r from-blue-600 to-cyan-500 text-white rounded-xl hover:shadow-lg transition-all font-medium flex items-center justify-center gap-2 disabled:opacity-80"
             >
-              <User className="w-4 h-4" />
-              <span>+ Pasien Baru</span>
-            </Link>
+              {isAddingPatient ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Memuat...</span>
+                </>
+              ) : (
+                <>
+                  <User className="w-4 h-4" />
+                  <span>+ Pasien Baru</span>
+                </>
+              )}
+            </button>
           </div>
 
           {/* Search Input - Fixed for better mobile responsiveness */}

@@ -175,19 +175,80 @@ export async function DELETE(request, { params }) {
   const isBPJS = searchParams.get("isBPJS") === "true";
 
   try {
-    // Determine which table to delete from based on isBPJS flag
+    // Check if patient has related records before attempting to delete
+    const patientId = parseInt(id);
+
+    // Check for related screenings
+    const relatedScreenings = await db.screening.findMany({
+      where: {
+        patientId: patientId,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    // Check for related medical records
+    const relatedMedicalRecords = await db.medicalRecord.findMany({
+      where: {
+        patientId: patientId,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    // If there are related records, perform a cascade delete
+    if (relatedScreenings.length > 0 || relatedMedicalRecords.length > 0) {
+      // Option 2: Perform a cascade delete
+      // Delete related prescription items and prescriptions first
+      for (const record of relatedMedicalRecords) {
+        // Check if the medical record has prescriptions
+        const prescription = await db.prescription.findUnique({
+          where: { medicalRecordId: record.id },
+        });
+
+        if (prescription) {
+          // Delete prescription items first
+          await db.prescriptionItem.deleteMany({
+            where: { prescriptionId: prescription.id },
+          });
+
+          // Delete the prescription
+          await db.prescription.delete({
+            where: { id: prescription.id },
+          });
+        }
+
+        // Delete medical record
+        await db.medicalRecord.delete({
+          where: { id: record.id },
+        });
+      }
+
+      // Delete screenings that don't have medical records
+      await db.screening.deleteMany({
+        where: {
+          patientId: patientId,
+          medicalRecord: null,
+        },
+      });
+    }
+
+    // Once all related records are deleted or if there are no related records,
+    // proceed with patient deletion
     if (isBPJS) {
       // Delete from PatientBPJS table
       await db.patientBPJS.delete({
         where: {
-          id: parseInt(id),
+          id: patientId,
         },
       });
     } else {
       // Delete from Patient table
       await db.patient.delete({
         where: {
-          id: parseInt(id),
+          id: patientId,
         },
       });
     }
@@ -207,6 +268,6 @@ export async function DELETE(request, { params }) {
       { status: 500 }
     );
   } finally {
-    await db.$disconnect(); // Changed from prisma to db to match the import
+    await db.$disconnect();
   }
 }

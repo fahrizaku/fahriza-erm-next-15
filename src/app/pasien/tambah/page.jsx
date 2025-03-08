@@ -133,6 +133,10 @@ const PatientRegistration = () => {
         no_bpjs: isBPJS ? formData.no_bpjs?.trim() || null : null,
       };
 
+      // Remove formattedBirthDate before sending to API
+      // This field is only for UI display and not part of the database schema
+      delete patientData.formattedBirthDate;
+
       // Create toast promise that shows loading/success/error states
       await toast.promise(
         fetch("/api/patients/register", {

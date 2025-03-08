@@ -33,21 +33,21 @@ const menuCategories = [
         icon: <User size={20} />, // Mengubah ke icon Users untuk representasi semua pasien
         href: "/pasien",
       },
-      // {
-      //   title: "Registrasi Pasien",
-      //   icon: <UserPlus size={20} />, // Tetap menggunakan UserPlus untuk registrasi
-      //   href: "/pasien/registrasi-pasien",
-      // },
+      {
+        title: "Registrasi Pasien",
+        icon: <UserPlus size={20} />, // Tetap menggunakan UserPlus untuk registrasi
+        href: "/pasien/tambah",
+      },
     ],
   },
   // {
   //   category: "Rawat Jalan",
   //   items: [
-  //     {
-  //       title: "Skrining",
-  //       icon: <ClipboardCheck size={20} />,
-  //       href: "/rawat-jalan/screening",
-  //     },
+  //     // {
+  //     //   title: "Skrining",
+  //     //   icon: <ClipboardCheck size={20} />,
+  //     //   href: "/rawat-jalan/screening",
+  //     // },
   //     {
   //       title: "Antrian",
   //       icon: <Users size={20} />,

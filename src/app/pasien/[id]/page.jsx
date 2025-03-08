@@ -20,6 +20,8 @@ import {
   Phone,
   Copy,
   ExternalLink,
+  Trash2,
+  X,
 } from "lucide-react";
 import { toast } from "react-toastify";
 
@@ -30,6 +32,8 @@ export default function PatientDetailPage({ params }) {
   const [patient, setPatient] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Fetch patient data
   useEffect(() => {
@@ -125,6 +129,46 @@ export default function PatientDetailPage({ params }) {
         console.error("Gagal menyalin:", err);
         toast.error("Gagal menyalin nomor BPJS");
       });
+  };
+
+  // Handle patient deletion
+  const handleDeletePatient = async () => {
+    try {
+      setIsDeleting(true);
+      // Get the URL parameters to determine if this is a BPJS patient
+      const urlParams = new URLSearchParams(window.location.search);
+      const isBPJS = urlParams.get("isBPJS") === "true";
+
+      const response = await fetch(`/api/patients/${id}?isBPJS=${isBPJS}`, {
+        method: "DELETE",
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        toast.success("Pasien berhasil dihapus");
+        // Redirect to the patients list page after successful deletion
+        router.push("/pasien");
+      } else {
+        // Check if the error is related to foreign key constraints
+        if (
+          data.error &&
+          data.error.includes("Foreign key constraint violated")
+        ) {
+          toast.error(
+            "Tidak dapat menghapus pasien karena masih memiliki data terkait (rekam medis, screening, dll)"
+          );
+        } else {
+          toast.error(data.message || "Gagal menghapus pasien");
+        }
+      }
+    } catch (error) {
+      console.error("Error deleting patient:", error);
+      toast.error("Terjadi kesalahan saat menghapus pasien");
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteModal(false);
+    }
   };
 
   // Format phone number for links (convert leading 0 to 62)
@@ -255,7 +299,7 @@ export default function PatientDetailPage({ params }) {
               </div>
             </div>
 
-            {/* Edit button */}
+            {/* Action buttons */}
             <div className="flex flex-col sm:flex-row gap-2">
               <Link
                 href={`/pasien/${id}/edit`}
@@ -265,6 +309,16 @@ export default function PatientDetailPage({ params }) {
                 <Edit className="h-4 w-4 mr-2" />
                 <span>Edit Data</span>
               </Link>
+
+              {/* Delete button */}
+              <button
+                onClick={() => setShowDeleteModal(true)}
+                className="px-4 py-2 bg-red-600 text-white hover:bg-red-700 rounded-lg transition-colors flex items-center shadow-sm justify-center"
+                title="Hapus Pasien"
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                <span>Hapus</span>
+              </button>
             </div>
           </div>
         </div>
@@ -422,6 +476,7 @@ export default function PatientDetailPage({ params }) {
             </div>
           </div>
 
+          {/* Tindakan Pasien */}
           {/* <div className="mt-8 border-t pt-6">
             <h3 className="text-lg font-semibold text-gray-800 mb-5">
               Tindakan Pasien
@@ -430,8 +485,10 @@ export default function PatientDetailPage({ params }) {
               <button
                 type="button"
                 onClick={() => {
-                  toast.error("Fitur Rawat Jalan belum dibuat");
-                  // router.push(`/rawat-jalan/${id}`); // Commented out until feature is ready
+                  // toast.error("Fitur Rawat Jalan belum dibuat");
+                  router.push(
+                    `/rawat-jalan/screening/${id}?isBPJS=${patient.isBPJS}`
+                  ); // Commented out until feature is ready
                 }}
                 className="flex items-center p-4 bg-white hover:bg-gray-50 rounded-lg transition-all duration-200 shadow-sm hover:shadow"
               >
@@ -491,6 +548,64 @@ export default function PatientDetailPage({ params }) {
           </div> */}
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 relative">
+            <button
+              onClick={() => setShowDeleteModal(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+              disabled={isDeleting}
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            <div className="text-center mb-5">
+              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
+                <AlertTriangle className="h-6 w-6 text-red-600" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                Konfirmasi Hapus Pasien
+              </h3>
+              <p className="text-gray-500">
+                Apakah Anda yakin ingin menghapus data pasien{" "}
+                <span className="font-semibold">
+                  {capitalizeEachWord(patient.name)}
+                </span>
+                ? Tindakan ini tidak dapat dibatalkan.
+              </p>
+            </div>
+
+            <div className="flex gap-3 justify-end">
+              <button
+                className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition-colors"
+                onClick={() => setShowDeleteModal(false)}
+                disabled={isDeleting}
+              >
+                Batal
+              </button>
+              <button
+                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center justify-center min-w-[100px]"
+                onClick={handleDeletePatient}
+                disabled={isDeleting}
+              >
+                {isDeleting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    <span>Menghapus...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    <span>Hapus</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
