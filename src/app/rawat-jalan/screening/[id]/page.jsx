@@ -9,7 +9,6 @@ import {
   Thermometer,
   Activity,
   Heart,
-  Lungs,
   Weight,
   Ruler,
   ChevronLeft,
