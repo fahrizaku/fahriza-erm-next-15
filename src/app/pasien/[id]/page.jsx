@@ -1,4 +1,3 @@
-//pasien/[id]/page.jsx
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -34,6 +33,11 @@ export default function PatientDetailPage({ params }) {
   const [error, setError] = useState(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Add loading states for buttons
+  const [isLoadingOutpatient, setIsLoadingOutpatient] = useState(false);
+  const [isLoadingInpatient, setIsLoadingInpatient] = useState(false);
+  const [isLoadingMedicalRecord, setIsLoadingMedicalRecord] = useState(false);
 
   // Fetch patient data
   useEffect(() => {
@@ -79,6 +83,29 @@ export default function PatientDetailPage({ params }) {
     const ageDifMs = Date.now() - birth.getTime();
     const ageDate = new Date(ageDifMs);
     return Math.abs(ageDate.getUTCFullYear() - 1970);
+  };
+
+  // Handle outpatient navigation with loading state
+  const handleOutpatientClick = () => {
+    setIsLoadingOutpatient(true);
+    router.push(`/rawat-jalan/screening/${id}?isBPJS=${patient.isBPJS}`);
+    // We don't reset the loading state since we're navigating away
+  };
+
+  // Handle inpatient navigation with loading state
+  const handleInpatientClick = () => {
+    setIsLoadingInpatient(true);
+    toast.error("Fitur Rawat Inap belum dibuat");
+    // Reset loading state after toast since we're not navigating
+    setTimeout(() => setIsLoadingInpatient(false), 500);
+  };
+
+  // Handle medical record navigation with loading state
+  const handleMedicalRecordClick = () => {
+    setIsLoadingMedicalRecord(true);
+    toast.error("Tidak ada riwayat rekam medis tersimpan!");
+    // Reset loading state after toast since we're not navigating
+    setTimeout(() => setIsLoadingMedicalRecord(false), 500);
   };
 
   const handleCopyBPJS = () => {
@@ -477,75 +504,84 @@ export default function PatientDetailPage({ params }) {
           </div>
 
           {/* Tindakan Pasien */}
-          {/* <div className="mt-8 border-t pt-6">
+          <div className="mt-8 border-t pt-6">
             <h3 className="text-lg font-semibold text-gray-800 mb-5">
               Tindakan Pasien
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+              {/* Rawat Jalan button with loading spinner */}
               <button
                 type="button"
-                onClick={() => {
-                  // toast.error("Fitur Rawat Jalan belum dibuat");
-                  router.push(
-                    `/rawat-jalan/screening/${id}?isBPJS=${patient.isBPJS}`
-                  ); // Commented out until feature is ready
-                }}
-                className="flex items-center p-4 bg-white hover:bg-gray-50 rounded-lg transition-all duration-200 shadow-sm hover:shadow"
+                onClick={handleOutpatientClick}
+                disabled={isLoadingOutpatient}
+                className="flex items-center p-4 bg-white hover:bg-gray-50 rounded-lg transition-all duration-200 shadow-sm hover:shadow cursor-pointer disabled:opacity-70"
               >
                 <div className="bg-green-100 p-3 rounded-lg text-green-600 mr-4">
-                  <Stethoscope className="h-5 w-5" />
+                  {isLoadingOutpatient ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <Stethoscope className="h-5 w-5" />
+                  )}
                 </div>
                 <div className="text-left">
                   <div className="font-medium text-gray-900 mb-1">
                     Rawat Jalan
                   </div>
                   <div className="text-xs text-gray-500">
-                    Daftarkan pelayanan
+                    {isLoadingOutpatient ? "Memuat..." : "Daftarkan pelayanan"}
                   </div>
                 </div>
               </button>
 
+              {/* Rawat Inap button with loading spinner */}
               <button
                 type="button"
-                onClick={() => {
-                  toast.error("Fitur Rawat Inap belum dibuat");
-                  // router.push(`/pasien/${id}/rawat-inap`); // Commented out until feature is ready
-                }}
-                className="flex items-center p-4 bg-white hover:bg-gray-50 rounded-lg transition-all duration-200 shadow-sm hover:shadow"
+                onClick={handleInpatientClick}
+                disabled={isLoadingInpatient}
+                className="flex items-center p-4 bg-white hover:bg-gray-50 rounded-lg transition-all duration-200 shadow-sm hover:shadow cursor-pointer disabled:opacity-70"
               >
                 <div className="bg-purple-100 p-3 rounded-lg text-purple-600 mr-4">
-                  <Bed className="h-5 w-5" />
+                  {isLoadingInpatient ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <Bed className="h-5 w-5" />
+                  )}
                 </div>
                 <div className="text-left">
                   <div className="font-medium text-gray-900 mb-1">
                     Rawat Inap
                   </div>
                   <div className="text-xs text-gray-500">
-                    Daftarkan pelayanan
+                    {isLoadingInpatient ? "Memuat..." : "Daftarkan pelayanan"}
                   </div>
                 </div>
               </button>
 
+              {/* Rekam Medis button with loading spinner */}
               <button
                 type="button"
-                onClick={() => {
-                  toast.error("Tidak ada riwayat rekam medis tersimpan!");
-                  // router.push(`/pasien/${id}/rekam-medis`); // Commented out until feature is ready
-                }}
-                className="flex items-center p-4 bg-white hover:bg-gray-50 rounded-lg transition-all duration-200 shadow-sm hover:shadow"
+                onClick={handleMedicalRecordClick}
+                disabled={isLoadingMedicalRecord}
+                className="flex items-center p-4 bg-white hover:bg-gray-50 rounded-lg transition-all duration-200 shadow-sm hover:shadow cursor-pointer disabled:opacity-70"
               >
                 <div className="bg-blue-100 p-3 rounded-lg text-blue-600 mr-4">
-                  <ClipboardList className="h-5 w-5" />
+                  {isLoadingMedicalRecord ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <ClipboardList className="h-5 w-5" />
+                  )}
                 </div>
                 <div className="text-left">
                   <div className="font-medium text-gray-900 mb-1">
                     Rekam Medis
                   </div>
-                  <div className="text-xs text-gray-500">Lihat riwayat</div>
+                  <div className="text-xs text-gray-500">
+                    {isLoadingMedicalRecord ? "Memuat..." : "Lihat riwayat"}
+                  </div>
                 </div>
               </button>
             </div>
-          </div> */}
+          </div>
         </div>
       </div>
 

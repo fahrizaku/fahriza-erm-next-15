@@ -1,7 +1,9 @@
+// meningitis form page
 "use client";
 
 import { useState } from "react";
-import { CalendarDays, ChevronRight } from "lucide-react";
+import { ChevronRight, AlertCircle } from "lucide-react";
+import { toast } from "react-toastify";
 
 export default function Home() {
   const [formData, setFormData] = useState({
@@ -17,54 +19,15 @@ export default function Home() {
   });
 
   const [error, setError] = useState(""); // State untuk pesan kesalahan
+  const [isLoading, setIsLoading] = useState(false); // State untuk loading
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
-  const validateDate = (date) => {
-    // Validasi format DD/MM/YYYY
-    const regex = /^\d{2}\/\d{2}\/\d{4}$/;
-    return regex.test(date);
-  };
-
-  const calculateAge = (birthDate) => {
-    if (!validateDate(birthDate)) {
-      setError("Format tanggal lahir harus DD/MM/YYYY");
-      return "";
-    }
-
-    const [day, month, year] = birthDate.split("/");
-    const birthDateObj = new Date(`${year}-${month}-${day}`);
-    const today = new Date();
-    let age = today.getFullYear() - birthDateObj.getFullYear();
-    const monthDifference = today.getMonth() - birthDateObj.getMonth();
-    if (
-      monthDifference < 0 ||
-      (monthDifference === 0 && today.getDate() < birthDateObj.getDate())
-    ) {
-      age--;
-    }
-    setError(""); // Hapus pesan kesalahan jika format benar
-    return age.toString();
-  };
-
-  const handleDateChange = (e) => {
     const { name, value } = e.target;
-    // Format otomatis: DD/MM/YYYY
-    const formatted = value
-      .replace(/\D/g, "")
-      .replace(/(\d{2})(\d)/, "$1/$2")
-      .replace(/(\d{2})(\d)/, "$1/$2")
-      .slice(0, 10);
+    setFormData({ ...formData, [name]: value });
 
-    setFormData((prevData) => ({
-      ...prevData,
-      [name]: formatted,
-    }));
-
+    // Jika tanggal lahir diubah, hitung umur
     if (name === "tanggalLahir") {
-      const age = calculateAge(formatted);
+      const age = calculateAge(value);
       setFormData((prevData) => ({
         ...prevData,
         umur: age,
@@ -72,27 +35,72 @@ export default function Home() {
     }
   };
 
+  const calculateAge = (birthDate) => {
+    if (!birthDate) return "";
+
+    try {
+      const birthDateObj = new Date(birthDate);
+      const today = new Date();
+      let age = today.getFullYear() - birthDateObj.getFullYear();
+      const monthDifference = today.getMonth() - birthDateObj.getMonth();
+
+      if (
+        monthDifference < 0 ||
+        (monthDifference === 0 && today.getDate() < birthDateObj.getDate())
+      ) {
+        age--;
+      }
+
+      setError(""); // Hapus pesan kesalahan
+      return age.toString();
+    } catch (err) {
+      setError("Format tanggal tidak valid");
+      return "";
+    }
+  };
+
   const generateWordDocument = async (e) => {
     e.preventDefault();
+    setError(""); // Reset pesan error
+
     try {
-      const response = await fetch("/api/generate-word", {
+      // Tampilkan loading state
+      setIsLoading(true);
+
+      const response = await fetch("/api/generate-docx", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });
 
-      if (!response.ok) throw new Error("Gagal menghasilkan dokumen");
+      if (!response.ok) {
+        const errorData = await response.json();
+        toast.error("Gagal menyimpan dokumen");
+        throw new Error(errorData.error || "Gagal menghasilkan dokumen");
+      }
 
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "Surat_Keterangan.docx";
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
+      // Parse response JSON dari API
+      const data = await response.json();
+
+      toast.success(data.message || "Dokumen berhasil dibuat dan disimpan");
+
+      // Opsional: Reset form setelah berhasil
+      setFormData({
+        nama: "",
+        alamat: "",
+        kotaKelahiran: "",
+        tanggalLahir: "",
+        umur: "",
+        jenisKelamin: "",
+        namaTravel: "",
+        tanggalKeberangkatan: "",
+        asalTravel: "",
+      });
     } catch (error) {
       console.error("Error:", error);
+      setError("Gagal membuat dokumen: " + error.message);
+    } finally {
+      setIsLoading(false); // Matikan loading state
     }
   };
 
@@ -103,6 +111,14 @@ export default function Home() {
           <h1 className="text-xl sm:text-2xl font-semibold text-gray-800 mb-4">
             Form Persetujuan dan Permohonan Vaksin Meningitis
           </h1>
+
+          {/* Pesan error global */}
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
+              <AlertCircle className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" />
+              <p className="text-red-700">{error}</p>
+            </div>
+          )}
 
           <form onSubmit={generateWordDocument} className="space-y-5">
             {/* Nama */}
@@ -129,17 +145,14 @@ export default function Home() {
                 </label>
                 <div className="relative mt-1">
                   <input
-                    type="text"
+                    type="date"
                     name="tanggalLahir"
                     value={formData.tanggalLahir}
-                    onChange={handleDateChange}
-                    placeholder="contoh: 29/02/1960"
-                    className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 pr-10 focus:outline-none focus:border-green-400 focus:ring-2 focus:ring-green-400"
+                    onChange={handleChange}
+                    className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 focus:outline-none focus:border-green-400 focus:ring-2 focus:ring-green-400"
                     required
                   />
-                  <CalendarDays className="w-5 h-5 text-gray-400 absolute right-3 top-2.5 pointer-events-none" />
                 </div>
-                {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">
@@ -151,19 +164,36 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Kota Kelahiran */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Kota Kelahiran
-              </label>
-              <input
-                type="text"
-                name="kotaKelahiran"
-                value={formData.kotaKelahiran}
-                onChange={handleChange}
-                placeholder="Masukkan kota kelahiran"
-                className="mt-1 block w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 focus:outline-none focus:border-green-400 focus:ring-2 focus:ring-green-400"
-              />
+            {/* Kota Kelahiran dan Jenis Kelamin */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Kota Kelahiran
+                </label>
+                <input
+                  type="text"
+                  name="kotaKelahiran"
+                  value={formData.kotaKelahiran}
+                  onChange={handleChange}
+                  placeholder="Masukkan kota kelahiran"
+                  className="mt-1 block w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 focus:outline-none focus:border-green-400 focus:ring-2 focus:ring-green-400"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Jenis Kelamin
+                </label>
+                <select
+                  name="jenisKelamin"
+                  value={formData.jenisKelamin}
+                  onChange={handleChange}
+                  className="mt-1 block w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 focus:outline-none focus:border-green-400 focus:ring-2 focus:ring-green-400"
+                >
+                  <option value="">Pilih Jenis Kelamin</option>
+                  <option value="Laki-laki">Laki-laki</option>
+                  <option value="Perempuan">Perempuan</option>
+                </select>
+              </div>
             </div>
 
             {/* Alamat */}
@@ -181,25 +211,8 @@ export default function Home() {
               />
             </div>
 
-            {/* Jenis Kelamin */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Jenis Kelamin
-              </label>
-              <select
-                name="jenisKelamin"
-                value={formData.jenisKelamin}
-                onChange={handleChange}
-                className="mt-1 block w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 focus:outline-none focus:border-green-400 focus:ring-2 focus:ring-green-400"
-              >
-                <option value="">Pilih Jenis Kelamin</option>
-                <option value="Laki-laki">Laki-laki</option>
-                <option value="Perempuan">Perempuan</option>
-              </select>
-            </div>
-
-            {/* Informasi Travel */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Informasi Travel dan Tanggal Keberangkatan */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700">
                   Nama Travel
@@ -226,23 +239,19 @@ export default function Home() {
                   className="mt-1 block w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 focus:outline-none focus:border-green-400 focus:ring-2 focus:ring-green-400"
                 />
               </div>
-            </div>
-
-            {/* Tanggal Keberangkatan */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Tanggal Keberangkatan
-              </label>
-              <div className="relative mt-1">
-                <input
-                  type="text"
-                  name="tanggalKeberangkatan"
-                  value={formData.tanggalKeberangkatan}
-                  onChange={handleDateChange}
-                  placeholder="contoh: 29/02/2028"
-                  className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 pr-10 focus:outline-none focus:border-green-400 focus:ring-2 focus:ring-green-400"
-                />
-                <CalendarDays className="w-5 h-5 text-gray-400 absolute right-3 top-2.5 pointer-events-none" />
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Tanggal Keberangkatan
+                </label>
+                <div className="relative mt-1">
+                  <input
+                    type="date"
+                    name="tanggalKeberangkatan"
+                    value={formData.tanggalKeberangkatan}
+                    onChange={handleChange}
+                    className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 focus:outline-none focus:border-green-400 focus:ring-2 focus:ring-green-400"
+                  />
+                </div>
               </div>
             </div>
 
@@ -250,9 +259,14 @@ export default function Home() {
             <div className="flex justify-end">
               <button
                 type="submit"
-                className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-blue-600 to-cyan-500 text-white rounded-xl hover:shadow-lg transition-all font-medium"
+                disabled={isLoading}
+                className={`flex items-center gap-2 px-5 py-3 ${
+                  isLoading
+                    ? "bg-gray-400"
+                    : "bg-gradient-to-r from-blue-600 to-cyan-500 hover:shadow-lg"
+                } text-white rounded-xl transition-all font-medium`}
               >
-                <span>Generate Dokumen</span>
+                <span>{isLoading ? "Memproses..." : "Generate Dokumen"}</span>
                 <ChevronRight className="w-4 h-4" />
               </button>
             </div>
