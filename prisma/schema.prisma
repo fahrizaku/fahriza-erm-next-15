@@ -36,20 +36,6 @@ model PatientDouble {
   address         String?
 }
 
-model PatientBPJS {
-  id              Int       @id @default(autoincrement())
-  no_rm           Int       @unique
-  name            String
-  gender          String?
-  birthDate       DateTime?
-  address         String?
-  isBPJS          Boolean
-  no_bpjs         String?   @unique
-  nik             String?   @unique
-  phoneNumber     String?   
-  createdAt       DateTime? @default(now())
-  updatedAt       DateTime? @updatedAt
-}
 
 model DrugStoreProduct {
   id            Int         @id @default(autoincrement()) 
@@ -134,7 +120,7 @@ model MedicalRecord {
   doctorName        String?
   
   // Relations
-  prescriptions     Prescription?
+  prescriptions     Prescription[]  // Changed from Prescription? to Prescription[]
   
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
@@ -147,12 +133,15 @@ model MedicalRecord {
 // Prescription models
 model Prescription {
   id                Int               @id @default(autoincrement())
-  medicalRecordId   Int               @unique
+  medicalRecordId   Int               
   medicalRecord     MedicalRecord     @relation(fields: [medicalRecordId], references: [id])
   items             PrescriptionItem[]
   notes             String?           // Additional notes about the prescription
+  prescriptionType  String?           // Type of prescription (e.g., "Main", "Follow-up", "Alternative")
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt
+  
+  @@index([medicalRecordId])
 }
 
 model PrescriptionItem {

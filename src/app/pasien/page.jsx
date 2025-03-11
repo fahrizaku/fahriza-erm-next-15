@@ -201,7 +201,7 @@ const Patient = () => {
   const handlePatientClick = (patientId, isBPJS) => {
     setClickedPatientId(patientId);
     // Navigate to patient details page
-    router.push(`/pasien/${patientId}?isBPJS=${isBPJS}`);
+    router.push(`/pasien/${patientId}`);
   };
 
   // Handle add new patient click

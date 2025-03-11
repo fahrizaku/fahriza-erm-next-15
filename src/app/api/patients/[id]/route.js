@@ -4,11 +4,9 @@ import { db } from "@/lib/db";
 
 // GET handler to fetch a single patient by ID
 export async function GET(request, { params }) {
-  // Await params sebelum mengakses propertinya
+  // Await params before accessing its properties
   const resolvedParams = await params;
   const id = resolvedParams.id;
-  const { searchParams } = new URL(request.url);
-  const isBPJS = searchParams.get("isBPJS") === "true";
 
   if (!id || isNaN(parseInt(id))) {
     return NextResponse.json(
@@ -18,42 +16,10 @@ export async function GET(request, { params }) {
   }
 
   try {
-    let patient;
-
-    // Pilih tabel berdasarkan parameter isBPJS
-    if (isBPJS) {
-      // Cari di tabel PatientBPJS
-      patient = await db.patientBPJS.findUnique({
-        where: { id: parseInt(id) },
-      });
-    } else {
-      // Cari di tabel Patient
-      patient = await db.patient.findUnique({
-        where: { id: parseInt(id) },
-      });
-    }
-
-    // Jika tidak ditemukan, coba cari di tabel lainnya
-    if (!patient) {
-      if (isBPJS) {
-        // Jika tidak ditemukan di BPJS, coba cari di Patient dengan no_rm yang sama
-        const regularPatient = await db.patient.findUnique({
-          where: { id: parseInt(id) },
-        });
-
-        if (regularPatient && regularPatient.isBPJS) {
-          // Jika ditemukan di Patient dan isBPJS=true, cari di BPJS berdasarkan no_rm
-          patient = await db.patientBPJS.findUnique({
-            where: { no_rm: regularPatient.no_rm },
-          });
-        }
-      } else {
-        // Jika tidak ditemukan di Patient, coba cari di BPJS
-        patient = await db.patientBPJS.findUnique({
-          where: { id: parseInt(id) },
-        });
-      }
-    }
+    // Find patient by ID
+    const patient = await db.patient.findUnique({
+      where: { id: parseInt(id) },
+    });
 
     if (!patient) {
       return NextResponse.json(
@@ -62,7 +28,13 @@ export async function GET(request, { params }) {
       );
     }
 
-    return NextResponse.json({ success: true, patient });
+    // Add patientType property for compatibility with frontend
+    const patientWithType = {
+      ...patient,
+      patientType: patient.isBPJS ? "bpjs" : "regular",
+    };
+
+    return NextResponse.json({ success: true, patient: patientWithType });
   } catch (error) {
     console.error("Error fetching patient:", error);
     return NextResponse.json(
@@ -74,7 +46,7 @@ export async function GET(request, { params }) {
 
 // PUT handler to update patient data
 export async function PUT(request, { params }) {
-  // Await params sebelum mengakses propertinya
+  // Await params before accessing its properties
   const resolvedParams = await params;
   const id = resolvedParams.id;
 
@@ -91,67 +63,44 @@ export async function PUT(request, { params }) {
     // Handle empty NIK by replacing empty string with null
     const nik = body.nik === "" || body.nik === undefined ? null : body.nik;
 
-    // Coba cari pasien di kedua tabel
-    const regularPatient = await db.patient.findUnique({
+    // Find patient by ID
+    const existingPatient = await db.patient.findUnique({
       where: { id: parseInt(id) },
     });
 
-    const bpjsPatient = await db.patientBPJS.findUnique({
-      where: { id: parseInt(id) },
-    });
-
-    // Tentukan pasien yang sedang diedit dan tipe pasien yang sebenarnya
-    let currentPatient;
-    let isCurrentlyBPJS = false;
-
-    if (bpjsPatient) {
-      currentPatient = bpjsPatient;
-      isCurrentlyBPJS = true;
-    } else if (regularPatient) {
-      currentPatient = regularPatient;
-      isCurrentlyBPJS = regularPatient.isBPJS;
-    } else {
+    if (!existingPatient) {
       return NextResponse.json(
         { success: false, message: "Patient not found" },
         { status: 404 }
       );
     }
 
-    // Selalu gunakan status BPJS asli, abaikan perubahan status
-    // Update di tabel yang sesuai berdasarkan status BPJS saat ini
-    if (isCurrentlyBPJS) {
-      // If this is a BPJS patient, update in the PatientBPJS table
-      const updatedBPJS = await db.patientBPJS.update({
-        where: { id: parseInt(id) },
-        data: {
-          name: body.name,
-          gender: body.gender,
-          birthDate: body.birthDate ? new Date(body.birthDate) : null,
-          address: body.address,
-          no_bpjs: body.no_bpjs,
-          nik: nik,
-          phoneNumber: body.phoneNumber || null, // Add phone number field
-        },
-      });
+    // Update patient
+    const updatedPatient = await db.patient.update({
+      where: { id: parseInt(id) },
+      data: {
+        name: body.name,
+        gender: body.gender,
+        birthDate: body.birthDate ? new Date(body.birthDate) : null,
+        address: body.address,
+        // Keep the existing isBPJS status
+        isBPJS: existingPatient.isBPJS,
+        // Only update no_bpjs if patient is BPJS
+        no_bpjs: existingPatient.isBPJS
+          ? body.no_bpjs
+          : existingPatient.no_bpjs,
+        nik: nik,
+        phoneNumber: body.phoneNumber || null,
+      },
+    });
 
-      return NextResponse.json({ success: true, patient: updatedBPJS });
-    } else {
-      // If this is a regular patient, update in the Patient table
-      const updatedRegular = await db.patient.update({
-        where: { id: parseInt(id) },
-        data: {
-          name: body.name,
-          gender: body.gender,
-          birthDate: body.birthDate ? new Date(body.birthDate) : null,
-          address: body.address,
-          nik: nik,
-          isBPJS: currentPatient.isBPJS,
-          phoneNumber: body.phoneNumber || null, // Add phone number field
-        },
-      });
+    // Add patientType property for compatibility with frontend
+    const patientWithType = {
+      ...updatedPatient,
+      patientType: updatedPatient.isBPJS ? "bpjs" : "regular",
+    };
 
-      return NextResponse.json({ success: true, patient: updatedRegular });
-    }
+    return NextResponse.json({ success: true, patient: patientWithType });
   } catch (error) {
     console.error("Error updating patient:", error);
     return NextResponse.json(
@@ -166,13 +115,9 @@ export async function PUT(request, { params }) {
 
 // Handle DELETE request
 export async function DELETE(request, { params }) {
-  // Await params sebelum mengakses propertinya
+  // Await params before accessing its properties
   const resolvedParams = await params;
   const id = resolvedParams.id;
-
-  // Get the query parameters
-  const { searchParams } = new URL(request.url);
-  const isBPJS = searchParams.get("isBPJS") === "true";
 
   try {
     // Check if patient has related records before attempting to delete
@@ -200,15 +145,15 @@ export async function DELETE(request, { params }) {
 
     // If there are related records, perform a cascade delete
     if (relatedScreenings.length > 0 || relatedMedicalRecords.length > 0) {
-      // Option 2: Perform a cascade delete
-      // Delete related prescription items and prescriptions first
+      // Delete related prescriptions and prescription items first
       for (const record of relatedMedicalRecords) {
-        // Check if the medical record has prescriptions
-        const prescription = await db.prescription.findUnique({
+        // Find all prescriptions for this medical record
+        const prescriptions = await db.prescription.findMany({
           where: { medicalRecordId: record.id },
         });
 
-        if (prescription) {
+        // Delete all prescription items and prescriptions
+        for (const prescription of prescriptions) {
           // Delete prescription items first
           await db.prescriptionItem.deleteMany({
             where: { prescriptionId: prescription.id },
@@ -237,21 +182,11 @@ export async function DELETE(request, { params }) {
 
     // Once all related records are deleted or if there are no related records,
     // proceed with patient deletion
-    if (isBPJS) {
-      // Delete from PatientBPJS table
-      await db.patientBPJS.delete({
-        where: {
-          id: patientId,
-        },
-      });
-    } else {
-      // Delete from Patient table
-      await db.patient.delete({
-        where: {
-          id: patientId,
-        },
-      });
-    }
+    await db.patient.delete({
+      where: {
+        id: patientId,
+      },
+    });
 
     return NextResponse.json({
       success: true,

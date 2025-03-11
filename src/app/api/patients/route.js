@@ -17,9 +17,6 @@ export async function GET(request) {
       ? sortField
       : "no_rm";
 
-    let patients = [];
-    let totalPatients = 0;
-
     // Create a filter for updatedAt when needed
     let whereClause = {};
     if (finalSortField === "updatedAt") {
@@ -30,76 +27,41 @@ export async function GET(request) {
       };
     }
 
-    // Fetch patients based on the requested type
-    if (patientType === "regular" || patientType === "all") {
-      const regularPatients = await db.patient.findMany({
-        where: whereClause,
-        take: patientType === "all" ? Math.ceil(limit / 2) : limit,
-        skip: patientType === "all" ? Math.ceil(skip / 2) : skip,
-        orderBy: {
-          [finalSortField]: sortOrder === "desc" ? "desc" : "asc",
-        },
-      });
-
-      patients = [
-        ...regularPatients.map((p) => ({ ...p, patientType: "regular" })),
-      ];
-
-      if (patientType === "regular") {
-        totalPatients = await db.patient.count({ where: whereClause });
-      }
+    // Add filter based on patient type
+    if (patientType === "regular") {
+      whereClause = {
+        ...whereClause,
+        isBPJS: false,
+      };
+    } else if (patientType === "bpjs") {
+      whereClause = {
+        ...whereClause,
+        isBPJS: true,
+      };
     }
 
-    if (patientType === "bpjs" || patientType === "all") {
-      const bpjsPatients = await db.patientBPJS.findMany({
-        where: whereClause,
-        take: patientType === "all" ? Math.ceil(limit / 2) : limit,
-        skip: patientType === "all" ? Math.ceil(skip / 2) : skip,
-        orderBy: {
-          [finalSortField]: sortOrder === "desc" ? "desc" : "asc",
-        },
-      });
+    // Fetch patients based on the filters
+    const patients = await db.patient.findMany({
+      where: whereClause,
+      take: limit,
+      skip: skip,
+      orderBy: {
+        [finalSortField]: sortOrder === "desc" ? "desc" : "asc",
+      },
+    });
 
-      patients = [
-        ...patients,
-        ...bpjsPatients.map((p) => ({ ...p, patientType: "bpjs" })),
-      ];
+    // Get total count for pagination
+    const totalPatients = await db.patient.count({ where: whereClause });
 
-      if (patientType === "bpjs") {
-        totalPatients = await db.patientBPJS.count({ where: whereClause });
-      }
-    }
-
-    // If fetching all patients, get combined total
-    if (patientType === "all") {
-      const regularCount = await db.patient.count({ where: whereClause });
-      const bpjsCount = await db.patientBPJS.count({ where: whereClause });
-      totalPatients = regularCount + bpjsCount;
-
-      // Sort the combined results
-      patients.sort((a, b) => {
-        // Skip comparison if either value is null when sorting by updatedAt
-        if (
-          finalSortField === "updatedAt" &&
-          (!a[finalSortField] || !b[finalSortField])
-        ) {
-          return 0;
-        }
-
-        if (sortOrder === "asc") {
-          return a[finalSortField] > b[finalSortField] ? 1 : -1;
-        } else {
-          return a[finalSortField] < b[finalSortField] ? 1 : -1;
-        }
-      });
-
-      // Apply limit after sorting
-      patients = patients.slice(0, limit);
-    }
+    // Add patientType field to each patient object
+    const patientsWithType = patients.map((p) => ({
+      ...p,
+      patientType: p.isBPJS ? "bpjs" : "regular",
+    }));
 
     return NextResponse.json({
       success: true,
-      patients,
+      patients: patientsWithType,
       pagination: {
         total: totalPatients,
         pages: Math.ceil(totalPatients / limit),

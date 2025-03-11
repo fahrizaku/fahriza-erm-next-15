@@ -1,8 +1,6 @@
 // /app/api/medical-records/[id]/route.js
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import { db } from "@/lib/db";
 
 // Get medical record by ID
 export async function GET(request, { params }) {
@@ -14,7 +12,7 @@ export async function GET(request, { params }) {
     let medicalRecord;
 
     // Try to find as medical record ID first
-    medicalRecord = await prisma.medicalRecord.findUnique({
+    medicalRecord = await db.medicalRecord.findUnique({
       where: {
         id: parseInt(id),
       },
@@ -22,7 +20,7 @@ export async function GET(request, { params }) {
 
     // If not found, try to find by screening ID
     if (!medicalRecord) {
-      medicalRecord = await prisma.medicalRecord.findUnique({
+      medicalRecord = await db.medicalRecord.findUnique({
         where: {
           screeningId: parseInt(id),
         },
@@ -37,24 +35,28 @@ export async function GET(request, { params }) {
     }
 
     // Get related data
-    const patient = await prisma.patient.findUnique({
+    const patient = await db.patient.findUnique({
       where: {
         id: medicalRecord.patientId,
       },
     });
 
-    const screening = await prisma.screening.findUnique({
+    const screening = await db.screening.findUnique({
       where: {
         id: medicalRecord.screeningId,
       },
     });
 
-    const prescription = await prisma.prescription.findUnique({
+    // Get all prescriptions for this medical record (modified to get multiple)
+    const prescriptions = await db.prescription.findMany({
       where: {
         medicalRecordId: medicalRecord.id,
       },
       include: {
         items: true,
+      },
+      orderBy: {
+        createdAt: "asc",
       },
     });
 
@@ -63,7 +65,7 @@ export async function GET(request, { params }) {
       medicalRecord,
       patient,
       screening,
-      prescription,
+      prescriptions,
     });
   } catch (error) {
     console.error("Error fetching medical record:", error);

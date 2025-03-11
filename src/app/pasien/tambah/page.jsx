@@ -33,14 +33,16 @@ const PatientRegistration = () => {
     no_rm: "",
     no_bpjs: "",
     nik: "",
+    phoneNumber: "",
   });
 
-  // Fetch next RM number when patient type changes
+  // Fetch next RM number when component loads
   useEffect(() => {
     const fetchNextRmNumber = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`/api/patients/next-rm?isBPJS=${isBPJS}`);
+        // Modified to work with the new API that doesn't need isBPJS parameter
+        const response = await fetch(`/api/patients/next-rm`);
         const data = await response.json();
 
         if (data.success) {
@@ -62,7 +64,7 @@ const PatientRegistration = () => {
     };
 
     fetchNextRmNumber();
-  }, [isBPJS]);
+  }, []);
 
   // Handle form input changes
   const handleInputChange = (e) => {
@@ -91,9 +93,9 @@ const PatientRegistration = () => {
     }
   };
 
-  // Handle patient type change
-  const handlePatientTypeChange = (type) => {
-    const newIsBPJS = type === "bpjs";
+  // Handle BPJS toggle
+  const handleBPJSChange = (e) => {
+    const newIsBPJS = e.target.checked;
     setIsBPJS(newIsBPJS);
 
     // Clear BPJS number if switching to regular patient
@@ -131,6 +133,7 @@ const PatientRegistration = () => {
         // Convert empty strings to null
         nik: formData.nik?.trim() || null,
         no_bpjs: isBPJS ? formData.no_bpjs?.trim() || null : null,
+        phoneNumber: formData.phoneNumber?.trim() || null,
       };
 
       // Remove formattedBirthDate before sending to API
@@ -150,7 +153,8 @@ const PatientRegistration = () => {
 
           if (data.success) {
             setTimeout(() => {
-              router.push(`/pasien/${data.patientId}?isBPJS=${isBPJS}`);
+              // Updated the URL to not include isBPJS parameter since it's no longer needed
+              router.push(`/pasien/${data.patientId}`);
             }, 1000);
             return data;
           } else {
@@ -189,57 +193,6 @@ const PatientRegistration = () => {
         <p className="text-gray-600 mt-1">
           Silakan lengkapi data pasien dengan benar
         </p>
-      </div>
-
-      {/* Patient Type Selection */}
-      <div className="mb-6 bg-white rounded-xl shadow-md p-6 border border-gray-200">
-        <h2 className="text-lg font-medium text-gray-800 mb-4">Jenis Pasien</h2>
-        <div className="flex flex-wrap gap-4">
-          <button
-            type="button"
-            onClick={() => handlePatientTypeChange("regular")}
-            className={`flex-1 p-4 rounded-xl border-2 flex flex-col items-center ${
-              !isBPJS
-                ? "border-blue-500 bg-blue-50 text-blue-700"
-                : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
-            }`}
-          >
-            <User className="w-8 h-8 mb-2" />
-            <span className="font-medium">Pasien Umum</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => handlePatientTypeChange("bpjs")}
-            className={`flex-1 p-4 rounded-xl border-2 flex flex-col items-center ${
-              isBPJS
-                ? "border-green-500 bg-green-50 text-green-700"
-                : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
-            }`}
-          >
-            <Shield className="w-8 h-8 mb-2" />
-            <span className="font-medium">Pasien BPJS</span>
-          </button>
-        </div>
-
-        {/* Loading indicator for RM number */}
-        {loading && (
-          <div className="mt-4 flex items-center text-gray-500">
-            <Loader2 className="w-4 h-4 animate-spin mr-2" />
-            <span>Mengambil nomor RM berikutnya...</span>
-          </div>
-        )}
-
-        {/* Display next RM number info */}
-        {nextRmNumber && !loading && (
-          <div className="mt-4 p-3 bg-gray-50 border border-gray-200 rounded-lg flex items-center text-sm">
-            <FileText className="w-4 h-4 text-gray-500 mr-2" />
-            <span>
-              Nomor RM yang akan diberikan:{" "}
-              <span className="font-mono font-medium">{nextRmNumber}</span>
-            </span>
-          </div>
-        )}
       </div>
 
       {/* Registration Form */}
@@ -347,6 +300,25 @@ const PatientRegistration = () => {
             </div>
           </div>
 
+          {/* Phone Number */}
+          <div>
+            <label
+              htmlFor="phoneNumber"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
+              Nomor Telepon
+            </label>
+            <input
+              type="text"
+              id="phoneNumber"
+              name="phoneNumber"
+              value={formData.phoneNumber}
+              onChange={handleInputChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              placeholder="Masukkan nomor telepon"
+            />
+          </div>
+
           {/* RM Number (readonly) */}
           <div>
             <label
@@ -393,7 +365,26 @@ const PatientRegistration = () => {
             </div>
           </div>
 
-          {/* BPJS Number (only for BPJS patients) */}
+          {/* BPJS checkbox - moved to end as requested */}
+          <div className="mt-6">
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                id="isBPJS"
+                checked={isBPJS}
+                onChange={handleBPJSChange}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              <label
+                htmlFor="isBPJS"
+                className="ml-2 block text-sm font-medium text-gray-700"
+              >
+                Pasien BPJS
+              </label>
+            </div>
+          </div>
+
+          {/* BPJS Number (only shown if BPJS is checked) */}
           {isBPJS && (
             <div>
               <label
@@ -412,6 +403,7 @@ const PatientRegistration = () => {
                   onChange={handleInputChange}
                   className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   placeholder="Masukkan nomor BPJS"
+                  required={isBPJS}
                 />
               </div>
             </div>
