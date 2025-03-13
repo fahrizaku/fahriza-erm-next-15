@@ -6,7 +6,6 @@ import {
   ArrowLeft,
   Calendar,
   Shield,
-  User,
   MapPin,
   FileText,
   CreditCard,
@@ -14,6 +13,7 @@ import {
   Loader2,
 } from "lucide-react";
 import Link from "next/link";
+import EnhancedDatePicker from "./_components/EnhanceDatePicker";
 import { toast } from "react-toastify";
 
 const PatientRegistration = () => {
@@ -27,8 +27,7 @@ const PatientRegistration = () => {
   const [formData, setFormData] = useState({
     name: "",
     gender: "",
-    birthDate: "",
-    formattedBirthDate: "", // Untuk display format dd/mm/yyyy
+    birthDate: "", // Untuk display format dd/mm/yyyy
     address: "",
     no_rm: "",
     no_bpjs: "",
@@ -69,28 +68,10 @@ const PatientRegistration = () => {
   // Handle form input changes
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-
-    // Khusus untuk input tanggal lahir
-    if (name === "birthDate" && value) {
-      // Format untuk display (dd/mm/yyyy)
-      const dateObj = new Date(value);
-      const formattedDate = dateObj.toLocaleDateString("id-ID", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-      });
-
-      setFormData({
-        ...formData,
-        [name]: value,
-        formattedBirthDate: formattedDate,
-      });
-    } else {
-      setFormData({
-        ...formData,
-        [name]: value,
-      });
-    }
+    setFormData({
+      ...formData,
+      [name]: value,
+    });
   };
 
   // Handle BPJS toggle
@@ -177,7 +158,7 @@ const PatientRegistration = () => {
   };
 
   return (
-    <div className="max-w-3xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+    <div className="max-w-4xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
       {/* Header Section */}
       <div className="mb-6">
         <Link
@@ -202,216 +183,205 @@ const PatientRegistration = () => {
       >
         <h2 className="text-lg font-medium text-gray-800 mb-4">Data Pasien</h2>
 
-        <div className="space-y-4">
-          {/* Name input */}
-          <div>
-            <label
-              htmlFor="name"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
-              Nama Lengkap <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              id="name"
-              name="name"
-              value={formData.name}
-              onChange={handleInputChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="Masukkan nama lengkap"
-              required
-            />
-          </div>
-
-          {/* Gender selection */}
-          <div>
-            <label
-              htmlFor="gender"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
-              Jenis Kelamin
-            </label>
-            <select
-              id="gender"
-              name="gender"
-              value={formData.gender}
-              onChange={handleInputChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value="">Pilih jenis kelamin</option>
-              <option value="Laki-laki">Laki-laki</option>
-              <option value="Perempuan">Perempuan</option>
-            </select>
-          </div>
-
-          {/* Birth date */}
-          <div>
-            <label
-              htmlFor="birthDate"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
-              Tanggal Lahir
-            </label>
-            <div className="relative max-w-xs">
-              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-              {/* Input dengan format dd/mm/yyyy */}
-              <div className="relative">
-                <input
-                  type="text"
-                  value={formData.formattedBirthDate}
-                  className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer"
-                  placeholder="dd/mm/yyyy"
-                  readOnly
-                  onClick={() =>
-                    document.getElementById("hiddenDatePicker").showPicker()
-                  }
-                />
-                <input
-                  type="date"
-                  id="hiddenDatePicker"
-                  name="birthDate"
-                  value={formData.birthDate}
-                  onChange={handleInputChange}
-                  className="opacity-0 absolute left-0 top-0 w-0 h-0"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Address */}
-          <div>
-            <label
-              htmlFor="address"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
-              Alamat
-            </label>
-            <div className="relative">
-              <MapPin className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
-              <textarea
-                id="address"
-                name="address"
-                value={formData.address}
-                onChange={handleInputChange}
-                rows="3"
-                className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Masukkan alamat lengkap"
-              ></textarea>
-            </div>
-          </div>
-
-          {/* Phone Number */}
-          <div>
-            <label
-              htmlFor="phoneNumber"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
-              Nomor Telepon
-            </label>
-            <input
-              type="text"
-              id="phoneNumber"
-              name="phoneNumber"
-              value={formData.phoneNumber}
-              onChange={handleInputChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="Masukkan nomor telepon"
-            />
-          </div>
-
-          {/* RM Number (readonly) */}
-          <div>
-            <label
-              htmlFor="no_rm"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
-              Nomor RM
-            </label>
-            <div className="relative">
-              <FileText className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input
-                type="text"
-                id="no_rm"
-                name="no_rm"
-                value={formData.no_rm}
-                readOnly
-                className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-300 focus:border-blue-300 cursor-not-allowed"
-              />
-            </div>
-            <p className="mt-1 text-sm text-gray-500">
-              Nomor RM diberikan secara otomatis
-            </p>
-          </div>
-
-          {/* NIK */}
-          <div>
-            <label
-              htmlFor="nik"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
-              NIK (Nomor Induk Kependudukan)
-            </label>
-            <div className="relative">
-              <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input
-                type="text"
-                id="nik"
-                name="nik"
-                value={formData.nik}
-                onChange={handleInputChange}
-                className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Masukkan NIK"
-              />
-            </div>
-          </div>
-
-          {/* BPJS checkbox - moved to end as requested */}
-          <div className="mt-6">
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                id="isBPJS"
-                checked={isBPJS}
-                onChange={handleBPJSChange}
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-              />
-              <label
-                htmlFor="isBPJS"
-                className="ml-2 block text-sm font-medium text-gray-700"
-              >
-                Pasien BPJS
-              </label>
-            </div>
-          </div>
-
-          {/* BPJS Number (only shown if BPJS is checked) */}
-          {isBPJS && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Left Column */}
+          <div className="space-y-4">
+            {/* Name input */}
             <div>
               <label
-                htmlFor="no_bpjs"
+                htmlFor="name"
                 className="block text-sm font-medium text-gray-700 mb-1"
               >
-                Nomor BPJS <span className="text-red-500">*</span>
+                Nama Lengkap <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                id="name"
+                name="name"
+                value={formData.name}
+                onChange={handleInputChange}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Masukkan nama lengkap"
+                required
+              />
+            </div>
+
+            {/* Gender selection */}
+            <div>
+              <label
+                htmlFor="gender"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                Jenis Kelamin
+              </label>
+              <select
+                id="gender"
+                name="gender"
+                value={formData.gender}
+                onChange={handleInputChange}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="">Pilih jenis kelamin</option>
+                <option value="Laki-laki">Laki-laki</option>
+                <option value="Perempuan">Perempuan</option>
+              </select>
+            </div>
+
+            {/* Birth date */}
+            {/* Birth date with enhanced picker */}
+            <div>
+              <label
+                htmlFor="birthDate"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                Tanggal Lahir
+              </label>
+              <EnhancedDatePicker
+                id="birthDate"
+                name="birthDate"
+                value={formData.birthDate}
+                onChange={handleInputChange}
+              />
+            </div>
+
+            {/* Phone Number */}
+            <div>
+              <label
+                htmlFor="phoneNumber"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                Nomor Telepon
+              </label>
+              <input
+                type="text"
+                id="phoneNumber"
+                name="phoneNumber"
+                value={formData.phoneNumber}
+                onChange={handleInputChange}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Masukkan nomor telepon"
+              />
+            </div>
+
+            {/* BPJS checkbox */}
+            <div className="mt-6">
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="isBPJS"
+                  checked={isBPJS}
+                  onChange={handleBPJSChange}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <label
+                  htmlFor="isBPJS"
+                  className="ml-2 block text-sm font-medium text-gray-700"
+                >
+                  Pasien BPJS
+                </label>
+              </div>
+            </div>
+
+            {/* BPJS Number (only shown if BPJS is checked) */}
+            {isBPJS && (
+              <div>
+                <label
+                  htmlFor="no_bpjs"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
+                  Nomor BPJS <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <Shield className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input
+                    type="text"
+                    id="no_bpjs"
+                    name="no_bpjs"
+                    value={formData.no_bpjs}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Masukkan nomor BPJS"
+                    required={isBPJS}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Right Column */}
+          <div className="space-y-4">
+            {/* Address */}
+            <div>
+              <label
+                htmlFor="address"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                Alamat
               </label>
               <div className="relative">
-                <Shield className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <MapPin className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+                <textarea
+                  id="address"
+                  name="address"
+                  value={formData.address}
+                  onChange={handleInputChange}
+                  rows="3"
+                  className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Masukkan alamat lengkap"
+                ></textarea>
+              </div>
+            </div>
+
+            {/* RM Number (readonly) */}
+            <div>
+              <label
+                htmlFor="no_rm"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                Nomor RM
+              </label>
+              <div className="relative">
+                <FileText className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
                   type="text"
-                  id="no_bpjs"
-                  name="no_bpjs"
-                  value={formData.no_bpjs}
+                  id="no_rm"
+                  name="no_rm"
+                  value={formData.no_rm}
+                  readOnly
+                  className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-300 focus:border-blue-300 cursor-not-allowed"
+                />
+              </div>
+              <p className="mt-1 text-sm text-gray-500">
+                Nomor RM diberikan secara otomatis
+              </p>
+            </div>
+
+            {/* NIK */}
+            <div>
+              <label
+                htmlFor="nik"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                NIK (Nomor Induk Kependudukan)
+              </label>
+              <div className="relative">
+                <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                  type="text"
+                  id="nik"
+                  name="nik"
+                  value={formData.nik}
                   onChange={handleInputChange}
                   className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Masukkan nomor BPJS"
-                  required={isBPJS}
+                  placeholder="Masukkan NIK"
                 />
               </div>
             </div>
-          )}
+          </div>
         </div>
 
-        {/* Submit Button */}
-        <div className="mt-8">
+        {/* Submit Button - Full width across both columns */}
+        <div className="mt-8 col-span-full">
           <button
             type="submit"
             disabled={savingPatient || loading}

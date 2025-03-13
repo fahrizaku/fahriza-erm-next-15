@@ -207,7 +207,7 @@ const Patient = () => {
   // Handle add new patient click
   const handleAddNewPatient = () => {
     setIsAddingPatient(true);
-    router.push("/pasien/tambah-cepat");
+    router.push("/pasien/tambah");
   };
 
   const BPJSBadge = () => (

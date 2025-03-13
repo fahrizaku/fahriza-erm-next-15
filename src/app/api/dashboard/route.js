@@ -4,32 +4,21 @@ import { db } from "@/lib/db";
 export async function GET() {
   try {
     // Menggunakan Promise.all untuk menjalankan semua query secara parallel
-    let [generalPatients, bpjsPatients, storeProducts] = await Promise.all([
-      // Menghitung pasien umum (non-BPJS)
-      db.patient
-        .count({
-          where: {
-            isBPJS: false,
-          },
-        })
-        .catch(() => 0),
-
-      // Menghitung pasien BPJS
-      db.patientBPJS.count().catch(() => 0),
+    let [patients, storeProducts] = await Promise.all([
+      // Menghitung semua pasien
+      db.patient.count().catch(() => 0),
 
       // Menghitung produk apotek
       db.drugStoreProduct.count().catch(() => 0),
     ]);
 
     // Memastikan nilai yang dikembalikan adalah angka valid
-    generalPatients = generalPatients || 0;
-    bpjsPatients = bpjsPatients || 0;
+    patients = patients || 0;
     storeProducts = storeProducts || 0;
 
     // Menyusun data untuk response
     const dashboardData = {
-      pasienUmum: generalPatients.toString(),
-      pasienBPJS: bpjsPatients.toString(),
+      pasien: patients.toString(),
       produkApotek: storeProducts.toString(),
     };
 
@@ -39,8 +28,7 @@ export async function GET() {
     // Mengembalikan objek dengan nilai default string jika terjadi error
     return NextResponse.json(
       {
-        pasienUmum: "0",
-        pasienBPJS: "0",
+        pasien: "0",
         produkApotek: "0",
         error: error.message,
       },

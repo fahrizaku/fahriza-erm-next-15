@@ -9,9 +9,9 @@ import {
   ListOrdered,
   ShoppingCart,
   User,
-  UserCheck,
   Pill,
   LayoutDashboard,
+  Folder,
 } from "lucide-react";
 
 const menuCategories = [
@@ -80,16 +80,21 @@ const menuCategories = [
       },
     ],
   },
-  // {
-  //   category: "Vaksin",
-  //   items: [
-  //     {
-  //       title: "Form Meningitis",
-  //       icon: <FileText size={20} />,
-  //       href: "/vaksin/meningitis-form",
-  //     },
-  //   ],
-  // },
+  {
+    category: "Lain-lain",
+    items: [
+      {
+        title: "Form Meningitis",
+        icon: <FileText size={20} />,
+        href: "/vaksin/meningitis-form",
+      },
+      {
+        title: "Files",
+        icon: <Folder size={20} />,
+        href: "/file-sharing",
+      },
+    ],
+  },
 ];
 
 export default menuCategories;

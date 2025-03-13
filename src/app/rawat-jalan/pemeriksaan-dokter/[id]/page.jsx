@@ -2,7 +2,7 @@
 // app/rawat-jalan/pemeriksaan-dokter/[id]/page.jsx
 "use client";
 
-import React, { useState, useEffect, use } from "react";
+import React, { useState, use } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import { Loader2, AlertTriangle, Save } from "lucide-react";
