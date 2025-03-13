@@ -11,7 +11,6 @@ export async function POST(request) {
     console.log("Registering patient with data:", { isBPJS, ...data });
 
     // Format birth date (if provided) or set to null if empty
-    // Handle birthDate even if it's an empty string
     if (
       data.birthDate === "" ||
       data.birthDate === null ||
@@ -88,13 +87,15 @@ export async function POST(request) {
     ) {
       data.gender = null;
     }
-    // Since NIK is no longer unique, we don't need to check for existing NIK
 
     // Verify BPJS number isn't already used (if applicable)
     if (isBPJS && data.no_bpjs) {
       try {
-        const existingBPJS = await db.patientBPJS.findUnique({
-          where: { no_bpjs: data.no_bpjs },
+        const existingBPJS = await db.patient.findFirst({
+          where: {
+            no_bpjs: data.no_bpjs,
+            isBPJS: true,
+          },
         });
 
         if (existingBPJS) {
@@ -112,39 +113,15 @@ export async function POST(request) {
       }
     }
 
-    // Save patient data to appropriate table
-    let savedPatient;
-
+    // Save patient data
     try {
-      if (isBPJS) {
-        // Special handling for BPJS patients
-        console.log("Registering BPJS patient with data:", {
+      // All patients now go to the Patient table with the isBPJS flag
+      const savedPatient = await db.patient.create({
+        data: {
           ...data,
-          isBPJS: true,
-        });
-
-        // Direct creation without duplicate check (let the database handle it)
-        savedPatient = await db.patientBPJS.create({
-          data: {
-            ...data,
-            isBPJS: true,
-          },
-        });
-      } else {
-        // Special handling for regular patients
-        console.log("Registering regular patient with data:", {
-          ...data,
-          isBPJS: false,
-        });
-
-        // Direct creation without duplicate check (let the database handle it)
-        savedPatient = await db.patient.create({
-          data: {
-            ...data,
-            isBPJS: false,
-          },
-        });
-      }
+          isBPJS: isBPJS || false,
+        },
+      });
 
       console.log("Patient registered successfully:", savedPatient);
 

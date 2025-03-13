@@ -1,15 +1,13 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { User, Package, Shield, Loader } from "lucide-react";
-import Link from "next/link";
+import { User, Package, Loader } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 const DashboardKlinik = () => {
   const router = useRouter();
   // State untuk data dashboard dengan default nilai string "0"
   const [data, setData] = useState({
-    pasienUmum: "0",
-    pasienBPJS: "0",
+    pasien: "0",
     produkApotek: "0",
   });
 
@@ -17,8 +15,7 @@ const DashboardKlinik = () => {
   const [loading, setLoading] = useState(true);
   // State untuk loading navigasi
   const [navLoading, setNavLoading] = useState({
-    pasienUmum: false,
-    pasienBPJS: false,
+    pasien: false,
     produkApotek: false,
   });
   const [error, setError] = useState(null);
@@ -38,8 +35,7 @@ const DashboardKlinik = () => {
 
         // Memastikan semua nilai dalam bentuk string
         const safeData = {
-          pasienUmum: String(dashboardData.pasienUmum || "0"),
-          pasienBPJS: String(dashboardData.pasienBPJS || "0"),
+          pasien: String(dashboardData.pasien || "0"),
           produkApotek: String(dashboardData.produkApotek || "0"),
         };
 
@@ -111,50 +107,26 @@ const DashboardKlinik = () => {
             Dashboard Klinik
           </h1>
 
-          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {/* Card Pasien Umum */}
+          <div className="grid grid-cols-2 md:grid-cols-2 gap-4">
+            {/* Card Semua Pasien */}
             <div
-              onClick={() => handleNavigation("/pasien", "pasienUmum")}
+              onClick={() => handleNavigation("/pasien", "pasien")}
               className="block cursor-pointer"
             >
               <div className="bg-white rounded-lg p-5 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
                 <div className="flex flex-col">
                   <div className="text-blue-500 mb-3">
-                    {navLoading.pasienUmum ? (
+                    {navLoading.pasien ? (
                       <Loader size={24} className="animate-spin" />
                     ) : (
                       <User size={24} />
                     )}
                   </div>
                   <h3 className="text-sm text-gray-500 font-medium mb-1">
-                    Pasien Umum
+                    Pasien
                   </h3>
                   <p className="text-2xl font-bold text-gray-800">
-                    {data.pasienUmum}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Card Pasien BPJS */}
-            <div
-              onClick={() => handleNavigation("/pasien", "pasienBPJS")}
-              className="block cursor-pointer"
-            >
-              <div className="bg-white rounded-lg p-5 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
-                <div className="flex flex-col">
-                  <div className="text-green-500 mb-3">
-                    {navLoading.pasienBPJS ? (
-                      <Loader size={24} className="animate-spin" />
-                    ) : (
-                      <Shield size={24} />
-                    )}
-                  </div>
-                  <h3 className="text-sm text-gray-500 font-medium mb-1">
-                    Pasien BPJS
-                  </h3>
-                  <p className="text-2xl font-bold text-gray-800">
-                    {data.pasienBPJS}
+                    {data.pasien}
                   </p>
                 </div>
               </div>

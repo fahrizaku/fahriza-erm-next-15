@@ -44,11 +44,8 @@ export default function PatientDetailPage({ params }) {
     const fetchPatientData = async () => {
       try {
         setIsLoading(true);
-        // Coba ambil dari query string apakah ini pasien BPJS
-        const urlParams = new URLSearchParams(window.location.search);
-        const isBPJS = urlParams.get("isBPJS") === "true";
 
-        const response = await fetch(`/api/patients/${id}?isBPJS=${isBPJS}`);
+        const response = await fetch(`/api/patients/${id}`);
 
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
@@ -88,7 +85,7 @@ export default function PatientDetailPage({ params }) {
   // Handle outpatient navigation with loading state
   const handleOutpatientClick = () => {
     setIsLoadingOutpatient(true);
-    router.push(`/rawat-jalan/screening/${id}?isBPJS=${patient.isBPJS}`);
+    router.push(`/rawat-jalan/screening/${id}`);
     // We don't reset the loading state since we're navigating away
   };
 
@@ -162,11 +159,8 @@ export default function PatientDetailPage({ params }) {
   const handleDeletePatient = async () => {
     try {
       setIsDeleting(true);
-      // Get the URL parameters to determine if this is a BPJS patient
-      const urlParams = new URLSearchParams(window.location.search);
-      const isBPJS = urlParams.get("isBPJS") === "true";
 
-      const response = await fetch(`/api/patients/${id}?isBPJS=${isBPJS}`, {
+      const response = await fetch(`/api/patients/${id}`, {
         method: "DELETE",
       });
 
