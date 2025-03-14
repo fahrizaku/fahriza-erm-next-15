@@ -27,8 +27,8 @@ const Patient = () => {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [totalPatients, setTotalPatients] = useState(0);
-  const [sortField, setSortField] = useState("no_rm");
-  const [sortOrder, setSortOrder] = useState("asc");
+  const [sortField, setSortField] = useState("updatedAt");
+  const [sortOrder, setSortOrder] = useState("desc");
   const [showTypeOptions, setShowTypeOptions] = useState(false);
   const [patientType, setPatientType] = useState("all"); // 'all', 'regular', or 'bpjs'
   const [clickedPatientId, setClickedPatientId] = useState(null); // Track which patient card is clicked
@@ -195,13 +195,6 @@ const Patient = () => {
       default:
         return "Semua Pasien";
     }
-  };
-
-  // Handle patient card click with loading state
-  const handlePatientClick = (patientId, isBPJS) => {
-    setClickedPatientId(patientId);
-    // Navigate to patient details page
-    router.push(`/pasien/${patientId}`);
   };
 
   // Handle add new patient click
@@ -415,12 +408,14 @@ const Patient = () => {
                   const isCardLoading = clickedPatientId === patient.id;
 
                   return (
-                    <div
+                    <Link
+                      href={`/pasien/${patient.id}`}
+                      prefetch={true}
                       key={`${patient.id}-${index}-${
                         patient.patientType || ""
                       }`}
-                      onClick={() => handlePatientClick(patient.id, isBPJS)}
                       className="block cursor-pointer relative"
+                      onClick={() => setIsCardLoading(true)}
                     >
                       <div
                         className={`group p-4 bg-white border-2 ${
@@ -490,7 +485,7 @@ const Patient = () => {
                           </div>
                         </div>
                       </div>
-                    </div>
+                    </Link>
                   );
                 })}
 
