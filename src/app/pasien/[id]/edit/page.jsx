@@ -1,4 +1,3 @@
-//pasien/[id]/edit/page.jsx
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -18,6 +17,7 @@ import {
   Check,
 } from "lucide-react";
 import { toast } from "react-toastify";
+import SeparatedDateInput from "@/components/ui/SeparatedDateInput";
 
 export default function PatientEditPage({ params }) {
   const router = useRouter();
@@ -66,35 +66,14 @@ export default function PatientEditPage({ params }) {
     }
   }, [id]);
 
-  // Format date to YYYY-MM-DD for input fields
-  const formatDateForInput = (dateString) => {
-    if (!dateString) return "";
-    const date = new Date(dateString);
-    return date.toISOString().split("T")[0];
-  };
-
-  // Calculate age based on birthDate
-  const calculateAge = (birthDate) => {
-    if (!birthDate) return "N/A";
-    const birth = new Date(birthDate);
-    const ageDifMs = Date.now() - birth.getTime();
-    const ageDate = new Date(ageDifMs);
-    return Math.abs(ageDate.getUTCFullYear() - 1970);
-  };
-
   // Handle form input changes
   const handleInputChange = (e) => {
     const { name, value } = e.target;
 
-    // Prevent changing isBPJS status
-    if (name === "isBPJS") return;
-
-    // Only allow BPJS patients to update no_bpjs
-    if (name === "no_bpjs" && !patient.isBPJS) return;
-
+    // Allow changing BPJS status by removing the restriction
     setEditedPatient((prev) => ({
       ...prev,
-      [name]: value,
+      [name]: name === "isBPJS" ? value === "true" : value,
     }));
   };
 
@@ -105,17 +84,25 @@ export default function PatientEditPage({ params }) {
     setError(null);
 
     try {
-      // Ensure we're maintaining the original isBPJS status
+      // Use the edited BPJS status now, not the original one
       const dataToSubmit = {
         ...editedPatient,
         birthDate: editedPatient.birthDate
           ? new Date(editedPatient.birthDate).toISOString()
           : null,
-        isBPJS: patient.isBPJS, // Keep original isBPJS status
+        // Using the edited BPJS status, not forcing the original one
       };
 
+      // If no_bpjs is not provided for a BPJS patient, show an error
+      if (editedPatient.isBPJS && !editedPatient.no_bpjs) {
+        setError("Nomor BPJS wajib diisi untuk pasien BPJS");
+        toast.error("Nomor BPJS wajib diisi untuk pasien BPJS");
+        setIsSaving(false);
+        return;
+      }
+
       // Remove no_bpjs if not a BPJS patient
-      if (!patient.isBPJS) {
+      if (!editedPatient.isBPJS) {
         delete dataToSubmit.no_bpjs;
       }
 
@@ -155,18 +142,9 @@ export default function PatientEditPage({ params }) {
     }
   };
 
-  // Function to capitalize each word
-  const capitalizeEachWord = (str) => {
-    if (!str) return "";
-    return str
-      .split(" ")
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-      .join(" ");
-  };
-
   if (isLoading) {
     return (
-      <div className="max-w-4xl mx-auto p-4 sm:p-6">
+      <div className="max-w-6xl mx-auto sm:p-6">
         <div className="flex justify-center items-center h-64">
           <div className="text-center">
             <Loader2 className="h-10 w-10 animate-spin text-blue-500 mx-auto" />
@@ -179,7 +157,7 @@ export default function PatientEditPage({ params }) {
 
   if (error) {
     return (
-      <div className="max-w-4xl mx-auto p-4 sm:p-6">
+      <div className="max-w-6xl mx-auto pt-4 px-1 sm:p-6">
         <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-md">
           <div className="flex items-start">
             <AlertTriangle className="h-6 w-6 text-red-500 mr-3 flex-shrink-0" />
@@ -217,7 +195,7 @@ export default function PatientEditPage({ params }) {
 
   return (
     // Main container
-    <div className="max-w-4xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
+    <div className="max-w-6xl mx-auto pt-4 px-1 sm:p-6">
       {/* Back button */}
       <div className="mb-8">
         <Link
@@ -260,8 +238,8 @@ export default function PatientEditPage({ params }) {
                   </span>
                 </div>
 
-                {/* Status badge */}
-                {patient.isBPJS ? (
+                {/* Status badge - now showing the current edited status */}
+                {editedPatient.isBPJS ? (
                   <div className="flex items-center gap-1.5 px-3 py-1 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-full text-sm font-medium shadow-sm">
                     <Shield className="h-4 w-4" />
                     <span>BPJS</span>
@@ -279,11 +257,11 @@ export default function PatientEditPage({ params }) {
 
         {/* Patient information form */}
         <form onSubmit={handleSubmit}>
-          <div className="p-6 md:p-8">
+          <div className="p-3 md:p-8">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {/* Left column - Personal Information */}
               <div>
-                <div className="bg-gray-50 p-6 rounded-lg border border-gray-100 shadow-sm">
+                <div className="bg-gray-50 p-3 rounded-lg border border-gray-100 shadow-sm">
                   <h3 className="text-lg font-semibold text-gray-800 mb-5 flex items-center">
                     <User className="h-5 w-5 mr-2 text-blue-500" />
                     Informasi Pribadi
@@ -314,12 +292,11 @@ export default function PatientEditPage({ params }) {
                         <span>Tanggal Lahir</span>
                       </div>
                     </label>
-                    <input
-                      type="date"
+                    <SeparatedDateInput
+                      id="birthDate"
                       name="birthDate"
-                      value={formatDateForInput(editedPatient.birthDate)}
+                      value={editedPatient.birthDate}
                       onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
 
@@ -381,28 +358,46 @@ export default function PatientEditPage({ params }) {
                     />
                   </div>
 
-                  {/* BPJS Number - only editable for BPJS patients */}
+                  {/* BPJS Status - add toggle switch */}
                   <div className="mb-5">
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      {patient.isBPJS ? "Nomor BPJS" : "Status BPJS"}
+                      Status BPJS
                     </label>
-                    <div>
-                      {patient.isBPJS ? (
-                        <input
-                          type="text"
-                          name="no_bpjs"
-                          value={editedPatient.no_bpjs || ""}
-                          onChange={handleInputChange}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          placeholder="Nomor BPJS"
-                        />
-                      ) : (
-                        <p className="text-gray-500 italic">
-                          Tidak memiliki BPJS
-                        </p>
-                      )}
+                    <div className="flex items-center space-x-4">
+                      <select
+                        name="isBPJS"
+                        value={editedPatient.isBPJS ? "true" : "false"}
+                        onChange={handleInputChange}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="false">Tidak memiliki BPJS</option>
+                        <option value="true">Memiliki BPJS</option>
+                      </select>
                     </div>
                   </div>
+
+                  {/* BPJS Number - only visible and required when isBPJS is true */}
+                  {editedPatient.isBPJS && (
+                    <div className="mb-5">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Nomor BPJS
+                      </label>
+                      <input
+                        type="text"
+                        name="no_bpjs"
+                        value={editedPatient.no_bpjs || ""}
+                        onChange={handleInputChange}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Nomor BPJS"
+                        required={editedPatient.isBPJS}
+                      />
+                      <p className="text-xs text-red-500 mt-1">
+                        {editedPatient.isBPJS && !editedPatient.no_bpjs
+                          ? "Nomor BPJS wajib diisi untuk pasien BPJS"
+                          : ""}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -419,7 +414,9 @@ export default function PatientEditPage({ params }) {
               <button
                 type="submit"
                 className="px-4 py-3 sm:py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center sm:w-auto shadow-sm"
-                disabled={isSaving}
+                disabled={
+                  isSaving || (editedPatient.isBPJS && !editedPatient.no_bpjs)
+                }
               >
                 {isSaving ? (
                   <>

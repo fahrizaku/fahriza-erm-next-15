@@ -25,11 +25,24 @@ const SeparatedDateInput = ({ value, onChange, name, id, className }) => {
 
   // Initialize fields from value prop
   useEffect(() => {
-    if (value && value.length > 0) {
-      const [yearVal, monthVal, dayVal] = value.split("-");
-      setYear(yearVal);
-      setMonth(monthVal);
-      setDay(dayVal);
+    if (value) {
+      // Parse tanggal menggunakan Date object
+      const date = new Date(value);
+
+      if (!isNaN(date)) {
+        const yearVal = date.getFullYear().toString();
+        const monthVal = (date.getMonth() + 1).toString().padStart(2, "0");
+        const dayVal = date.getDate().toString().padStart(2, "0");
+
+        setYear(yearVal);
+        setMonth(monthVal);
+        setDay(dayVal);
+      }
+    } else {
+      // Reset jika value kosong
+      setYear("");
+      setMonth("");
+      setDay("");
     }
   }, [value]);
 

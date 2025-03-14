@@ -1,6 +1,6 @@
 import React from "react";
 import { Shield, MapPin, FileText, CreditCard } from "lucide-react";
-import SeparatedDateInput from "./SeparatedDateInput";
+import SeparatedDateInput from "@/components/ui/SeparatedDateInput";
 
 const PatientInfoForm = ({
   formData,
@@ -67,7 +67,10 @@ const PersonalInformationFields = ({ formData, handleInputChange }) => {
           htmlFor="name"
           className="block text-sm font-medium text-gray-700 mb-1"
         >
-          Nama Lengkap <span className="text-red-500">*</span>
+          Nama Lengkap{" "}
+          <span className="bg-red-100 text-red-600 text-xs px-1 ml-1 rounded">
+            wajib diisi
+          </span>
         </label>
         <input
           type="text"
@@ -87,7 +90,10 @@ const PersonalInformationFields = ({ formData, handleInputChange }) => {
           htmlFor="gender"
           className="block text-sm font-medium text-gray-700 mb-1"
         >
-          Jenis Kelamin
+          Jenis Kelamin{" "}
+          <span className="bg-red-100 text-red-600 text-xs px-1 ml-1 rounded">
+            wajib diisi
+          </span>
         </label>
         <select
           id="gender"
@@ -95,6 +101,7 @@ const PersonalInformationFields = ({ formData, handleInputChange }) => {
           value={formData.gender}
           onChange={handleInputChange}
           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          required
         >
           <option value="">Pilih jenis kelamin</option>
           <option value="Laki-laki">Laki-laki</option>
@@ -108,13 +115,17 @@ const PersonalInformationFields = ({ formData, handleInputChange }) => {
           htmlFor="birthDate"
           className="block text-sm font-medium text-gray-700 mb-1"
         >
-          Tanggal Lahir
+          Tanggal Lahir{" "}
+          <span className="bg-red-100 text-red-600 text-xs px-1 ml-1 rounded">
+            wajib diisi
+          </span>
         </label>
         <SeparatedDateInput
           id="birthDate"
           name="birthDate"
           value={formData.birthDate}
           onChange={handleInputChange}
+          required
         />
       </div>
 
@@ -177,7 +188,10 @@ const AdditionalInformationFields = ({ formData, handleInputChange }) => {
           htmlFor="address"
           className="block text-sm font-medium text-gray-700 mb-1"
         >
-          Alamat
+          Alamat{" "}
+          <span className="bg-red-100 text-red-600 text-xs px-1 ml-1 rounded">
+            wajib diisi
+          </span>
         </label>
         <div className="relative">
           <MapPin className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
@@ -189,7 +203,8 @@ const AdditionalInformationFields = ({ formData, handleInputChange }) => {
             rows="3"
             className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             placeholder="Masukkan alamat lengkap"
-          ></textarea>
+            required
+          />
         </div>
       </div>
 
