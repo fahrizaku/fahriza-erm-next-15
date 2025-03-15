@@ -68,11 +68,15 @@ model Screening {
   patient           Patient       @relation(fields: [patientId], references: [id])
   complaints        String        // Patient's complaints
   temperature       Decimal?      // Body temperature
-  bloodPressure     String?       // Blood pressure (e.g., "120/80")
+  systolicBP        Int?          // Systolic blood pressure (e.g., 120 in "120/80")
+  diastolicBP       Int?          // Diastolic blood pressure (e.g., 80 in "120/80")
   pulse             Int?          // Heart rate
   respiratoryRate   Int?          // Breathing rate
   weight            Decimal?      // Weight in kg
   height            Int?          // Height in cm
+  waistCircumference Decimal?     // Lingkar pinggang in cm
+  oxygenSaturation  Decimal?      // Saturasi oksigen in percentage
+  isBPJSActive      Boolean?      // Status BPJS aktif atau tidak
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
   
