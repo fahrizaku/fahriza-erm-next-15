@@ -83,9 +83,24 @@ const PatientRegistration = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Validation
+    // Enhanced Validation
     if (!formData.name) {
       toast.error("Nama pasien wajib diisi");
+      return;
+    }
+
+    if (!formData.gender) {
+      toast.error("Jenis kelamin wajib dipilih");
+      return;
+    }
+
+    if (!formData.birthDate) {
+      toast.error("Tanggal lahir wajib diisi");
+      return;
+    }
+
+    if (!formData.address) {
+      toast.error("Alamat wajib diisi");
       return;
     }
 
