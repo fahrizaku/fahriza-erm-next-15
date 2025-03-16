@@ -6,7 +6,7 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "15");
-    const sortField = searchParams.get("sortField") || "name";
+    const sortField = searchParams.get("sortField") || "updatedAt";
     const sortOrder = searchParams.get("sortOrder") || "asc";
     const patientType = searchParams.get("type") || "all"; // 'regular', 'bpjs', or 'all'
     const skip = (page - 1) * limit;

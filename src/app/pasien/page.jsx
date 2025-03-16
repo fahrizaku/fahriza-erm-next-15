@@ -1,4 +1,3 @@
-//patien page
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
@@ -27,12 +26,12 @@ const Patient = () => {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [totalPatients, setTotalPatients] = useState(0);
-  const [sortField, setSortField] = useState("no_rm");
-  const [sortOrder, setSortOrder] = useState("asc");
+  const [sortField, setSortField] = useState("updatedAt");
+  const [sortOrder, setSortOrder] = useState("desc");
   const [showTypeOptions, setShowTypeOptions] = useState(false);
   const [patientType, setPatientType] = useState("all"); // 'all', 'regular', or 'bpjs'
-  const [clickedPatientId, setClickedPatientId] = useState(null); // Track which patient card is clicked
   const [isAddingPatient, setIsAddingPatient] = useState(false); // Track if we're navigating to add patient page
+  const [loadingPatientId, setLoadingPatientId] = useState(null); // Track which patient card is currently loading
 
   const ITEMS_PER_PAGE = 15;
   const DEBOUNCE_DELAY = 500; // 500ms debounce delay
@@ -197,17 +196,21 @@ const Patient = () => {
     }
   };
 
-  // Handle patient card click with loading state
-  const handlePatientClick = (patientId, isBPJS) => {
-    setClickedPatientId(patientId);
-    // Navigate to patient details page
-    router.push(`/pasien/${patientId}`);
-  };
-
   // Handle add new patient click
   const handleAddNewPatient = () => {
     setIsAddingPatient(true);
     router.push("/pasien/tambah");
+  };
+
+  // Handle patient card click with loading state
+  const handlePatientClick = (e, patientId) => {
+    e.preventDefault(); // Prevent default Link behavior
+    setLoadingPatientId(patientId); // Set loading state for this card
+
+    // Navigate programmatically with a small delay to show loading state
+    setTimeout(() => {
+      router.push(`/pasien/${patientId}`);
+    }, 100);
   };
 
   const BPJSBadge = () => (
@@ -250,7 +253,7 @@ const Patient = () => {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
             <div>
               <h1 className="text-xl sm:text-2xl font-semibold text-gray-800">
-                Data Pasien 🧑‍🤝‍👩
+                Data Pasien
               </h1>
               <p className="text-sm text-gray-500 mt-1">
                 {totalPatients} pasien ditemukan
@@ -411,31 +414,29 @@ const Patient = () => {
                   const isBPJS =
                     patient.isBPJS || patient.patientType === "bpjs";
 
-                  // Check if this card is currently in loading state
-                  const isCardLoading = clickedPatientId === patient.id;
+                  // Check if this card is loading
+                  const isCardLoading = loadingPatientId === patient.id;
 
                   return (
                     <div
                       key={`${patient.id}-${index}-${
                         patient.patientType || ""
                       }`}
-                      onClick={() => handlePatientClick(patient.id, isBPJS)}
                       className="block cursor-pointer relative"
+                      onClick={(e) => handlePatientClick(e, patient.id)}
                     >
                       <div
-                        className={`group p-4 bg-white border-2 ${
-                          isCardLoading
-                            ? "border-blue-300 bg-blue-50"
-                            : "border-indigo-100"
-                        } rounded-lg hover:border-indigo-200 hover:shadow-md transition-all`}
+                        className={`group p-4 bg-white border-2 border-indigo-100 rounded-lg hover:border-indigo-200 hover:shadow-md transition-all ${
+                          isCardLoading ? "bg-gray-50" : ""
+                        }`}
                       >
-                        {/* Loading overlay */}
+                        {/* Loading Overlay */}
                         {isCardLoading && (
-                          <div className="absolute inset-0 bg-blue-50 bg-opacity-60 rounded-lg flex items-center justify-center z-10">
-                            <div className="flex items-center justify-center gap-2">
-                              <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
-                              <span className="text-blue-700 font-medium">
-                                Memuat...
+                          <div className="absolute inset-0 bg-white bg-opacity-70 flex items-center justify-center rounded-lg z-10">
+                            <div className="flex flex-col items-center">
+                              <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+                              <span className="mt-2 text-sm text-blue-600 font-medium">
+                                Memuat detail pasien...
                               </span>
                             </div>
                           </div>

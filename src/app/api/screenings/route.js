@@ -32,17 +32,39 @@ export async function POST(request) {
 
     const queueNumber = latestQueue ? latestQueue.queueNumber + 1 : 1;
 
-    // Create the screening entry
+    // If isBPJSActive is true and the patient doesn't have BPJS information,
+    // update patient record with BPJS number
+    if (data.isBPJSActive && data.no_bpjs && data.updatePatientBPJS) {
+      await db.patient.update({
+        where: { id: data.patientId },
+        data: {
+          isBPJS: true,
+          no_bpjs: data.no_bpjs,
+        },
+      });
+    }
+
+    // Create the screening entry with the updated schema fields
     const screening = await db.screening.create({
       data: {
         patientId: data.patientId,
         complaints: data.complaints,
-        temperature: data.temperature,
-        bloodPressure: data.bloodPressure,
-        pulse: data.pulse,
-        respiratoryRate: data.respiratoryRate,
-        weight: data.weight,
-        height: data.height,
+        temperature: data.temperature ? parseFloat(data.temperature) : null,
+        systolicBP: data.systolicBP ? parseInt(data.systolicBP) : null,
+        diastolicBP: data.diastolicBP ? parseInt(data.diastolicBP) : null,
+        pulse: data.pulse ? parseInt(data.pulse) : null,
+        respiratoryRate: data.respiratoryRate
+          ? parseInt(data.respiratoryRate)
+          : null,
+        weight: data.weight ? parseFloat(data.weight) : null,
+        height: data.height ? parseInt(data.height) : null,
+        waistCircumference: data.waistCircumference
+          ? parseFloat(data.waistCircumference)
+          : null,
+        oxygenSaturation: data.oxygenSaturation
+          ? parseFloat(data.oxygenSaturation)
+          : null,
+        isBPJSActive: data.isBPJSActive || false,
         status: "waiting",
         queueNumber: queueNumber,
       },
@@ -65,7 +87,11 @@ export async function POST(request) {
   } catch (error) {
     console.error("Error creating screening:", error);
     return NextResponse.json(
-      { success: false, message: "Failed to create screening" },
+      {
+        success: false,
+        message: "Failed to create screening",
+        error: error.message,
+      },
       { status: 500 }
     );
   }

@@ -12,6 +12,7 @@ import {
   Pill,
   LayoutDashboard,
   Folder,
+  History,
 } from "lucide-react";
 
 const menuCategories = [
@@ -37,6 +38,11 @@ const menuCategories = [
         title: "Registrasi Pasien",
         icon: <UserPlus size={20} />, // Tetap menggunakan UserPlus untuk registrasi
         href: "/pasien/tambah",
+      },
+      {
+        title: "Riwayat Kunjungan",
+        icon: <History size={20} />, // Tetap menggunakan UserPlus untuk registrasi
+        href: "/pasien/riwayat-kunjungan",
       },
     ],
   },

@@ -116,48 +116,92 @@ export async function POST(request) {
 // GET endpoint for retrieving all medical records
 export async function GET(request) {
   try {
-    // Extract query parameters
+    // Membaca query parameters
     const { searchParams } = new URL(request.url);
-    const patientId = searchParams.get("patientId");
-    const limit = parseInt(searchParams.get("limit") || "10");
+    const search = searchParams.get("search");
+    const startDate = searchParams.get("startDate");
+    const endDate = searchParams.get("endDate");
     const page = parseInt(searchParams.get("page") || "1");
+    const limit = parseInt(searchParams.get("limit") || "20");
+
+    // Menghitung offset untuk pagination
     const skip = (page - 1) * limit;
 
-    // Build the query
-    const whereClause = {};
-    if (patientId) {
-      whereClause.patientId = parseInt(patientId);
-    }
+    // Membuat kondisi filter
+    const where = {};
 
-    // Get medical records with pagination
-    const medicalRecords = await db.medicalRecord.findMany({
-      where: whereClause,
-      orderBy: {
-        visitDate: "desc",
-      },
-      include: {
-        patient: {
-          select: {
-            id: true,
-            name: true,
-            no_rm: true,
-            isBPJS: true,
+    if (search) {
+      where.OR = [
+        {
+          patient: {
+            name: {
+              contains: search,
+              mode: "insensitive",
+            },
           },
         },
+        {
+          patient: {
+            no_rm: {
+              equals: isNaN(parseInt(search)) ? undefined : parseInt(search),
+            },
+          },
+        },
+        {
+          patient: {
+            nik: {
+              contains: search,
+            },
+          },
+        },
+      ];
+    }
+
+    // Filter tanggal kunjungan
+    if (startDate || endDate) {
+      where.visitDate = {};
+
+      if (startDate) {
+        where.visitDate.gte = new Date(startDate);
+      }
+
+      if (endDate) {
+        // Atur waktu ke akhir hari
+        const endDateTime = new Date(endDate);
+        endDateTime.setHours(23, 59, 59, 999);
+        where.visitDate.lte = endDateTime;
+      }
+    }
+
+    // Mengambil total count untuk pagination
+    const totalCount = await db.medicalRecord.count({ where });
+
+    // Mengambil data berdasarkan filter
+    const medicalRecords = await db.medicalRecord.findMany({
+      where,
+      include: {
+        patient: true,
+        screening: true,
+        prescriptions: {
+          include: {
+            items: {
+              include: {
+                drug: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        visitDate: "desc",
       },
       skip,
       take: limit,
     });
 
-    // Get total count for pagination
-    const totalCount = await db.medicalRecord.count({
-      where: whereClause,
-    });
-
     return NextResponse.json({
-      success: true,
-      medicalRecords,
-      pagination: {
+      data: medicalRecords,
+      meta: {
         total: totalCount,
         page,
         limit,
@@ -167,8 +211,10 @@ export async function GET(request) {
   } catch (error) {
     console.error("Error fetching medical records:", error);
     return NextResponse.json(
-      { success: false, message: "Failed to fetch medical records" },
+      { error: "Failed to fetch medical records" },
       { status: 500 }
     );
+  } finally {
+    await db.$disconnect();
   }
 }
