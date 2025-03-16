@@ -1,4 +1,3 @@
-//patien page
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
@@ -31,7 +30,6 @@ const Patient = () => {
   const [sortOrder, setSortOrder] = useState("desc");
   const [showTypeOptions, setShowTypeOptions] = useState(false);
   const [patientType, setPatientType] = useState("all"); // 'all', 'regular', or 'bpjs'
-  const [clickedPatientId, setClickedPatientId] = useState(null); // Track which patient card is clicked
   const [isAddingPatient, setIsAddingPatient] = useState(false); // Track if we're navigating to add patient page
 
   const ITEMS_PER_PAGE = 15;
@@ -404,9 +402,6 @@ const Patient = () => {
                   const isBPJS =
                     patient.isBPJS || patient.patientType === "bpjs";
 
-                  // Check if this card is currently in loading state
-                  const isCardLoading = clickedPatientId === patient.id;
-
                   return (
                     <Link
                       href={`/pasien/${patient.id}`}
@@ -415,27 +410,8 @@ const Patient = () => {
                         patient.patientType || ""
                       }`}
                       className="block cursor-pointer relative"
-                      onClick={() => setIsCardLoading(true)}
                     >
-                      <div
-                        className={`group p-4 bg-white border-2 ${
-                          isCardLoading
-                            ? "border-blue-300 bg-blue-50"
-                            : "border-indigo-100"
-                        } rounded-lg hover:border-indigo-200 hover:shadow-md transition-all`}
-                      >
-                        {/* Loading overlay */}
-                        {isCardLoading && (
-                          <div className="absolute inset-0 bg-blue-50 bg-opacity-60 rounded-lg flex items-center justify-center z-10">
-                            <div className="flex items-center justify-center gap-2">
-                              <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
-                              <span className="text-blue-700 font-medium">
-                                Memuat...
-                              </span>
-                            </div>
-                          </div>
-                        )}
-
+                      <div className="group p-4 bg-white border-2 border-indigo-100 rounded-lg hover:border-indigo-200 hover:shadow-md transition-all">
                         <div className="flex flex-col gap-2">
                           {/* Header */}
                           <div className="flex items-start justify-between">
