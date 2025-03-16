@@ -208,6 +208,10 @@ const SeparatedDateInput = ({ value, onChange, name, id, className }) => {
         </div>
       </div>
 
+      <p className="text-xs text-orange-500 mt-1">
+        Catatan: Pilih tahun terlebih dahulu!
+      </p>
+
       {/* Hidden input with the complete value in YYYY-MM-DD format */}
       <input
         type="hidden"

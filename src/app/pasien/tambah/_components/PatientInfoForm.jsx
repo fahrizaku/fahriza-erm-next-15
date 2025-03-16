@@ -159,7 +159,10 @@ const BPJSField = ({ value, onChange, required }) => {
         htmlFor="no_bpjs"
         className="block text-sm font-medium text-gray-700 mb-1"
       >
-        Nomor BPJS <span className="text-red-500">*</span>
+        Nomor BPJS{" "}
+        <span className="bg-red-100 text-red-600 text-xs px-1 ml-1 rounded">
+          wajib diisi
+        </span>
       </label>
       <div className="relative">
         <Shield className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />

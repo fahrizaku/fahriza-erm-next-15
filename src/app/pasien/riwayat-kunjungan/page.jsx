@@ -1,13 +1,13 @@
-// app/pasien/riwayat-kunjungan/page.js
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import VisitHistoryList from "./_components/VisitHistoryList";
 import SearchFilter from "./_components/SearchFilter";
 import Pagination from "./_components/Pagination";
 
-export default function VisitHistoryPage() {
+// Create a client component that uses useSearchParams
+function VisitHistoryContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -93,9 +93,7 @@ export default function VisitHistoryPage() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold mb-6">Riwayat Kunjungan Pasien</h1>
-
+    <>
       <SearchFilter onSearch={() => setPage(1)} />
 
       {isLoading ? (
@@ -129,6 +127,28 @@ export default function VisitHistoryPage() {
           )}
         </>
       )}
+    </>
+  );
+}
+
+// Loading fallback component
+function LoadingFallback() {
+  return (
+    <div className="flex justify-center py-10">
+      <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
+    </div>
+  );
+}
+
+// Main page component that uses Suspense
+export default function VisitHistoryPage() {
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="text-2xl font-bold mb-6">Riwayat Kunjungan Pasien</h1>
+
+      <Suspense fallback={<LoadingFallback />}>
+        <VisitHistoryContent />
+      </Suspense>
     </div>
   );
 }

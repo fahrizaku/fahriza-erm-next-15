@@ -13,6 +13,7 @@ import {
   LayoutDashboard,
   Folder,
   History,
+  Microscope,
 } from "lucide-react";
 
 const menuCategories = [
@@ -46,26 +47,26 @@ const menuCategories = [
       },
     ],
   },
-  // {
-  //   category: "Rawat Jalan",
-  //   items: [
-  //     // {
-  //     //   title: "Skrining",
-  //     //   icon: <ClipboardCheck size={20} />,
-  //     //   href: "/rawat-jalan/screening",
-  //     // },
-  //     {
-  //       title: "Antrian",
-  //       icon: <Users size={20} />,
-  //       href: "/rawat-jalan/antrian",
-  //     },
-  //     {
-  //       title: "Pemeriksaan",
-  //       icon: <Stethoscope size={20} />,
-  //       href: "/rawat-jalan/pemeriksaan",
-  //     },
-  //   ],
-  // },
+  {
+    category: "Rawat Jalan",
+    items: [
+      {
+        title: "Antrian",
+        icon: <Users size={20} />,
+        href: "/rawat-jalan/antrian",
+      },
+      {
+        title: "Laboratorium",
+        icon: <Microscope size={20} />,
+        href: "/rawat-jalan/laboratorium",
+      },
+      {
+        title: "Pemeriksaan",
+        icon: <Stethoscope size={20} />,
+        href: "/rawat-jalan/pemeriksaan",
+      },
+    ],
+  },
   {
     category: "Apotek",
     items: [

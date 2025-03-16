@@ -1,6 +1,21 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { toast } from "react-toastify";
 
-export const usePrescriptions = () => {
+export const useDoctorExamination = (screeningId) => {
+  // Screening data state
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [patient, setPatient] = useState(null);
+  const [screening, setScreening] = useState(null);
+
+  // Medical record state
+  const [medicalRecord, setMedicalRecord] = useState({
+    diagnosis: "",
+    icdCode: "",
+    clinicalNotes: "",
+    doctorName: "",
+  });
+
   // Multiple prescriptions state
   const [prescriptions, setPrescriptions] = useState([
     {
@@ -10,6 +25,49 @@ export const usePrescriptions = () => {
       items: [{ id: 1, manualDrugName: "", dosage: "", quantity: 1 }],
     },
   ]);
+
+  // Fetch screening data
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch(`/api/screenings/${screeningId}`);
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        if (data.success) {
+          setScreening(data.screening);
+          setPatient(data.patient);
+        } else {
+          setError(data.message || "Failed to fetch screening data");
+          toast.error(data.message || "Failed to fetch screening data");
+        }
+      } catch (error) {
+        console.error("Error fetching data:", error);
+        setError("An error occurred while fetching data");
+        toast.error("An error occurred while fetching data");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (screeningId) {
+      fetchData();
+    }
+  }, [screeningId]);
+
+  // Handle medical record input changes
+  const handleMedicalRecordChange = (e) => {
+    const { name, value } = e.target;
+    setMedicalRecord((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
 
   // Handle prescription type change
   const handlePrescriptionTypeChange = (index, value) => {
@@ -84,6 +142,18 @@ export const usePrescriptions = () => {
   };
 
   return {
+    // Screening data
+    loading,
+    error,
+    patient,
+    screening,
+
+    // Medical record
+    medicalRecord,
+    setMedicalRecord,
+    handleMedicalRecordChange,
+
+    // Prescriptions
     prescriptions,
     setPrescriptions,
     handlePrescriptionTypeChange,
