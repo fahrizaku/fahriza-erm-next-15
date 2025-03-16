@@ -1,5 +1,3 @@
-// 1. File Utama
-// app/rawat-jalan/pemeriksaan-dokter/[id]/page.jsx
 "use client";
 
 import React, { useState, use } from "react";
@@ -15,20 +13,22 @@ import DiagnosisForm from "./_components/DiagnosisForm";
 import PrescriptionsForm from "./_components/PrescriptionsForm";
 import DoctorSignature from "./_components/DoctorSignature";
 
-// Import custom hooks
-import { useScreeningData } from "./_hooks/useScreeningData";
-import { useMedicalRecord } from "./_hooks/useMedicalRecord";
-import { usePrescriptions } from "./_hooks/usePrescriptions";
+// Import combined hook
+import { useDoctorExamination } from "./_hooks/useDoctorExamination";
 
 export default function DoctorExaminationPage({ params }) {
   const router = useRouter();
   const { id } = use(params); // Screening ID
 
-  // Custom hooks
-  const { loading, error, patient, screening } = useScreeningData(id);
-  const { medicalRecord, handleMedicalRecordChange, setMedicalRecord } =
-    useMedicalRecord();
+  // Use combined hook
   const {
+    loading,
+    error,
+    patient,
+    screening,
+    medicalRecord,
+    setMedicalRecord,
+    handleMedicalRecordChange,
     prescriptions,
     handlePrescriptionTypeChange,
     handlePrescriptionNotesChange,
@@ -37,7 +37,7 @@ export default function DoctorExaminationPage({ params }) {
     removePrescriptionItem,
     addPrescription,
     removePrescription,
-  } = usePrescriptions();
+  } = useDoctorExamination(id);
 
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState(null);
