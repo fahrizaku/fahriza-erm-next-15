@@ -159,13 +159,13 @@ const PatientRegistration = () => {
   };
 
   return (
-    <div className="max-w-5xl mx-auto pt-4 px-1 sm:p-6">
+    <div className="max-w-5xl mx-auto pt-4 px-3 sm:p-6">
       <PageHeader />
 
       {/* Registration Form */}
       <form
         onSubmit={handleSubmit}
-        className="bg-white rounded-xl shadow-md p-6 border border-gray-200"
+        className="bg-white rounded-xl shadow-md p-4 md:p-6 border border-gray-200"
       >
         <h2 className="text-lg font-medium text-gray-800 mb-4">Data Pasien</h2>
 

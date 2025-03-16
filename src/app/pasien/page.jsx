@@ -31,6 +31,7 @@ const Patient = () => {
   const [showTypeOptions, setShowTypeOptions] = useState(false);
   const [patientType, setPatientType] = useState("all"); // 'all', 'regular', or 'bpjs'
   const [isAddingPatient, setIsAddingPatient] = useState(false); // Track if we're navigating to add patient page
+  const [loadingPatientId, setLoadingPatientId] = useState(null); // Track which patient card is currently loading
 
   const ITEMS_PER_PAGE = 15;
   const DEBOUNCE_DELAY = 500; // 500ms debounce delay
@@ -201,6 +202,17 @@ const Patient = () => {
     router.push("/pasien/tambah");
   };
 
+  // Handle patient card click with loading state
+  const handlePatientClick = (e, patientId) => {
+    e.preventDefault(); // Prevent default Link behavior
+    setLoadingPatientId(patientId); // Set loading state for this card
+
+    // Navigate programmatically with a small delay to show loading state
+    setTimeout(() => {
+      router.push(`/pasien/${patientId}`);
+    }, 100);
+  };
+
   const BPJSBadge = () => (
     <div className="flex items-center gap-1.5 px-3 py-1 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-full text-sm font-medium shadow-sm">
       <Shield className="h-4 w-4" strokeWidth={2.5} />
@@ -241,7 +253,7 @@ const Patient = () => {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
             <div>
               <h1 className="text-xl sm:text-2xl font-semibold text-gray-800">
-                Data Pasien 🧑‍🤝‍👩
+                Data Pasien
               </h1>
               <p className="text-sm text-gray-500 mt-1">
                 {totalPatients} pasien ditemukan
@@ -402,16 +414,34 @@ const Patient = () => {
                   const isBPJS =
                     patient.isBPJS || patient.patientType === "bpjs";
 
+                  // Check if this card is loading
+                  const isCardLoading = loadingPatientId === patient.id;
+
                   return (
-                    <Link
-                      href={`/pasien/${patient.id}`}
-                      prefetch={true}
+                    <div
                       key={`${patient.id}-${index}-${
                         patient.patientType || ""
                       }`}
                       className="block cursor-pointer relative"
+                      onClick={(e) => handlePatientClick(e, patient.id)}
                     >
-                      <div className="group p-4 bg-white border-2 border-indigo-100 rounded-lg hover:border-indigo-200 hover:shadow-md transition-all">
+                      <div
+                        className={`group p-4 bg-white border-2 border-indigo-100 rounded-lg hover:border-indigo-200 hover:shadow-md transition-all ${
+                          isCardLoading ? "bg-gray-50" : ""
+                        }`}
+                      >
+                        {/* Loading Overlay */}
+                        {isCardLoading && (
+                          <div className="absolute inset-0 bg-white bg-opacity-70 flex items-center justify-center rounded-lg z-10">
+                            <div className="flex flex-col items-center">
+                              <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+                              <span className="mt-2 text-sm text-blue-600 font-medium">
+                                Memuat detail pasien...
+                              </span>
+                            </div>
+                          </div>
+                        )}
+
                         <div className="flex flex-col gap-2">
                           {/* Header */}
                           <div className="flex items-start justify-between">
@@ -461,7 +491,7 @@ const Patient = () => {
                           </div>
                         </div>
                       </div>
-                    </Link>
+                    </div>
                   );
                 })}
 
