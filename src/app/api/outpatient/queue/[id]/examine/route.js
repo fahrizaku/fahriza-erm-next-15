@@ -1,8 +1,8 @@
-// /app/api/outpatient/queue/[id]/call/route.js
+// /app/api/outpatient/queue/[id]/examine/route.js
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 
-// Call patient from queue
+// Examine patient from queue
 export async function PUT(request, { params }) {
   try {
     const resolvedParams = await params;
@@ -14,7 +14,7 @@ export async function PUT(request, { params }) {
         screeningId: parseInt(id),
       },
       data: {
-        status: "called",
+        status: "in-progress",
       },
     });
 
@@ -24,7 +24,7 @@ export async function PUT(request, { params }) {
         id: parseInt(id),
       },
       data: {
-        status: "called", // Changed from "in-progress" to "called"
+        status: "in-progress",
       },
       include: {
         patient: true,
@@ -33,13 +33,13 @@ export async function PUT(request, { params }) {
 
     return NextResponse.json({
       success: true,
-      message: "Patient called successfully",
+      message: "Patient examination started successfully",
       patientName: screening.patient.name,
     });
   } catch (error) {
-    console.error("Error calling patient:", error);
+    console.error("Error starting patient examination:", error);
     return NextResponse.json(
-      { success: false, message: "Failed to call patient" },
+      { success: false, message: "Failed to start patient examination" },
       { status: 500 }
     );
   }

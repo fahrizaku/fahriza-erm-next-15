@@ -7,7 +7,7 @@ import { ChevronLeft } from "lucide-react";
 import { toast } from "react-toastify";
 import QueueHeader from "./_components/QueueHeader";
 import QueueFilters from "./_components/QueueFilters";
-import QueueTable from "./_components/QueueTable";
+import QueueTable from "./_components/QueueCards";
 import { LoadingState, EmptyState, ErrorState } from "./_components/UIStates";
 
 export default function OutpatientQueuePage() {
@@ -17,7 +17,7 @@ export default function OutpatientQueuePage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
-  const [filter, setFilter] = useState("all"); // waiting, in-progress, completed
+  const [filter, setFilter] = useState("all"); // waiting, called, in-progress, completed
   const [searchTerm, setSearchTerm] = useState("");
 
   // Fetch queue data
@@ -70,7 +70,7 @@ export default function OutpatientQueuePage() {
     fetchQueueData();
   };
 
-  // Handle calling a patient
+  // Handle calling a patient (only changes status to "called")
   const handleCallPatient = async (screeningId) => {
     try {
       const response = await fetch(
@@ -100,15 +100,54 @@ export default function OutpatientQueuePage() {
         );
 
         toast.success(`Pasien ${data.patientName} berhasil dipanggil`);
-
-        // Redirect to doctor's examination page
-        router.push(`/rawat-jalan/pemeriksaan-dokter/${screeningId}`);
       } else {
         toast.error(data.message || "Failed to call patient");
       }
     } catch (error) {
       console.error("Error calling patient:", error);
       toast.error("An error occurred while calling patient");
+    }
+  };
+
+  // Handle examining a patient (change status to "in-progress" and redirect)
+  const handleExaminePatient = async (screeningId) => {
+    try {
+      const response = await fetch(
+        `/api/outpatient/queue/${screeningId}/examine`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Update the queue list
+        setQueueList(
+          queueList.map((item) =>
+            item.screeningId === screeningId
+              ? { ...item, status: "in-progress" }
+              : item
+          )
+        );
+
+        toast.success(`Pasien ${data.patientName} sedang diperiksa`);
+
+        // Redirect to doctor's examination page
+        router.push(`/rawat-jalan/pemeriksaan-dokter/${screeningId}`);
+      } else {
+        toast.error(data.message || "Failed to examine patient");
+      }
+    } catch (error) {
+      console.error("Error examining patient:", error);
+      toast.error("An error occurred while examining patient");
     }
   };
 
@@ -119,7 +158,36 @@ export default function OutpatientQueuePage() {
       (item.queueNumber?.toString() || "").includes(searchTerm)
   );
 
-  // Get status text for empty state message
+  // Group queue items by status when filter is "all"
+  const getGroupedQueue = () => {
+    if (filter !== "all") return [{ status: filter, items: filteredQueue }];
+
+    // Define the order of status groups
+    const statusOrder = ["in-progress", "called", "waiting", "completed"];
+
+    // Group items by status
+    const groupedByStatus = filteredQueue.reduce((groups, item) => {
+      const group = groups[item.status] || [];
+      group.push(item);
+      groups[item.status] = group;
+      return groups;
+    }, {});
+
+    // Convert to array ordered by our status priority
+    return statusOrder
+      .filter(
+        (status) =>
+          groupedByStatus[status] && groupedByStatus[status].length > 0
+      )
+      .map((status) => ({
+        status,
+        items: groupedByStatus[status].sort(
+          (a, b) => a.queueNumber - b.queueNumber
+        ),
+      }));
+  };
+
+  // Get status text for display
   const getStatusText = (status) => {
     switch (status) {
       case "waiting":
@@ -134,6 +202,8 @@ export default function OutpatientQueuePage() {
         return status;
     }
   };
+
+  const groupedQueue = getGroupedQueue();
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
@@ -179,11 +249,23 @@ export default function OutpatientQueuePage() {
               }`}
             />
           ) : (
-            <QueueTable
-              queueData={filteredQueue}
-              onCallPatient={handleCallPatient}
-              router={router}
-            />
+            <div>
+              {groupedQueue.map((group, index) => (
+                <div key={group.status} className={index > 0 ? "mt-8" : ""}>
+                  {filter === "all" && (
+                    <h3 className="text-lg font-medium text-gray-900 mb-3 pb-2 border-b">
+                      {getStatusText(group.status)}
+                    </h3>
+                  )}
+                  <QueueTable
+                    queueData={group.items}
+                    onCallPatient={handleCallPatient}
+                    onExaminePatient={handleExaminePatient}
+                    router={router}
+                  />
+                </div>
+              ))}
+            </div>
           )}
         </div>
       </div>
