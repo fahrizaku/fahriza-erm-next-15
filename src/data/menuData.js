@@ -61,9 +61,9 @@ const menuCategories = [
         href: "/rawat-jalan/laboratorium",
       },
       {
-        title: "Pemeriksaan",
+        title: "Doctor's Examination",
         icon: <Stethoscope size={20} />,
-        href: "/rawat-jalan/pemeriksaan",
+        href: "/rawat-jalan/pemeriksaan-dokter",
       },
     ],
   },
