@@ -1,4 +1,4 @@
-  // File: DoctorExaminationPage.jsx (main modifications)
+// File: DoctorExaminationPage.jsx
 "use client";
 import React, { useState, use } from "react";
 import { useRouter } from "next/navigation";
@@ -42,7 +42,7 @@ export default function DoctorExaminationPage({ params }) {
     drugSearchResults,
     isSearchingDrugs,
     searchDrugs,
-    selectDrug
+    selectDrug,
   } = useDoctorExamination(id);
 
   const [submitting, setSubmitting] = useState(false);
@@ -187,7 +187,7 @@ export default function DoctorExaminationPage({ params }) {
         {/* Header */}
         <div className="p-5 md:p-6 border-b border-gray-200 bg-gray-50">
           <h1 className="text-xl font-bold text-gray-800 mb-1">
-            Pemeriksaan Dokter
+            Pemeriksaan oleh Dokter
           </h1>
           <p className="text-gray-600">Isi diagnosa dan resep untuk pasien</p>
         </div>
@@ -256,7 +256,7 @@ export default function DoctorExaminationPage({ params }) {
                 ) : (
                   <>
                     <Save className="h-4 w-4 mr-2" />
-                    <span>Simpan & Buat Rekam Medis</span>
+                    <span>Simpan & Teruskan ke Apoteker</span>
                   </>
                 )}
               </button>

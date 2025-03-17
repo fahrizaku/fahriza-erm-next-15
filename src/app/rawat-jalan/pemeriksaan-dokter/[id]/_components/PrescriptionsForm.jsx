@@ -17,7 +17,7 @@ const PrescriptionsForm = ({
   drugSearchResults,
   isSearchingDrugs,
   selectDrug,
-  drugSearchQuery
+  drugSearchQuery,
 }) => {
   return (
     <div className="mb-8">
@@ -32,7 +32,7 @@ const PrescriptionsForm = ({
           className="px-3 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm flex items-center shadow-sm"
         >
           <Plus className="h-4 w-4 mr-1" />
-          Tambah Resep Baru
+          Tambah Resep
         </button>
       </div>
 
@@ -60,7 +60,6 @@ const PrescriptionsForm = ({
                   className="text-sm border border-gray-300 rounded px-2 py-1 bg-white"
                 >
                   <option value="Main">Utama</option>
-                  <option value="Racikan">Racikan</option>
                   <option value="Alternative">Alternatif</option>
                   <option value="Follow-up">Lanjutan</option>
                 </select>

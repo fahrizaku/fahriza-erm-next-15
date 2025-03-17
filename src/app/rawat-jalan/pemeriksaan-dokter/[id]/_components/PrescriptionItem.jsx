@@ -1,6 +1,6 @@
-// File: _components/PrescriptionItem.jsx
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import { Minus, Search, Loader2 } from "lucide-react";
+import { DOSAGE_SUGGESTIONS } from "@/data/dosis";
 
 const PrescriptionItem = ({
   item,
@@ -9,32 +9,83 @@ const PrescriptionItem = ({
   itemsLength,
   handlePrescriptionItemChange,
   removePrescriptionItem,
-  // New props for drug search
+  // Drug search props
   searchDrugs,
   drugSearchResults,
   isSearchingDrugs,
   selectDrug,
-  drugSearchQuery
+  drugSearchQuery,
 }) => {
   // Refs for handling dropdown
   const dropdownRef = useRef(null);
   const inputRef = useRef(null);
-  
-  // Close dropdown when clicking outside
+  const dosageInputRef = useRef(null);
+  const dosageDropdownRef = useRef(null);
+
+  // State to control dosage suggestions visibility
+  const [showDosageSuggestions, setShowDosageSuggestions] = useState(false);
+  // State to store filtered dosage suggestions
+  const [filteredDosageSuggestions, setFilteredDosageSuggestions] =
+    useState(DOSAGE_SUGGESTIONS);
+
+  // Close drug search dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target) && 
-          inputRef.current && !inputRef.current.contains(event.target)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target) &&
+        inputRef.current &&
+        !inputRef.current.contains(event.target)
+      ) {
         // Could use a state variable to control dropdown visibility if needed
       }
     };
-    
+
     document.addEventListener("mousedown", handleClickOutside);
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
-  
+
+  // Handle dosage suggestions dropdown
+  useEffect(() => {
+    const handleClickOutsideDosage = (event) => {
+      if (
+        dosageDropdownRef.current &&
+        !dosageDropdownRef.current.contains(event.target) &&
+        dosageInputRef.current &&
+        !dosageInputRef.current.contains(event.target)
+      ) {
+        setShowDosageSuggestions(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutsideDosage);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutsideDosage);
+    };
+  }, []);
+
+  // Handle selecting a dosage suggestion
+  const handleSelectDosage = (suggestion) => {
+    handlePrescriptionItemChange(prescIndex, itemIndex, "dosage", suggestion);
+    setShowDosageSuggestions(false);
+  };
+
+  // Filter dosage suggestions based on input
+  const handleDosageInputChange = (value) => {
+    handlePrescriptionItemChange(prescIndex, itemIndex, "dosage", value);
+
+    // Filter suggestions based on input
+    const filtered = DOSAGE_SUGGESTIONS.filter((suggestion) =>
+      suggestion.toLowerCase().includes(value.toLowerCase())
+    );
+    setFilteredDosageSuggestions(filtered);
+
+    // Show suggestions dropdown if we have input
+    setShowDosageSuggestions(true);
+  };
+
   return (
     <div className="p-4 border border-gray-200 rounded-md bg-gray-50">
       <div className="flex justify-between items-start mb-3">
@@ -87,10 +138,10 @@ const PrescriptionItem = ({
               </div>
             )}
           </div>
-          
+
           {/* Dropdown for drug search results */}
           {drugSearchResults.length > 0 && (
-            <div 
+            <div
               ref={dropdownRef}
               className="absolute z-10 mt-1 w-full bg-white shadow-lg rounded-md border border-gray-200 max-h-48 overflow-y-auto"
             >
@@ -110,25 +161,43 @@ const PrescriptionItem = ({
           )}
         </div>
 
-        {/* Dosage */}
-        <div>
+        {/* Dosage with searchable suggestions */}
+        <div className="relative">
           <label className="block text-xs font-medium text-gray-700 mb-1">
             Dosis
           </label>
-          <input
-            type="text"
-            value={item.dosage}
-            onChange={(e) =>
-              handlePrescriptionItemChange(
-                prescIndex,
-                itemIndex,
-                "dosage",
-                e.target.value
-              )
-            }
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="3x sehari setelah makan"
-          />
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Search className="h-4 w-4 text-gray-400" />
+            </div>
+            <input
+              ref={dosageInputRef}
+              type="text"
+              value={item.dosage}
+              onChange={(e) => handleDosageInputChange(e.target.value)}
+              onFocus={() => setShowDosageSuggestions(true)}
+              className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Cari atau masukkan dosis..."
+            />
+          </div>
+
+          {/* Dropdown for filtered dosage suggestions */}
+          {showDosageSuggestions && filteredDosageSuggestions.length > 0 && (
+            <div
+              ref={dosageDropdownRef}
+              className="absolute z-10 mt-1 w-full bg-white shadow-lg rounded-md border border-gray-200 max-h-48 overflow-y-auto"
+            >
+              {filteredDosageSuggestions.map((suggestion, index) => (
+                <div
+                  key={index}
+                  onClick={() => handleSelectDosage(suggestion)}
+                  className="px-4 py-2 hover:bg-blue-50 cursor-pointer text-sm"
+                >
+                  {suggestion}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Quantity */}

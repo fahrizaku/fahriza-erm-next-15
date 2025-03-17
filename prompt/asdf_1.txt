@@ -1,11 +1,11 @@
+// File: DoctorExaminationPage.jsx
 "use client";
-
 import React, { useState, use } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import { Loader2, AlertTriangle, Save } from "lucide-react";
 
-// Import komponen yang dipisahkan
+// Import components
 import BackNavigation from "./_components/BackNavigation";
 import PatientInfo from "./_components/PatientInfo";
 import ScreeningResults from "./_components/ScreeningResults";
@@ -37,6 +37,12 @@ export default function DoctorExaminationPage({ params }) {
     removePrescriptionItem,
     addPrescription,
     removePrescription,
+    // New props for drug search
+    drugSearchQuery,
+    drugSearchResults,
+    isSearchingDrugs,
+    searchDrugs,
+    selectDrug,
   } = useDoctorExamination(id);
 
   const [submitting, setSubmitting] = useState(false);
@@ -90,6 +96,7 @@ export default function DoctorExaminationPage({ params }) {
               .filter((item) => item.manualDrugName && item.dosage)
               .map((item) => ({
                 manualDrugName: item.manualDrugName,
+                drugStoreProductId: item.drugStoreProductId,
                 dosage: item.dosage,
                 quantity: parseInt(item.quantity),
               })),
@@ -180,7 +187,7 @@ export default function DoctorExaminationPage({ params }) {
         {/* Header */}
         <div className="p-5 md:p-6 border-b border-gray-200 bg-gray-50">
           <h1 className="text-xl font-bold text-gray-800 mb-1">
-            Pemeriksaan Dokter
+            Pemeriksaan oleh Dokter
           </h1>
           <p className="text-gray-600">Isi diagnosa dan resep untuk pasien</p>
         </div>
@@ -210,7 +217,7 @@ export default function DoctorExaminationPage({ params }) {
               handleMedicalRecordChange={handleMedicalRecordChange}
             />
 
-            {/* Multiple Prescriptions section */}
+            {/* Multiple Prescriptions section with drug search */}
             <PrescriptionsForm
               prescriptions={prescriptions}
               handlePrescriptionTypeChange={handlePrescriptionTypeChange}
@@ -220,6 +227,12 @@ export default function DoctorExaminationPage({ params }) {
               removePrescriptionItem={removePrescriptionItem}
               addPrescription={addPrescription}
               removePrescription={removePrescription}
+              // Pass the new drug search props
+              searchDrugs={searchDrugs}
+              drugSearchResults={drugSearchResults}
+              isSearchingDrugs={isSearchingDrugs}
+              selectDrug={selectDrug}
+              drugSearchQuery={drugSearchQuery}
             />
 
             {/* Doctor name */}
@@ -255,176 +268,8 @@ export default function DoctorExaminationPage({ params }) {
   );
 }
 
-//_hooks
-import { useState, useEffect } from "react";
-import { toast } from "react-toastify";
 
-export const useDoctorExamination = (screeningId) => {
-  // Screening data state
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [patient, setPatient] = useState(null);
-  const [screening, setScreening] = useState(null);
-
-  // Medical record state
-  const [medicalRecord, setMedicalRecord] = useState({
-    diagnosis: "",
-    icdCode: "",
-    clinicalNotes: "",
-    doctorName: "",
-  });
-
-  // Multiple prescriptions state
-  const [prescriptions, setPrescriptions] = useState([
-    {
-      id: 1,
-      type: "Main",
-      notes: "",
-      items: [{ id: 1, manualDrugName: "", dosage: "", quantity: 1 }],
-    },
-  ]);
-
-  // Fetch screening data
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const response = await fetch(`/api/screenings/${screeningId}`);
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const data = await response.json();
-
-        if (data.success) {
-          setScreening(data.screening);
-          setPatient(data.patient);
-        } else {
-          setError(data.message || "Failed to fetch screening data");
-          toast.error(data.message || "Failed to fetch screening data");
-        }
-      } catch (error) {
-        console.error("Error fetching data:", error);
-        setError("An error occurred while fetching data");
-        toast.error("An error occurred while fetching data");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (screeningId) {
-      fetchData();
-    }
-  }, [screeningId]);
-
-  // Handle medical record input changes
-  const handleMedicalRecordChange = (e) => {
-    const { name, value } = e.target;
-    setMedicalRecord((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
-
-  // Handle prescription type change
-  const handlePrescriptionTypeChange = (index, value) => {
-    const updatedPrescriptions = [...prescriptions];
-    updatedPrescriptions[index].type = value;
-    setPrescriptions(updatedPrescriptions);
-  };
-
-  // Handle prescription notes change
-  const handlePrescriptionNotesChange = (index, value) => {
-    const updatedPrescriptions = [...prescriptions];
-    updatedPrescriptions[index].notes = value;
-    setPrescriptions(updatedPrescriptions);
-  };
-
-  // Handle prescription item changes
-  const handlePrescriptionItemChange = (
-    prescIndex,
-    itemIndex,
-    field,
-    value
-  ) => {
-    const updatedPrescriptions = [...prescriptions];
-    updatedPrescriptions[prescIndex].items[itemIndex][field] = value;
-    setPrescriptions(updatedPrescriptions);
-  };
-
-  // Add prescription item
-  const addPrescriptionItem = (prescIndex) => {
-    const updatedPrescriptions = [...prescriptions];
-    const items = updatedPrescriptions[prescIndex].items;
-    updatedPrescriptions[prescIndex].items = [
-      ...items,
-      {
-        id: items.length + 1,
-        manualDrugName: "",
-        dosage: "",
-        quantity: 1,
-      },
-    ];
-    setPrescriptions(updatedPrescriptions);
-  };
-
-  // Remove prescription item
-  const removePrescriptionItem = (prescIndex, itemIndex) => {
-    const updatedPrescriptions = [...prescriptions];
-    updatedPrescriptions[prescIndex].items.splice(itemIndex, 1);
-    setPrescriptions(updatedPrescriptions);
-  };
-
-  // Add a new prescription
-  const addPrescription = () => {
-    setPrescriptions([
-      ...prescriptions,
-      {
-        id: prescriptions.length + 1,
-        type: "Racikan",
-        notes: "",
-        items: [{ id: 1, manualDrugName: "", dosage: "", quantity: 1 }],
-      },
-    ]);
-  };
-
-  // Remove a prescription
-  const removePrescription = (index) => {
-    if (prescriptions.length === 1) {
-      return; // Don't remove if it's the only prescription
-    }
-    const updatedPrescriptions = [...prescriptions];
-    updatedPrescriptions.splice(index, 1);
-    setPrescriptions(updatedPrescriptions);
-  };
-
-  return {
-    // Screening data
-    loading,
-    error,
-    patient,
-    screening,
-
-    // Medical record
-    medicalRecord,
-    setMedicalRecord,
-    handleMedicalRecordChange,
-
-    // Prescriptions
-    prescriptions,
-    setPrescriptions,
-    handlePrescriptionTypeChange,
-    handlePrescriptionNotesChange,
-    handlePrescriptionItemChange,
-    addPrescriptionItem,
-    removePrescriptionItem,
-    addPrescription,
-    removePrescription,
-  };
-};
-
-// 7. components/PrescriptionsForm.jsx
+// File: _components/PrescriptionsForm.jsx
 import React from "react";
 import { Pill, Plus, Clipboard, X } from "lucide-react";
 import PrescriptionItem from "./PrescriptionItem";
@@ -438,6 +283,12 @@ const PrescriptionsForm = ({
   removePrescriptionItem,
   addPrescription,
   removePrescription,
+  // New props for drug search
+  searchDrugs,
+  drugSearchResults,
+  isSearchingDrugs,
+  selectDrug,
+  drugSearchQuery,
 }) => {
   return (
     <div className="mb-8">
@@ -480,7 +331,6 @@ const PrescriptionsForm = ({
                   className="text-sm border border-gray-300 rounded px-2 py-1 bg-white"
                 >
                   <option value="Main">Utama</option>
-                  <option value="Racikan">Racikan</option>
                   <option value="Alternative">Alternatif</option>
                   <option value="Follow-up">Lanjutan</option>
                 </select>
@@ -512,6 +362,12 @@ const PrescriptionsForm = ({
                     itemsLength={prescription.items.length}
                     handlePrescriptionItemChange={handlePrescriptionItemChange}
                     removePrescriptionItem={removePrescriptionItem}
+                    // Pass drug search props
+                    searchDrugs={searchDrugs}
+                    drugSearchResults={drugSearchResults}
+                    isSearchingDrugs={isSearchingDrugs}
+                    selectDrug={selectDrug}
+                    drugSearchQuery={drugSearchQuery}
                   />
                 ))}
               </div>
@@ -551,8 +407,10 @@ const PrescriptionsForm = ({
 
 export default PrescriptionsForm;
 
-import React from "react";
-import { Minus } from "lucide-react";
+
+import React, { useRef, useEffect, useState } from "react";
+import { Minus, Search, Loader2 } from "lucide-react";
+import { DOSAGE_SUGGESTIONS } from "@/data/dosis";
 
 const PrescriptionItem = ({
   item,
@@ -561,7 +419,83 @@ const PrescriptionItem = ({
   itemsLength,
   handlePrescriptionItemChange,
   removePrescriptionItem,
+  // Drug search props
+  searchDrugs,
+  drugSearchResults,
+  isSearchingDrugs,
+  selectDrug,
+  drugSearchQuery,
 }) => {
+  // Refs for handling dropdown
+  const dropdownRef = useRef(null);
+  const inputRef = useRef(null);
+  const dosageInputRef = useRef(null);
+  const dosageDropdownRef = useRef(null);
+
+  // State to control dosage suggestions visibility
+  const [showDosageSuggestions, setShowDosageSuggestions] = useState(false);
+  // State to store filtered dosage suggestions
+  const [filteredDosageSuggestions, setFilteredDosageSuggestions] =
+    useState(DOSAGE_SUGGESTIONS);
+
+  // Close drug search dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target) &&
+        inputRef.current &&
+        !inputRef.current.contains(event.target)
+      ) {
+        // Could use a state variable to control dropdown visibility if needed
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  // Handle dosage suggestions dropdown
+  useEffect(() => {
+    const handleClickOutsideDosage = (event) => {
+      if (
+        dosageDropdownRef.current &&
+        !dosageDropdownRef.current.contains(event.target) &&
+        dosageInputRef.current &&
+        !dosageInputRef.current.contains(event.target)
+      ) {
+        setShowDosageSuggestions(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutsideDosage);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutsideDosage);
+    };
+  }, []);
+
+  // Handle selecting a dosage suggestion
+  const handleSelectDosage = (suggestion) => {
+    handlePrescriptionItemChange(prescIndex, itemIndex, "dosage", suggestion);
+    setShowDosageSuggestions(false);
+  };
+
+  // Filter dosage suggestions based on input
+  const handleDosageInputChange = (value) => {
+    handlePrescriptionItemChange(prescIndex, itemIndex, "dosage", value);
+
+    // Filter suggestions based on input
+    const filtered = DOSAGE_SUGGESTIONS.filter((suggestion) =>
+      suggestion.toLowerCase().includes(value.toLowerCase())
+    );
+    setFilteredDosageSuggestions(filtered);
+
+    // Show suggestions dropdown if we have input
+    setShowDosageSuggestions(true);
+  };
+
   return (
     <div className="p-4 border border-gray-200 rounded-md bg-gray-50">
       <div className="flex justify-between items-start mb-3">
@@ -583,46 +517,97 @@ const PrescriptionItem = ({
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Drug name */}
-        <div>
+        {/* Drug name with autocomplete */}
+        <div className="relative">
           <label className="block text-xs font-medium text-gray-700 mb-1">
             Nama Obat
           </label>
-          <input
-            type="text"
-            value={item.manualDrugName}
-            onChange={(e) =>
-              handlePrescriptionItemChange(
-                prescIndex,
-                itemIndex,
-                "manualDrugName",
-                e.target.value
-              )
-            }
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Nama obat"
-          />
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Search className="h-4 w-4 text-gray-400" />
+            </div>
+            <input
+              ref={inputRef}
+              type="text"
+              value={item.manualDrugName}
+              onChange={(e) => {
+                handlePrescriptionItemChange(
+                  prescIndex,
+                  itemIndex,
+                  "manualDrugName",
+                  e.target.value
+                );
+                searchDrugs(e.target.value);
+              }}
+              className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Cari obat..."
+            />
+            {isSearchingDrugs && (
+              <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                <Loader2 className="h-4 w-4 text-blue-500 animate-spin" />
+              </div>
+            )}
+          </div>
+
+          {/* Dropdown for drug search results */}
+          {drugSearchResults.length > 0 && (
+            <div
+              ref={dropdownRef}
+              className="absolute z-10 mt-1 w-full bg-white shadow-lg rounded-md border border-gray-200 max-h-48 overflow-y-auto"
+            >
+              {drugSearchResults.map((drug) => (
+                <div
+                  key={drug.id}
+                  onClick={() => selectDrug(prescIndex, itemIndex, drug)}
+                  className="px-4 py-2 hover:bg-blue-50 cursor-pointer text-sm"
+                >
+                  <div className="font-medium">{drug.displayName}</div>
+                  {/* <div className="text-xs text-gray-500">
+                    Stok: {drug.stock} | Harga: Rp {drug.price.toLocaleString()}
+                  </div> */}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* Dosage */}
-        <div>
+        {/* Dosage with searchable suggestions */}
+        <div className="relative">
           <label className="block text-xs font-medium text-gray-700 mb-1">
             Dosis
           </label>
-          <input
-            type="text"
-            value={item.dosage}
-            onChange={(e) =>
-              handlePrescriptionItemChange(
-                prescIndex,
-                itemIndex,
-                "dosage",
-                e.target.value
-              )
-            }
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="3x sehari setelah makan"
-          />
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Search className="h-4 w-4 text-gray-400" />
+            </div>
+            <input
+              ref={dosageInputRef}
+              type="text"
+              value={item.dosage}
+              onChange={(e) => handleDosageInputChange(e.target.value)}
+              onFocus={() => setShowDosageSuggestions(true)}
+              className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Cari atau masukkan dosis..."
+            />
+          </div>
+
+          {/* Dropdown for filtered dosage suggestions */}
+          {showDosageSuggestions && filteredDosageSuggestions.length > 0 && (
+            <div
+              ref={dosageDropdownRef}
+              className="absolute z-10 mt-1 w-full bg-white shadow-lg rounded-md border border-gray-200 max-h-48 overflow-y-auto"
+            >
+              {filteredDosageSuggestions.map((suggestion, index) => (
+                <div
+                  key={index}
+                  onClick={() => handleSelectDosage(suggestion)}
+                  className="px-4 py-2 hover:bg-blue-50 cursor-pointer text-sm"
+                >
+                  {suggestion}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Quantity */}
@@ -652,244 +637,283 @@ const PrescriptionItem = ({
 
 export default PrescriptionItem;
 
-//api
-// /app/api/medical-records/route.js
-import { NextResponse } from "next/server";
-import { db } from "@/lib/db";
 
-export async function POST(request) {
-  try {
-    const data = await request.json();
 
-    // Validate required fields
-    if (
-      !data.patientId ||
-      !data.screeningId ||
-      !data.diagnosis ||
-      !data.doctorName
-    ) {
-      return NextResponse.json(
-        { success: false, message: "Missing required fields" },
-        { status: 400 }
-      );
-    }
+// File: _hooks/useDoctorExamination.js
+import { useState, useEffect } from "react";
+import { toast } from "react-toastify";
 
-    // Create medical record first
-    const medicalRecord = await db.medicalRecord.create({
-      data: {
-        patientId: data.patientId,
-        screeningId: data.screeningId,
-        diagnosis: data.diagnosis,
-        icdCode: data.icdCode || null,
-        clinicalNotes: data.clinicalNotes || null,
-        doctorName: data.doctorName,
-        visitType: "outpatient",
-      },
-    });
+export const useDoctorExamination = (screeningId) => {
+  // Existing state...
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [patient, setPatient] = useState(null);
+  const [screening, setScreening] = useState(null);
 
-    // Handle prescriptions (now supporting multiple)
-    if (
-      data.prescriptions &&
-      Array.isArray(data.prescriptions) &&
-      data.prescriptions.length > 0
-    ) {
-      // Create each prescription
-      for (const prescriptionData of data.prescriptions) {
-        // Validate prescription data
-        if (!prescriptionData.items || !Array.isArray(prescriptionData.items)) {
-          continue; // Skip invalid prescription
+  // Medical record state
+  const [medicalRecord, setMedicalRecord] = useState({
+    diagnosis: "",
+    icdCode: "",
+    clinicalNotes: "",
+    doctorName: "",
+  });
+
+  // Multiple prescriptions state
+  const [prescriptions, setPrescriptions] = useState([
+    {
+      id: 1,
+      type: "Main",
+      notes: "",
+      items: [
+        {
+          id: 1,
+          manualDrugName: "",
+          drugStoreProductId: null,
+          drugStoreProductName: "",
+          dosage: "",
+          quantity: 1,
+        },
+      ],
+    },
+  ]);
+
+  // Add state for drug search
+  const [drugSearchQuery, setDrugSearchQuery] = useState("");
+  const [drugSearchResults, setDrugSearchResults] = useState([]);
+  const [isSearchingDrugs, setIsSearchingDrugs] = useState(false);
+
+  // Existing useEffect for fetching screening data...
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch(`/api/screenings/${screeningId}`);
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
         }
 
-        // Create prescription
-        await db.prescription.create({
-          data: {
-            medicalRecordId: medicalRecord.id,
-            notes: prescriptionData.notes || null,
-            prescriptionType: prescriptionData.type || null,
-            items: {
-              create: prescriptionData.items.map((item) => ({
-                manualDrugName: item.manualDrugName,
-                drugId: item.drugId || null,
-                dosage: item.dosage,
-                quantity: item.quantity,
-              })),
-            },
-          },
-        });
+        const data = await response.json();
+
+        if (data.success) {
+          setScreening(data.screening);
+          setPatient(data.patient);
+        } else {
+          setError(data.message || "Failed to fetch screening data");
+          toast.error(data.message || "Failed to fetch screening data");
+        }
+      } catch (error) {
+        console.error("Error fetching data:", error);
+        setError("An error occurred while fetching data");
+        toast.error("An error occurred while fetching data");
+      } finally {
+        setLoading(false);
       }
-    } else if (data.prescription) {
-      // For backward compatibility - handle single prescription
-      await db.prescription.create({
-        data: {
-          medicalRecordId: medicalRecord.id,
-          notes: data.prescription.notes || null,
-          items: {
-            create: data.prescription.items.map((item) => ({
-              manualDrugName: item.manualDrugName,
-              drugId: item.drugId || null,
-              dosage: item.dosage,
-              quantity: item.quantity,
-            })),
-          },
-        },
-      });
+    };
+
+    if (screeningId) {
+      fetchData();
+    }
+  }, [screeningId]);
+
+  // Add a function to search for drugs
+  const searchDrugs = async (query) => {
+    setDrugSearchQuery(query);
+
+    if (query.length < 2) {
+      setDrugSearchResults([]);
+      return;
     }
 
-    // Update screening status to "completed"
-    await db.screening.update({
-      where: {
-        id: data.screeningId,
-      },
-      data: {
-        status: "completed",
-      },
-    });
+    try {
+      setIsSearchingDrugs(true);
+      const response = await fetch(
+        `/api/drug-store-products?search=${query}&limit=10`
+      );
 
-    // Update queue status
-    await db.outpatientQueue.updateMany({
-      where: {
-        screeningId: data.screeningId,
-      },
-      data: {
-        status: "completed",
-      },
-    });
-
-    return NextResponse.json({
-      success: true,
-      medicalRecordId: medicalRecord.id,
-    });
-  } catch (error) {
-    console.error("Error creating medical record:", error);
-    return NextResponse.json(
-      { success: false, message: "Failed to create medical record" },
-      { status: 500 }
-    );
-  }
-}
-
-// GET endpoint for retrieving all medical records
-export async function GET(request) {
-  try {
-    // Membaca query parameters
-    const { searchParams } = new URL(request.url);
-    const search = searchParams.get("search");
-    const startDate = searchParams.get("startDate");
-    const endDate = searchParams.get("endDate");
-    const page = parseInt(searchParams.get("page") || "1");
-    const limit = parseInt(searchParams.get("limit") || "20");
-
-    // Menghitung offset untuk pagination
-    const skip = (page - 1) * limit;
-
-    // Membuat kondisi filter
-    const where = {};
-
-    if (search) {
-      where.OR = [
-        {
-          patient: {
-            name: {
-              contains: search,
-              mode: "insensitive",
-            },
-          },
-        },
-        {
-          patient: {
-            no_rm: {
-              equals: isNaN(parseInt(search)) ? undefined : parseInt(search),
-            },
-          },
-        },
-        {
-          patient: {
-            nik: {
-              contains: search,
-            },
-          },
-        },
-      ];
-    }
-
-    // Filter tanggal kunjungan
-    if (startDate || endDate) {
-      where.visitDate = {};
-
-      if (startDate) {
-        where.visitDate.gte = new Date(startDate);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      if (endDate) {
-        // Atur waktu ke akhir hari
-        const endDateTime = new Date(endDate);
-        endDateTime.setHours(23, 59, 59, 999);
-        where.visitDate.lte = endDateTime;
+      const data = await response.json();
+
+      if (data.success) {
+        setDrugSearchResults(data.products);
+      } else {
+        console.error("Failed to fetch drugs");
       }
+    } catch (error) {
+      console.error("Error searching drugs:", error);
+    } finally {
+      setIsSearchingDrugs(false);
+    }
+  };
+
+  // Function to select a drug from search results
+  const selectDrug = (prescIndex, itemIndex, drug) => {
+    const updatedPrescriptions = [...prescriptions];
+    updatedPrescriptions[prescIndex].items[itemIndex].drugStoreProductId =
+      drug.id;
+    updatedPrescriptions[prescIndex].items[itemIndex].manualDrugName =
+      drug.displayName;
+    updatedPrescriptions[prescIndex].items[itemIndex].drugStoreProductName =
+      drug.displayName;
+    setPrescriptions(updatedPrescriptions);
+    setDrugSearchResults([]);
+    setDrugSearchQuery("");
+  };
+
+  // Existing functions...
+  const handleMedicalRecordChange = (e) => {
+    const { name, value } = e.target;
+    setMedicalRecord((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handlePrescriptionTypeChange = (index, value) => {
+    const updatedPrescriptions = [...prescriptions];
+    updatedPrescriptions[index].type = value;
+    setPrescriptions(updatedPrescriptions);
+  };
+
+  const handlePrescriptionNotesChange = (index, value) => {
+    const updatedPrescriptions = [...prescriptions];
+    updatedPrescriptions[index].notes = value;
+    setPrescriptions(updatedPrescriptions);
+  };
+
+  const handlePrescriptionItemChange = (
+    prescIndex,
+    itemIndex,
+    field,
+    value
+  ) => {
+    const updatedPrescriptions = [...prescriptions];
+    updatedPrescriptions[prescIndex].items[itemIndex][field] = value;
+
+    // If they're typing in the manualDrugName field, reset the drugStoreProductId
+    if (field === "manualDrugName") {
+      updatedPrescriptions[prescIndex].items[itemIndex].drugStoreProductId =
+        null;
+      updatedPrescriptions[prescIndex].items[itemIndex].drugStoreProductName =
+        "";
     }
 
-    // Mengambil total count untuk pagination
-    const totalCount = await db.medicalRecord.count({ where });
+    setPrescriptions(updatedPrescriptions);
+  };
 
-    // Mengambil data berdasarkan filter
-    const medicalRecords = await db.medicalRecord.findMany({
-      where,
-      include: {
-        patient: true,
-        screening: true,
-        prescriptions: {
-          include: {
-            items: {
-              include: {
-                drug: true,
-              },
-            },
+  const addPrescriptionItem = (prescIndex) => {
+    const updatedPrescriptions = [...prescriptions];
+    const items = updatedPrescriptions[prescIndex].items;
+    updatedPrescriptions[prescIndex].items = [
+      ...items,
+      {
+        id: items.length + 1,
+        manualDrugName: "",
+        drugStoreProductId: null,
+        drugStoreProductName: "",
+        dosage: "",
+        quantity: 1,
+      },
+    ];
+    setPrescriptions(updatedPrescriptions);
+  };
+
+  const removePrescriptionItem = (prescIndex, itemIndex) => {
+    const updatedPrescriptions = [...prescriptions];
+    updatedPrescriptions[prescIndex].items.splice(itemIndex, 1);
+    setPrescriptions(updatedPrescriptions);
+  };
+
+  const addPrescription = () => {
+    setPrescriptions([
+      ...prescriptions,
+      {
+        id: prescriptions.length + 1,
+        type: "Racikan",
+        notes: "",
+        items: [
+          {
+            id: 1,
+            manualDrugName: "",
+            drugStoreProductId: null,
+            drugStoreProductName: "",
+            dosage: "",
+            quantity: 1,
           },
-        },
+        ],
       },
-      orderBy: {
-        visitDate: "desc",
-      },
-      skip,
-      take: limit,
-    });
+    ]);
+  };
 
-    return NextResponse.json({
-      data: medicalRecords,
-      meta: {
-        total: totalCount,
-        page,
-        limit,
-        totalPages: Math.ceil(totalCount / limit),
-      },
-    });
-  } catch (error) {
-    console.error("Error fetching medical records:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch medical records" },
-      { status: 500 }
-    );
-  } finally {
-    await db.$disconnect();
-  }
+  const removePrescription = (index) => {
+    if (prescriptions.length === 1) {
+      return; // Don't remove if it's the only prescription
+    }
+    const updatedPrescriptions = [...prescriptions];
+    updatedPrescriptions.splice(index, 1);
+    setPrescriptions(updatedPrescriptions);
+  };
+
+  return {
+    // Screening data
+    loading,
+    error,
+    patient,
+    screening,
+
+    // Medical record
+    medicalRecord,
+    setMedicalRecord,
+    handleMedicalRecordChange,
+
+    // Prescriptions
+    prescriptions,
+    setPrescriptions,
+    handlePrescriptionTypeChange,
+    handlePrescriptionNotesChange,
+    handlePrescriptionItemChange,
+    addPrescriptionItem,
+    removePrescriptionItem,
+    addPrescription,
+    removePrescription,
+
+    // Drug search
+    drugSearchQuery,
+    drugSearchResults,
+    isSearchingDrugs,
+    searchDrugs,
+    selectDrug,
+  };
+};
+
+// Prescription models
+model Prescription {
+  id                Int               @id @default(autoincrement())
+  medicalRecordId   Int               
+  medicalRecord     MedicalRecord     @relation(fields: [medicalRecordId], references: [id])
+  items             PrescriptionItem[]
+  notes             String?           // Additional notes about the prescription
+  prescriptionType  String?           // Type of prescription (e.g., "Main", "Follow-up", "Alternative")
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  
+  @@index([medicalRecordId])
 }
 
-saya ingin agar obat bisa diambil dari model DrugStoreProduct, ambil string name dan unit digabung dengan " - " 
-model DrugStoreProduct {
-  id            Int         @id @default(autoincrement()) 
-  name          String
-  category      String?
-  manufacturer  String?
-  purchasePrice Decimal?
-  price         Decimal
-  stock         Int
-  expiryDate    String?
-  unit          String
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
-
-  @@index([name])
-  @@index([category])
-  @@index([manufacturer])
-  @@index([expiryDate])
+model PrescriptionItem {
+  id                Int               @id @default(autoincrement())
+  prescriptionId    Int
+  prescription      Prescription      @relation(fields: [prescriptionId], references: [id])
+  manualDrugName    String?           // For manual entry when drug not in system
+  dosage            String            // Dosage instructions (e.g., "1 tablet 3 times a day")
+  quantity          Int
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  
+  @@index([prescriptionId])
 }
+
+saya ingin menambahkan fitur racikan, apakah saya perlu memodifikasi model prescriptiom dan menambahkan property dosage. 

@@ -23,14 +23,16 @@ export const useDoctorExamination = (screeningId) => {
       id: 1,
       type: "Main",
       notes: "",
-      items: [{ 
-        id: 1, 
-        manualDrugName: "", 
-        drugStoreProductId: null,
-        drugStoreProductName: "",
-        dosage: "", 
-        quantity: 1 
-      }],
+      items: [
+        {
+          id: 1,
+          manualDrugName: "",
+          drugStoreProductId: null,
+          drugStoreProductName: "",
+          dosage: "",
+          quantity: 1,
+        },
+      ],
     },
   ]);
 
@@ -76,22 +78,24 @@ export const useDoctorExamination = (screeningId) => {
   // Add a function to search for drugs
   const searchDrugs = async (query) => {
     setDrugSearchQuery(query);
-    
+
     if (query.length < 2) {
       setDrugSearchResults([]);
       return;
     }
-    
+
     try {
       setIsSearchingDrugs(true);
-      const response = await fetch(`/api/drug-store-products?search=${query}&limit=10`);
-      
+      const response = await fetch(
+        `/api/drug-store-products?search=${query}&limit=10`
+      );
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
+
       const data = await response.json();
-      
+
       if (data.success) {
         setDrugSearchResults(data.products);
       } else {
@@ -107,9 +111,12 @@ export const useDoctorExamination = (screeningId) => {
   // Function to select a drug from search results
   const selectDrug = (prescIndex, itemIndex, drug) => {
     const updatedPrescriptions = [...prescriptions];
-    updatedPrescriptions[prescIndex].items[itemIndex].drugStoreProductId = drug.id;
-    updatedPrescriptions[prescIndex].items[itemIndex].manualDrugName = drug.displayName;
-    updatedPrescriptions[prescIndex].items[itemIndex].drugStoreProductName = drug.displayName;
+    updatedPrescriptions[prescIndex].items[itemIndex].drugStoreProductId =
+      drug.id;
+    updatedPrescriptions[prescIndex].items[itemIndex].manualDrugName =
+      drug.displayName;
+    updatedPrescriptions[prescIndex].items[itemIndex].drugStoreProductName =
+      drug.displayName;
     setPrescriptions(updatedPrescriptions);
     setDrugSearchResults([]);
     setDrugSearchQuery("");
@@ -144,13 +151,15 @@ export const useDoctorExamination = (screeningId) => {
   ) => {
     const updatedPrescriptions = [...prescriptions];
     updatedPrescriptions[prescIndex].items[itemIndex][field] = value;
-    
+
     // If they're typing in the manualDrugName field, reset the drugStoreProductId
-    if (field === 'manualDrugName') {
-      updatedPrescriptions[prescIndex].items[itemIndex].drugStoreProductId = null;
-      updatedPrescriptions[prescIndex].items[itemIndex].drugStoreProductName = "";
+    if (field === "manualDrugName") {
+      updatedPrescriptions[prescIndex].items[itemIndex].drugStoreProductId =
+        null;
+      updatedPrescriptions[prescIndex].items[itemIndex].drugStoreProductName =
+        "";
     }
-    
+
     setPrescriptions(updatedPrescriptions);
   };
 
@@ -184,14 +193,16 @@ export const useDoctorExamination = (screeningId) => {
         id: prescriptions.length + 1,
         type: "Racikan",
         notes: "",
-        items: [{ 
-          id: 1, 
-          manualDrugName: "", 
-          drugStoreProductId: null,
-          drugStoreProductName: "",
-          dosage: "", 
-          quantity: 1 
-        }],
+        items: [
+          {
+            id: 1,
+            manualDrugName: "",
+            drugStoreProductId: null,
+            drugStoreProductName: "",
+            dosage: "",
+            quantity: 1,
+          },
+        ],
       },
     ]);
   };
@@ -227,12 +238,12 @@ export const useDoctorExamination = (screeningId) => {
     removePrescriptionItem,
     addPrescription,
     removePrescription,
-    
+
     // Drug search
     drugSearchQuery,
     drugSearchResults,
     isSearchingDrugs,
     searchDrugs,
-    selectDrug
+    selectDrug,
   };
 };
