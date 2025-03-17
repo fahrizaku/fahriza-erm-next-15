@@ -149,7 +149,8 @@ model Prescription {
   medicalRecord     MedicalRecord     @relation(fields: [medicalRecordId], references: [id])
   items             PrescriptionItem[]
   notes             String?           // Additional notes about the prescription
-  prescriptionType  String?           // Type of prescription (e.g., "Main", "Follow-up", "Alternative")
+  prescriptionType  String?           // Type of prescription (e.g., "Main", "Follow-up", "Alternative", "Racikan")
+  dosage            String?           // Shared dosage instruction for racikan prescriptions
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt
   
@@ -161,7 +162,7 @@ model PrescriptionItem {
   prescriptionId    Int
   prescription      Prescription      @relation(fields: [prescriptionId], references: [id])
   manualDrugName    String?           // For manual entry when drug not in system
-  dosage            String            // Dosage instructions (e.g., "1 tablet 3 times a day")
+  dosage            String?           // Individual dosage (only used for non-racikan prescriptions)
   quantity          Int
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt

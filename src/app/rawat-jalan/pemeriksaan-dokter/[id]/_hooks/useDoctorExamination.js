@@ -23,13 +23,14 @@ export const useDoctorExamination = (screeningId) => {
       id: 1,
       type: "Main",
       notes: "",
+      sharedDosage: "", // New field for racikan prescriptions
       items: [
         {
           id: 1,
           manualDrugName: "",
           drugStoreProductId: null,
           drugStoreProductName: "",
-          dosage: "",
+          dosage: "", // Will be ignored for racikan type
           quantity: 1,
         },
       ],
@@ -122,19 +123,45 @@ export const useDoctorExamination = (screeningId) => {
     setDrugSearchQuery("");
   };
 
-  // Existing functions...
+  const handlePrescriptionTypeChange = (index, value) => {
+    const updatedPrescriptions = [...prescriptions];
+    const previousType = updatedPrescriptions[index].type;
+    updatedPrescriptions[index].type = value;
+
+    // If changing to or from Racikan type, adjust dosage handling
+    if (value === "Racikan" && previousType !== "Racikan") {
+      // Moving from regular prescription to racikan
+      // Take the dosage from the first item and make it the shared dosage
+      if (updatedPrescriptions[index].items.length > 0) {
+        updatedPrescriptions[index].sharedDosage =
+          updatedPrescriptions[index].items[0].dosage || "";
+      }
+    } else if (value !== "Racikan" && previousType === "Racikan") {
+      // Moving from racikan to regular prescription
+      // Distribute the shared dosage to all items
+      const sharedDosage = updatedPrescriptions[index].sharedDosage || "";
+      updatedPrescriptions[index].items.forEach((item) => {
+        item.dosage = sharedDosage;
+      });
+      updatedPrescriptions[index].sharedDosage = "";
+    }
+
+    setPrescriptions(updatedPrescriptions);
+  };
+
+  // Handle shared dosage change for racikan prescriptions
+  const handleSharedDosageChange = (index, value) => {
+    const updatedPrescriptions = [...prescriptions];
+    updatedPrescriptions[index].sharedDosage = value;
+    setPrescriptions(updatedPrescriptions);
+  };
+
   const handleMedicalRecordChange = (e) => {
     const { name, value } = e.target;
     setMedicalRecord((prev) => ({
       ...prev,
       [name]: value,
     }));
-  };
-
-  const handlePrescriptionTypeChange = (index, value) => {
-    const updatedPrescriptions = [...prescriptions];
-    updatedPrescriptions[index].type = value;
-    setPrescriptions(updatedPrescriptions);
   };
 
   const handlePrescriptionNotesChange = (index, value) => {
@@ -150,9 +177,19 @@ export const useDoctorExamination = (screeningId) => {
     value
   ) => {
     const updatedPrescriptions = [...prescriptions];
-    updatedPrescriptions[prescIndex].items[itemIndex][field] = value;
 
-    // If they're typing in the manualDrugName field, reset the drugStoreProductId
+    // If changing dosage and this is a racikan prescription,
+    // update the shared dosage instead of individual item dosage
+    if (
+      field === "dosage" &&
+      updatedPrescriptions[prescIndex].type === "Racikan"
+    ) {
+      updatedPrescriptions[prescIndex].sharedDosage = value;
+    } else {
+      updatedPrescriptions[prescIndex].items[itemIndex][field] = value;
+    }
+
+    // Existing drug name handling...
     if (field === "manualDrugName") {
       updatedPrescriptions[prescIndex].items[itemIndex].drugStoreProductId =
         null;
@@ -173,7 +210,7 @@ export const useDoctorExamination = (screeningId) => {
         manualDrugName: "",
         drugStoreProductId: null,
         drugStoreProductName: "",
-        dosage: "",
+        dosage: updatedPrescriptions[prescIndex].type === "Racikan" ? "" : "",
         quantity: 1,
       },
     ];
@@ -191,8 +228,9 @@ export const useDoctorExamination = (screeningId) => {
       ...prescriptions,
       {
         id: prescriptions.length + 1,
-        type: "Racikan",
+        type: "Main",
         notes: "",
+        sharedDosage: "",
         items: [
           {
             id: 1,
@@ -214,6 +252,28 @@ export const useDoctorExamination = (screeningId) => {
     const updatedPrescriptions = [...prescriptions];
     updatedPrescriptions.splice(index, 1);
     setPrescriptions(updatedPrescriptions);
+  };
+
+  // Format data for submission
+  const formatPrescriptionsForSubmission = () => {
+    return prescriptions
+      .map((prescription) => {
+        const isRacikan = prescription.type === "Racikan";
+        return {
+          type: prescription.type,
+          notes: prescription.notes,
+          dosage: isRacikan ? prescription.sharedDosage : null, // Only include dosage for racikan
+          items: prescription.items
+            .filter((item) => item.manualDrugName)
+            .map((item) => ({
+              manualDrugName: item.manualDrugName,
+              drugStoreProductId: item.drugStoreProductId,
+              dosage: isRacikan ? null : item.dosage, // Only include individual dosage for non-racikan
+              quantity: parseInt(item.quantity),
+            })),
+        };
+      })
+      .filter((prescription) => prescription.items.length > 0);
   };
 
   return {
@@ -238,6 +298,8 @@ export const useDoctorExamination = (screeningId) => {
     removePrescriptionItem,
     addPrescription,
     removePrescription,
+    handleSharedDosageChange,
+    formatPrescriptionsForSubmission,
 
     // Drug search
     drugSearchQuery,

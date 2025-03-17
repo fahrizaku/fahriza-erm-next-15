@@ -33,6 +33,7 @@ export default function DoctorExaminationPage({ params }) {
     handlePrescriptionTypeChange,
     handlePrescriptionNotesChange,
     handlePrescriptionItemChange,
+    handleSharedDosageChange,
     addPrescriptionItem,
     removePrescriptionItem,
     addPrescription,
@@ -67,9 +68,16 @@ export default function DoctorExaminationPage({ params }) {
       // Validate prescription items
       let hasValidPrescription = false;
       for (const prescription of prescriptions) {
+        const isRacikan = prescription.type === "Racikan";
+
+        // For racikan prescriptions, validate shared dosage
+        if (isRacikan && !prescription.sharedDosage) {
+          throw new Error("Dosis racikan harus diisi");
+        }
+
         if (prescription.items.length > 0) {
           const invalidItems = prescription.items.filter(
-            (item) => !item.manualDrugName || !item.dosage
+            (item) => !item.manualDrugName || (!isRacikan && !item.dosage)
           );
           if (invalidItems.length === 0) {
             hasValidPrescription = true;
@@ -89,18 +97,25 @@ export default function DoctorExaminationPage({ params }) {
         screeningId: parseInt(id),
         ...medicalRecord,
         prescriptions: prescriptions
-          .map((prescription) => ({
-            type: prescription.type,
-            notes: prescription.notes,
-            items: prescription.items
-              .filter((item) => item.manualDrugName && item.dosage)
-              .map((item) => ({
-                manualDrugName: item.manualDrugName,
-                drugStoreProductId: item.drugStoreProductId,
-                dosage: item.dosage,
-                quantity: parseInt(item.quantity),
-              })),
-          }))
+          .map((prescription) => {
+            const isRacikan = prescription.type === "Racikan";
+
+            return {
+              type: prescription.type,
+              notes: prescription.notes,
+              dosage: isRacikan ? prescription.sharedDosage : null, // Only include dosage for racikan
+              items: prescription.items
+                .filter(
+                  (item) => item.manualDrugName && (isRacikan || item.dosage)
+                )
+                .map((item) => ({
+                  manualDrugName: item.manualDrugName,
+                  drugId: item.drugStoreProductId,
+                  dosage: isRacikan ? null : item.dosage, // Only include individual dosage for non-racikan
+                  quantity: parseInt(item.quantity),
+                })),
+            };
+          })
           .filter((prescription) => prescription.items.length > 0),
       };
 
@@ -223,6 +238,7 @@ export default function DoctorExaminationPage({ params }) {
               handlePrescriptionTypeChange={handlePrescriptionTypeChange}
               handlePrescriptionNotesChange={handlePrescriptionNotesChange}
               handlePrescriptionItemChange={handlePrescriptionItemChange}
+              handleSharedDosageChange={handleSharedDosageChange}
               addPrescriptionItem={addPrescriptionItem}
               removePrescriptionItem={removePrescriptionItem}
               addPrescription={addPrescription}

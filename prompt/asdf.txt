@@ -1,34 +1,106 @@
-  if (loading) {
-    return (
-      <div className="max-w-4xl mx-auto p-4 sm:p-6">
-        <div className="flex justify-center items-center h-64">
-          <div className="text-center">
-            <Loader2 className="h-10 w-10 animate-spin text-blue-500 mx-auto" />
-            <p className="mt-4 text-gray-600">Memuat data pemeriksaan...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
+// Update only the handleSubmit function in DoctorExaminationPage.jsx
 
-  if (error && !screening) {
-    return (
-      <div className="max-w-4xl mx-auto p-4 sm:p-6">
-        <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-md">
-          <div className="flex items-start">
-            <AlertTriangle className="h-6 w-6 text-red-500 mr-3 flex-shrink-0" />
-            <div>
-              <h3 className="text-lg font-medium text-red-800">Error</h3>
-              <p className="mt-1 text-red-700">{error}</p>
-              <button
-                onClick={() => router.push("/rawat-jalan/antrian")}
-                className="mt-3 px-4 py-2 bg-white text-red-700 border border-red-300 rounded-md hover:bg-red-50 transition-colors"
-              >
-                Kembali ke Antrian
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  setSubmitting(true);
+  setFormError(null);
+
+  try {
+    // Validate required fields
+    if (!medicalRecord.diagnosis) {
+      throw new Error("Diagnosis pasien harus diisi");
+    }
+
+    if (!medicalRecord.doctorName) {
+      throw new Error("Nama dokter harus diisi");
+    }
+
+    // Validate prescription items
+    let hasValidPrescription = false;
+    for (const prescription of prescriptions) {
+      const isRacikan = prescription.type === "Racikan";
+      
+      // For racikan prescriptions, validate shared dosage
+      if (isRacikan && !prescription.sharedDosage) {
+        throw new Error("Dosis racikan harus diisi");
+      }
+      
+      if (prescription.items.length > 0) {
+        const invalidItems = prescription.items.filter(
+          (item) => !item.manualDrugName || (!isRacikan && !item.dosage)
+        );
+        if (invalidItems.length === 0) {
+          hasValidPrescription = true;
+        }
+      }
+    }
+
+    if (!hasValidPrescription) {
+      throw new Error(
+        "Setidaknya satu resep harus diisi lengkap (nama obat dan dosis)"
+      );
+    }
+
+    // Format data for submission
+    const medicalRecordData = {
+      patientId: patient.id,
+      screeningId: parseInt(id),
+      ...medicalRecord,
+      prescriptions: prescriptions
+        .map((prescription) => {
+          const isRacikan = prescription.type === "Racikan";
+          
+          return {
+            type: prescription.type,
+            notes: prescription.notes,
+            dosage: isRacikan ? prescription.sharedDosage : null, // Only include dosage for racikan
+            items: prescription.items
+              .filter((item) => item.manualDrugName && (isRacikan || item.dosage))
+              .map((item) => ({
+                manualDrugName: item.manualDrugName,
+                drugId: item.drugStoreProductId,
+                dosage: isRacikan ? null : item.dosage, // Only include individual dosage for non-racikan
+                quantity: parseInt(item.quantity),
+              })),
+          };
+        })
+        .filter((prescription) => prescription.items.length > 0),
+    };
+
+    // Submit the medical record
+    const response = await fetch("/api/medical-records", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(medicalRecordData),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    if (data.success) {
+      // Show success message
+      toast.success("Rekam medis berhasil disimpan");
+
+      // Redirect to medical record view
+      router.push(`/rekam-medis/${data.medicalRecordId}`);
+    } else {
+      setFormError(data.message || "Failed to save medical record");
+      toast.error(data.message || "Failed to save medical record");
+    }
+  } catch (error) {
+    console.error("Error saving medical record:", error);
+    setFormError(
+      error.message || "An error occurred while saving medical record"
     );
+    toast.error(
+      error.message || "An error occurred while saving medical record"
+    );
+  } finally {
+    setSubmitting(false);
   }
+};

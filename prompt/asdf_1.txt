@@ -916,4 +916,4 @@ model PrescriptionItem {
   @@index([prescriptionId])
 }
 
-saya ingin menambahkan fitur racikan, apakah saya perlu memodifikasi model prescriptiom dan menambahkan property dosage. 
+saya ingin menambahkan fitur racikan, tapi bukankah racikan hanya ada satu dosis dan obatnya ada beberapa, bagaimana caranya
