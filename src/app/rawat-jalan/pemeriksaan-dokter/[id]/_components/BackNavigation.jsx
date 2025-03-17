@@ -6,11 +6,11 @@ const BackNavigation = () => {
   return (
     <div className="mb-6">
       <Link
-        href="/rawat-jalan/antrian"
+        href="/rawat-jalan/pemeriksaan-dokter"
         className="inline-flex items-center text-blue-600 hover:text-blue-800 transition-colors font-medium"
       >
         <ChevronLeft className="h-5 w-5" />
-        <span>Kembali ke Antrian</span>
+        <span>Kembali</span>
       </Link>
     </div>
   );

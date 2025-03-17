@@ -1,8 +1,9 @@
+// File: _hooks/useDoctorExamination.js
 import { useState, useEffect } from "react";
 import { toast } from "react-toastify";
 
 export const useDoctorExamination = (screeningId) => {
-  // Screening data state
+  // Existing state...
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [patient, setPatient] = useState(null);
@@ -22,11 +23,23 @@ export const useDoctorExamination = (screeningId) => {
       id: 1,
       type: "Main",
       notes: "",
-      items: [{ id: 1, manualDrugName: "", dosage: "", quantity: 1 }],
+      items: [{ 
+        id: 1, 
+        manualDrugName: "", 
+        drugStoreProductId: null,
+        drugStoreProductName: "",
+        dosage: "", 
+        quantity: 1 
+      }],
     },
   ]);
 
-  // Fetch screening data
+  // Add state for drug search
+  const [drugSearchQuery, setDrugSearchQuery] = useState("");
+  const [drugSearchResults, setDrugSearchResults] = useState([]);
+  const [isSearchingDrugs, setIsSearchingDrugs] = useState(false);
+
+  // Existing useEffect for fetching screening data...
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -60,7 +73,49 @@ export const useDoctorExamination = (screeningId) => {
     }
   }, [screeningId]);
 
-  // Handle medical record input changes
+  // Add a function to search for drugs
+  const searchDrugs = async (query) => {
+    setDrugSearchQuery(query);
+    
+    if (query.length < 2) {
+      setDrugSearchResults([]);
+      return;
+    }
+    
+    try {
+      setIsSearchingDrugs(true);
+      const response = await fetch(`/api/drug-store-products?search=${query}&limit=10`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        setDrugSearchResults(data.products);
+      } else {
+        console.error("Failed to fetch drugs");
+      }
+    } catch (error) {
+      console.error("Error searching drugs:", error);
+    } finally {
+      setIsSearchingDrugs(false);
+    }
+  };
+
+  // Function to select a drug from search results
+  const selectDrug = (prescIndex, itemIndex, drug) => {
+    const updatedPrescriptions = [...prescriptions];
+    updatedPrescriptions[prescIndex].items[itemIndex].drugStoreProductId = drug.id;
+    updatedPrescriptions[prescIndex].items[itemIndex].manualDrugName = drug.displayName;
+    updatedPrescriptions[prescIndex].items[itemIndex].drugStoreProductName = drug.displayName;
+    setPrescriptions(updatedPrescriptions);
+    setDrugSearchResults([]);
+    setDrugSearchQuery("");
+  };
+
+  // Existing functions...
   const handleMedicalRecordChange = (e) => {
     const { name, value } = e.target;
     setMedicalRecord((prev) => ({
@@ -69,21 +124,18 @@ export const useDoctorExamination = (screeningId) => {
     }));
   };
 
-  // Handle prescription type change
   const handlePrescriptionTypeChange = (index, value) => {
     const updatedPrescriptions = [...prescriptions];
     updatedPrescriptions[index].type = value;
     setPrescriptions(updatedPrescriptions);
   };
 
-  // Handle prescription notes change
   const handlePrescriptionNotesChange = (index, value) => {
     const updatedPrescriptions = [...prescriptions];
     updatedPrescriptions[index].notes = value;
     setPrescriptions(updatedPrescriptions);
   };
 
-  // Handle prescription item changes
   const handlePrescriptionItemChange = (
     prescIndex,
     itemIndex,
@@ -92,10 +144,16 @@ export const useDoctorExamination = (screeningId) => {
   ) => {
     const updatedPrescriptions = [...prescriptions];
     updatedPrescriptions[prescIndex].items[itemIndex][field] = value;
+    
+    // If they're typing in the manualDrugName field, reset the drugStoreProductId
+    if (field === 'manualDrugName') {
+      updatedPrescriptions[prescIndex].items[itemIndex].drugStoreProductId = null;
+      updatedPrescriptions[prescIndex].items[itemIndex].drugStoreProductName = "";
+    }
+    
     setPrescriptions(updatedPrescriptions);
   };
 
-  // Add prescription item
   const addPrescriptionItem = (prescIndex) => {
     const updatedPrescriptions = [...prescriptions];
     const items = updatedPrescriptions[prescIndex].items;
@@ -104,6 +162,8 @@ export const useDoctorExamination = (screeningId) => {
       {
         id: items.length + 1,
         manualDrugName: "",
+        drugStoreProductId: null,
+        drugStoreProductName: "",
         dosage: "",
         quantity: 1,
       },
@@ -111,14 +171,12 @@ export const useDoctorExamination = (screeningId) => {
     setPrescriptions(updatedPrescriptions);
   };
 
-  // Remove prescription item
   const removePrescriptionItem = (prescIndex, itemIndex) => {
     const updatedPrescriptions = [...prescriptions];
     updatedPrescriptions[prescIndex].items.splice(itemIndex, 1);
     setPrescriptions(updatedPrescriptions);
   };
 
-  // Add a new prescription
   const addPrescription = () => {
     setPrescriptions([
       ...prescriptions,
@@ -126,12 +184,18 @@ export const useDoctorExamination = (screeningId) => {
         id: prescriptions.length + 1,
         type: "Racikan",
         notes: "",
-        items: [{ id: 1, manualDrugName: "", dosage: "", quantity: 1 }],
+        items: [{ 
+          id: 1, 
+          manualDrugName: "", 
+          drugStoreProductId: null,
+          drugStoreProductName: "",
+          dosage: "", 
+          quantity: 1 
+        }],
       },
     ]);
   };
 
-  // Remove a prescription
   const removePrescription = (index) => {
     if (prescriptions.length === 1) {
       return; // Don't remove if it's the only prescription
@@ -163,5 +227,12 @@ export const useDoctorExamination = (screeningId) => {
     removePrescriptionItem,
     addPrescription,
     removePrescription,
+    
+    // Drug search
+    drugSearchQuery,
+    drugSearchResults,
+    isSearchingDrugs,
+    searchDrugs,
+    selectDrug
   };
 };

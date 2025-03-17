@@ -1,11 +1,11 @@
+  // File: DoctorExaminationPage.jsx (main modifications)
 "use client";
-
 import React, { useState, use } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import { Loader2, AlertTriangle, Save } from "lucide-react";
 
-// Import komponen yang dipisahkan
+// Import components
 import BackNavigation from "./_components/BackNavigation";
 import PatientInfo from "./_components/PatientInfo";
 import ScreeningResults from "./_components/ScreeningResults";
@@ -37,6 +37,12 @@ export default function DoctorExaminationPage({ params }) {
     removePrescriptionItem,
     addPrescription,
     removePrescription,
+    // New props for drug search
+    drugSearchQuery,
+    drugSearchResults,
+    isSearchingDrugs,
+    searchDrugs,
+    selectDrug
   } = useDoctorExamination(id);
 
   const [submitting, setSubmitting] = useState(false);
@@ -90,6 +96,7 @@ export default function DoctorExaminationPage({ params }) {
               .filter((item) => item.manualDrugName && item.dosage)
               .map((item) => ({
                 manualDrugName: item.manualDrugName,
+                drugStoreProductId: item.drugStoreProductId,
                 dosage: item.dosage,
                 quantity: parseInt(item.quantity),
               })),
@@ -210,7 +217,7 @@ export default function DoctorExaminationPage({ params }) {
               handleMedicalRecordChange={handleMedicalRecordChange}
             />
 
-            {/* Multiple Prescriptions section */}
+            {/* Multiple Prescriptions section with drug search */}
             <PrescriptionsForm
               prescriptions={prescriptions}
               handlePrescriptionTypeChange={handlePrescriptionTypeChange}
@@ -220,6 +227,12 @@ export default function DoctorExaminationPage({ params }) {
               removePrescriptionItem={removePrescriptionItem}
               addPrescription={addPrescription}
               removePrescription={removePrescription}
+              // Pass the new drug search props
+              searchDrugs={searchDrugs}
+              drugSearchResults={drugSearchResults}
+              isSearchingDrugs={isSearchingDrugs}
+              selectDrug={selectDrug}
+              drugSearchQuery={drugSearchQuery}
             />
 
             {/* Doctor name */}

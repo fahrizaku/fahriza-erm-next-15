@@ -1,4 +1,4 @@
-// 7. components/PrescriptionsForm.jsx
+// File: _components/PrescriptionsForm.jsx
 import React from "react";
 import { Pill, Plus, Clipboard, X } from "lucide-react";
 import PrescriptionItem from "./PrescriptionItem";
@@ -12,6 +12,12 @@ const PrescriptionsForm = ({
   removePrescriptionItem,
   addPrescription,
   removePrescription,
+  // New props for drug search
+  searchDrugs,
+  drugSearchResults,
+  isSearchingDrugs,
+  selectDrug,
+  drugSearchQuery
 }) => {
   return (
     <div className="mb-8">
@@ -86,6 +92,12 @@ const PrescriptionsForm = ({
                     itemsLength={prescription.items.length}
                     handlePrescriptionItemChange={handlePrescriptionItemChange}
                     removePrescriptionItem={removePrescriptionItem}
+                    // Pass drug search props
+                    searchDrugs={searchDrugs}
+                    drugSearchResults={drugSearchResults}
+                    isSearchingDrugs={isSearchingDrugs}
+                    selectDrug={selectDrug}
+                    drugSearchQuery={drugSearchQuery}
                   />
                 ))}
               </div>

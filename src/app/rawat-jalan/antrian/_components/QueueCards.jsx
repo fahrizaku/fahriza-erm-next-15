@@ -68,23 +68,25 @@ export default function QueueCards({
         );
       case "called":
         return (
-          <button
-            onClick={() => onExaminePatient(item.screeningId)}
-            className="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-          >
-            <Stethoscope className="w-3 h-3 mr-1" />
-            Periksa
-          </button>
+          // <button
+          //   onClick={() => onExaminePatient(item.screeningId)}
+          //   className="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+          // >
+          //   <Stethoscope className="w-3 h-3 mr-1" />
+          //   Periksa
+          // </button>
+          <></>
         );
       case "in-progress":
         return (
-          <button
-            onClick={() => onExaminePatient(item.screeningId)}
-            className="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-          >
-            <Stethoscope className="w-3 h-3 mr-1" />
-            Lanjutkan
-          </button>
+          // <button
+          //   onClick={() => onExaminePatient(item.screeningId)}
+          //   className="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+          // >
+          //   <Stethoscope className="w-3 h-3 mr-1" />
+          //   Lanjutkan
+          // </button>
+          <></>
         );
       default:
         return null;
