@@ -7,7 +7,7 @@ import { ChevronLeft } from "lucide-react";
 import { toast } from "react-toastify";
 import QueueHeader from "./_components/QueueHeader";
 import QueueFilters from "./_components/QueueFilters";
-import QueueTable from "./_components/QueueCards";
+import QueueCards from "./_components/QueueCards";
 import { LoadingState, EmptyState, ErrorState } from "./_components/UIStates";
 
 export default function OutpatientQueuePage() {
@@ -257,7 +257,7 @@ export default function OutpatientQueuePage() {
                       {getStatusText(group.status)}
                     </h3>
                   )}
-                  <QueueTable
+                  <QueueCards
                     queueData={group.items}
                     onCallPatient={handleCallPatient}
                     onExaminePatient={handleExaminePatient}

@@ -15,6 +15,29 @@ export async function POST(request) {
       );
     }
 
+    // If trying to update patient with BPJS, check if the BPJS number already exists
+    if (data.isBPJSActive && data.no_bpjs && data.updatePatientBPJS) {
+      // Check if BPJS number already exists for another patient
+      const existingPatient = await db.patient.findFirst({
+        where: {
+          no_bpjs: data.no_bpjs,
+          id: {
+            not: data.patientId, // Exclude current patient
+          },
+        },
+      });
+
+      if (existingPatient) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "Nomor BPJS telah terdaftar pada pasien lain",
+          },
+          { status: 400 }
+        );
+      }
+    }
+
     // Generate a queue number (get highest queue number for today + 1)
     const today = new Date();
     today.setHours(0, 0, 0, 0);

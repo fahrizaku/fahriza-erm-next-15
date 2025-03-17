@@ -1,4 +1,3 @@
-//app/pasien/tambah/page.jsx
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -123,36 +122,42 @@ const PatientRegistration = () => {
         phoneNumber: formData.phoneNumber?.trim() || null,
       };
 
-      // Create toast promise that shows loading/success/error states
-      await toast.promise(
-        fetch("/api/patients/register", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(patientData),
-        }).then(async (response) => {
-          const data = await response.json();
+      // Use fetch directly instead of toast.promise to handle errors better
+      const response = await fetch("/api/patients/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(patientData),
+      });
 
-          if (data.success) {
-            setTimeout(() => {
-              router.push(`/pasien/${data.patientId}`);
-            }, 1000);
-            return data;
-          } else {
-            throw new Error(data.message || "Gagal menyimpan data pasien");
+      const data = await response.json();
+
+      if (data.success) {
+        toast.success("Data pasien berhasil disimpan!");
+
+        // Redirect after a short delay
+        setTimeout(() => {
+          router.push(`/pasien/${data.patientId}`);
+        }, 1000);
+      } else {
+        // Show appropriate error message from server
+        toast.error(data.message || "Gagal menyimpan data pasien");
+
+        // Focus on the field with error if possible
+        if (data.target && data.target[0]) {
+          const fieldWithError = data.target[0];
+          const inputElement = document.querySelector(
+            `[name="${fieldWithError}"]`
+          );
+          if (inputElement) {
+            inputElement.focus();
           }
-        }),
-        {
-          loading: "Menyimpan data pasien...",
-          success: "Data pasien berhasil disimpan!",
-          error: (err) =>
-            `${err.message || "Terjadi kesalahan saat menyimpan data"}`,
         }
-      );
+      }
     } catch (error) {
       console.error("Error submitting form:", error);
-      // The toast.promise will handle the error display
+      toast.error("Terjadi kesalahan saat menyimpan data");
     } finally {
       setSavingPatient(false);
     }

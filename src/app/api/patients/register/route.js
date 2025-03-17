@@ -133,13 +133,30 @@ export async function POST(request) {
     } catch (createError) {
       console.error("Error creating patient record:", createError);
 
-      // Provide detailed error message
+      // Provide detailed error message for unique constraint violations
       if (createError.code === "P2002") {
         const target = createError.meta?.target[0] || "field";
+
+        // Create user-friendly error messages based on the field
+        let errorMessage = "";
+        switch (target) {
+          case "no_rm":
+            errorMessage = `Nomor RM ${data.no_rm} sudah terdaftar`;
+            break;
+          case "no_bpjs":
+            errorMessage = `Nomor BPJS ${data.no_bpjs} sudah terdaftar`;
+            break;
+          case "nik":
+            errorMessage = `NIK ${data.nik} sudah terdaftar`;
+            break;
+          default:
+            errorMessage = `Data dengan ${target} tersebut sudah ada`;
+        }
+
         return NextResponse.json(
           {
             success: false,
-            message: `Data pasien dengan ${target} tersebut sudah ada (${createError.message})`,
+            message: errorMessage,
             error: createError.code,
             target: createError.meta?.target,
           },
