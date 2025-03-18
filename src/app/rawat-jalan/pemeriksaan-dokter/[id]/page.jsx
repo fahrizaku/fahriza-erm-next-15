@@ -208,7 +208,7 @@ export default function DoctorExaminationPage({ params }) {
         </div>
 
         {/* Patient info card */}
-        <PatientInfo patient={patient} />
+        <PatientInfo patient={patient} screening={screening} />
 
         {/* Screening summary */}
         <ScreeningResults screening={screening} />

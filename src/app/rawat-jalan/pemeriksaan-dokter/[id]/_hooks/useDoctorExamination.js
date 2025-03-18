@@ -88,7 +88,7 @@ export const useDoctorExamination = (screeningId) => {
     try {
       setIsSearchingDrugs(true);
       const response = await fetch(
-        `/api/drug-store-products?search=${query}&limit=10`
+        `/api/drug-prescriptions?search=${query}&limit=10`
       );
 
       if (!response.ok) {

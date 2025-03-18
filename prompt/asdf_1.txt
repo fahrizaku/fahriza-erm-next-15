@@ -1,366 +1,132 @@
-ada eror: 
-Error creating medical record: Error [PrismaClientValidationError]: 
-Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["db"].prescription.create()` invocation in
-C:\Project\fahriza-erm-next-15\.next\server\chunks\[root of the server]__7384d389._.js:133:157
-
-  130 // Check if this is a racikan prescription
-  131 const isRacikan = prescriptionData.type === "Racikan";
-  132 // Create prescription
-→ 133 await __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["db"].prescription.create({
-        data: {
-          medicalRecordId: 12,
-          notes: null,
-          prescriptionType: "Racikan",
-          dosage: "3x1",
-          ~~~~~~
-          items: {
-            create: [
-              {
-                manualDrugName: "Acifar 400 tab 400 mg Ifars - Tablet",
-                dosage: null,
-                quantity: 1
-              }
-            ]
-          },
-      ?   id?: Int,
-      ?   createdAt?: DateTime,
-      ?   updatedAt?: DateTime
-        }
-      })
-
-Unknown argument `dosage`. Available options are marked with ?.
-    at <unknown> (file://C%3A/Project/fahriza-erm-next-15/src/app/api/medical-records/route.js:52:30)
-    at async POST (file://C%3A/Project/fahriza-erm-next-15/src/app/api/medical-records/route.js:52:8)
-  50 |
-  51 |         // Create prescription
-> 52 |         await db.prescription.create({
-     |                              ^
-  53 |           data: {
-  54 |             medicalRecordId: medicalRecord.id,
-  55 |             notes: prescriptionData.notes || null, {
-  clientVersion: '6.4.1'
-
-// /app/api/medical-records/route.js
-import { NextResponse } from "next/server";
-import { db } from "@/lib/db";
-
-export async function POST(request) {
-  try {
-    const data = await request.json();
-
-    // Validate required fields
-    if (
-      !data.patientId ||
-      !data.screeningId ||
-      !data.diagnosis ||
-      !data.doctorName
-    ) {
-      return NextResponse.json(
-        { success: false, message: "Missing required fields" },
-        { status: 400 }
-      );
-    }
-
-    // Create medical record first
-    const medicalRecord = await db.medicalRecord.create({
-      data: {
-        patientId: data.patientId,
-        screeningId: data.screeningId,
-        diagnosis: data.diagnosis,
-        icdCode: data.icdCode || null,
-        clinicalNotes: data.clinicalNotes || null,
-        doctorName: data.doctorName,
-        visitType: "outpatient",
-      },
-    });
-
-    // Handle prescriptions (now supporting multiple and racikan type)
-    if (
-      data.prescriptions &&
-      Array.isArray(data.prescriptions) &&
-      data.prescriptions.length > 0
-    ) {
-      // Create each prescription
-      for (const prescriptionData of data.prescriptions) {
-        // Validate prescription data
-        if (!prescriptionData.items || !Array.isArray(prescriptionData.items)) {
-          continue; // Skip invalid prescription
-        }
-
-        // Check if this is a racikan prescription
-        const isRacikan = prescriptionData.type === "Racikan";
-
-        // Create prescription
-        await db.prescription.create({
-          data: {
-            medicalRecordId: medicalRecord.id,
-            notes: prescriptionData.notes || null,
-            prescriptionType: prescriptionData.type || null,
-            // Add the dosage field for racikan prescriptions
-            dosage: isRacikan ? prescriptionData.dosage : null,
-            items: {
-              create: prescriptionData.items.map((item) => ({
-                manualDrugName: item.manualDrugName,
-                // For racikan items, don't store individual dosages
-                // For regular prescriptions, store dosage at item level
-                dosage: isRacikan ? null : item.dosage,
-                quantity: item.quantity,
-              })),
-            },
-          },
-        });
-      }
-    } else if (data.prescription) {
-      // For backward compatibility - handle single prescription
-      await db.prescription.create({
-        data: {
-          medicalRecordId: medicalRecord.id,
-          notes: data.prescription.notes || null,
-          prescriptionType: data.prescription.type || "Main",
-          items: {
-            create: data.prescription.items.map((item) => ({
-              manualDrugName: item.manualDrugName,
-              drugId: item.drugId || null,
-              dosage: item.dosage,
-              quantity: item.quantity,
-            })),
-          },
-        },
-      });
-    }
-
-    // Update screening status to "completed"
-    await db.screening.update({
-      where: {
-        id: data.screeningId,
-      },
-      data: {
-        status: "completed",
-      },
-    });
-
-    // Update queue status
-    await db.outpatientQueue.updateMany({
-      where: {
-        screeningId: data.screeningId,
-      },
-      data: {
-        status: "completed",
-      },
-    });
-
-    return NextResponse.json({
-      success: true,
-      medicalRecordId: medicalRecord.id,
-    });
-  } catch (error) {
-    console.error("Error creating medical record:", error);
-    return NextResponse.json(
-      { success: false, message: "Failed to create medical record" },
-      { status: 500 }
-    );
-  }
-}
-
-// GET endpoint for retrieving all medical records - updated to include dosage field
-export async function GET(request) {
-  try {
-    // Membaca query parameters
-    const { searchParams } = new URL(request.url);
-    const search = searchParams.get("search");
-    const startDate = searchParams.get("startDate");
-    const endDate = searchParams.get("endDate");
-    const page = parseInt(searchParams.get("page") || "1");
-    const limit = parseInt(searchParams.get("limit") || "20");
-
-    // Menghitung offset untuk pagination
-    const skip = (page - 1) * limit;
-
-    // Membuat kondisi filter
-    const where = {};
-
-    if (search) {
-      where.OR = [
-        {
-          patient: {
-            name: {
-              contains: search,
-              mode: "insensitive",
-            },
-          },
-        },
-        {
-          patient: {
-            no_rm: {
-              equals: isNaN(parseInt(search)) ? undefined : parseInt(search),
-            },
-          },
-        },
-        {
-          patient: {
-            nik: {
-              contains: search,
-            },
-          },
-        },
-      ];
-    }
-
-    // Filter tanggal kunjungan
-    if (startDate || endDate) {
-      where.visitDate = {};
-
-      if (startDate) {
-        where.visitDate.gte = new Date(startDate);
-      }
-
-      if (endDate) {
-        // Atur waktu ke akhir hari
-        const endDateTime = new Date(endDate);
-        endDateTime.setHours(23, 59, 59, 999);
-        where.visitDate.lte = endDateTime;
-      }
-    }
-
-    // Mengambil total count untuk pagination
-    const totalCount = await db.medicalRecord.count({ where });
-
-    // Mengambil data berdasarkan filter
-    const medicalRecords = await db.medicalRecord.findMany({
-      where,
-      include: {
-        patient: true,
-        screening: true,
-        prescriptions: {
-          include: {
-            items: {
-              include: {
-                drug: true,
-              },
-            },
-          },
-        },
-      },
-      orderBy: {
-        visitDate: "desc",
-      },
-      skip,
-      take: limit,
-    });
-
-    return NextResponse.json({
-      data: medicalRecords,
-      meta: {
-        total: totalCount,
-        page,
-        limit,
-        totalPages: Math.ceil(totalCount / limit),
-      },
-    });
-  } catch (error) {
-    console.error("Error fetching medical records:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch medical records" },
-      { status: 500 }
-    );
-  } finally {
-    await db.$disconnect();
-  }
-}
-
-
-// File: _hooks/useDoctorExamination.js
-import { useState, useEffect } from "react";
+// File: DoctorExaminationPage.jsx
+"use client";
+import React, { useState, use } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
+import { Loader2, AlertTriangle, Save } from "lucide-react";
 
-export const useDoctorExamination = (screeningId) => {
-  // Existing state...
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [patient, setPatient] = useState(null);
-  const [screening, setScreening] = useState(null);
+// Import components
+import BackNavigation from "./_components/BackNavigation";
+import PatientInfo from "./_components/PatientInfo";
+import ScreeningResults from "./_components/ScreeningResults";
+import DiagnosisForm from "./_components/DiagnosisForm";
+import PrescriptionsForm from "./_components/PrescriptionsForm";
+import DoctorSignature from "./_components/DoctorSignature";
 
-  // Medical record state
-  const [medicalRecord, setMedicalRecord] = useState({
-    diagnosis: "",
-    icdCode: "",
-    clinicalNotes: "",
-    doctorName: "",
-  });
+// Import combined hook
+import { useDoctorExamination } from "./_hooks/useDoctorExamination";
 
-  // Multiple prescriptions state
-  const [prescriptions, setPrescriptions] = useState([
-    {
-      id: 1,
-      type: "Main",
-      notes: "",
-      sharedDosage: "", // New field for racikan prescriptions
-      items: [
-        {
-          id: 1,
-          manualDrugName: "",
-          drugStoreProductId: null,
-          drugStoreProductName: "",
-          dosage: "", // Will be ignored for racikan type
-          quantity: 1,
-        },
-      ],
-    },
-  ]);
+export default function DoctorExaminationPage({ params }) {
+  const router = useRouter();
+  const { id } = use(params); // Screening ID
 
-  // Add state for drug search
-  const [drugSearchQuery, setDrugSearchQuery] = useState("");
-  const [drugSearchResults, setDrugSearchResults] = useState([]);
-  const [isSearchingDrugs, setIsSearchingDrugs] = useState(false);
+  // Use combined hook
+  const {
+    loading,
+    error,
+    patient,
+    screening,
+    medicalRecord,
+    setMedicalRecord,
+    handleMedicalRecordChange,
+    prescriptions,
+    handlePrescriptionTypeChange,
+    handlePrescriptionNotesChange,
+    handlePrescriptionItemChange,
+    handleSharedDosageChange,
+    addPrescriptionItem,
+    removePrescriptionItem,
+    addPrescription,
+    removePrescription,
+    // New props for drug search
+    drugSearchQuery,
+    drugSearchResults,
+    isSearchingDrugs,
+    searchDrugs,
+    selectDrug,
+  } = useDoctorExamination(id);
 
-  // Existing useEffect for fetching screening data...
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const response = await fetch(`/api/screenings/${screeningId}`);
+  const [submitting, setSubmitting] = useState(false);
+  const [formError, setFormError] = useState(null);
 
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const data = await response.json();
-
-        if (data.success) {
-          setScreening(data.screening);
-          setPatient(data.patient);
-        } else {
-          setError(data.message || "Failed to fetch screening data");
-          toast.error(data.message || "Failed to fetch screening data");
-        }
-      } catch (error) {
-        console.error("Error fetching data:", error);
-        setError("An error occurred while fetching data");
-        toast.error("An error occurred while fetching data");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (screeningId) {
-      fetchData();
-    }
-  }, [screeningId]);
-
-  // Add a function to search for drugs
-  const searchDrugs = async (query) => {
-    setDrugSearchQuery(query);
-
-    if (query.length < 2) {
-      setDrugSearchResults([]);
-      return;
-    }
+  // Handle form submission
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setSubmitting(true);
+    setFormError(null);
 
     try {
-      setIsSearchingDrugs(true);
-      const response = await fetch(
-        `/api/drug-store-products?search=${query}&limit=10`
-      );
+      // Validate required fields
+      if (!medicalRecord.diagnosis) {
+        throw new Error("Diagnosis pasien harus diisi");
+      }
+
+      if (!medicalRecord.doctorName) {
+        throw new Error("Nama dokter harus diisi");
+      }
+
+      // Validate prescription items
+      let hasValidPrescription = false;
+      for (const prescription of prescriptions) {
+        const isRacikan = prescription.type === "Racikan";
+
+        // For racikan prescriptions, validate shared dosage
+        if (isRacikan && !prescription.sharedDosage) {
+          throw new Error("Dosis racikan harus diisi");
+        }
+
+        if (prescription.items.length > 0) {
+          const invalidItems = prescription.items.filter(
+            (item) => !item.manualDrugName || (!isRacikan && !item.dosage)
+          );
+          if (invalidItems.length === 0) {
+            hasValidPrescription = true;
+          }
+        }
+      }
+
+      if (!hasValidPrescription) {
+        throw new Error(
+          "Setidaknya satu resep harus diisi lengkap (nama obat dan dosis)"
+        );
+      }
+
+      // Format data for submission
+      const medicalRecordData = {
+        patientId: patient.id,
+        screeningId: parseInt(id),
+        ...medicalRecord,
+        prescriptions: prescriptions
+          .map((prescription) => {
+            const isRacikan = prescription.type === "Racikan";
+
+            return {
+              type: prescription.type,
+              notes: prescription.notes,
+              dosage: isRacikan ? prescription.sharedDosage : null, // Only include dosage for racikan
+              items: prescription.items
+                .filter(
+                  (item) => item.manualDrugName && (isRacikan || item.dosage)
+                )
+                .map((item) => ({
+                  manualDrugName: item.manualDrugName,
+                  drugId: item.drugStoreProductId,
+                  dosage: isRacikan ? null : item.dosage, // Only include individual dosage for non-racikan
+                  quantity: parseInt(item.quantity),
+                })),
+            };
+          })
+          .filter((prescription) => prescription.items.length > 0),
+      };
+
+      // Submit the medical record
+      const response = await fetch("/api/medical-records", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(medicalRecordData),
+      });
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -369,751 +135,251 @@ export const useDoctorExamination = (screeningId) => {
       const data = await response.json();
 
       if (data.success) {
-        setDrugSearchResults(data.products);
+        // Show success message
+        toast.success("Rekam medis berhasil disimpan");
+
+        // Redirect to medical record view
+        router.push(`/rekam-medis/${data.medicalRecordId}`);
       } else {
-        console.error("Failed to fetch drugs");
+        setFormError(data.message || "Failed to save medical record");
+        toast.error(data.message || "Failed to save medical record");
       }
     } catch (error) {
-      console.error("Error searching drugs:", error);
+      console.error("Error saving medical record:", error);
+      setFormError(
+        error.message || "An error occurred while saving medical record"
+      );
+      toast.error(
+        error.message || "An error occurred while saving medical record"
+      );
     } finally {
-      setIsSearchingDrugs(false);
+      setSubmitting(false);
     }
   };
 
-  // Function to select a drug from search results
-  const selectDrug = (prescIndex, itemIndex, drug) => {
-    const updatedPrescriptions = [...prescriptions];
-    updatedPrescriptions[prescIndex].items[itemIndex].drugStoreProductId =
-      drug.id;
-    updatedPrescriptions[prescIndex].items[itemIndex].manualDrugName =
-      drug.displayName;
-    updatedPrescriptions[prescIndex].items[itemIndex].drugStoreProductName =
-      drug.displayName;
-    setPrescriptions(updatedPrescriptions);
-    setDrugSearchResults([]);
-    setDrugSearchQuery("");
-  };
-
-  const handlePrescriptionTypeChange = (index, value) => {
-    const updatedPrescriptions = [...prescriptions];
-    const previousType = updatedPrescriptions[index].type;
-    updatedPrescriptions[index].type = value;
-
-    // If changing to or from Racikan type, adjust dosage handling
-    if (value === "Racikan" && previousType !== "Racikan") {
-      // Moving from regular prescription to racikan
-      // Take the dosage from the first item and make it the shared dosage
-      if (updatedPrescriptions[index].items.length > 0) {
-        updatedPrescriptions[index].sharedDosage =
-          updatedPrescriptions[index].items[0].dosage || "";
-      }
-    } else if (value !== "Racikan" && previousType === "Racikan") {
-      // Moving from racikan to regular prescription
-      // Distribute the shared dosage to all items
-      const sharedDosage = updatedPrescriptions[index].sharedDosage || "";
-      updatedPrescriptions[index].items.forEach((item) => {
-        item.dosage = sharedDosage;
-      });
-      updatedPrescriptions[index].sharedDosage = "";
-    }
-
-    setPrescriptions(updatedPrescriptions);
-  };
-
-  // Handle shared dosage change for racikan prescriptions
-  const handleSharedDosageChange = (index, value) => {
-    const updatedPrescriptions = [...prescriptions];
-    updatedPrescriptions[index].sharedDosage = value;
-    setPrescriptions(updatedPrescriptions);
-  };
-
-  const handleMedicalRecordChange = (e) => {
-    const { name, value } = e.target;
-    setMedicalRecord((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
-
-  const handlePrescriptionNotesChange = (index, value) => {
-    const updatedPrescriptions = [...prescriptions];
-    updatedPrescriptions[index].notes = value;
-    setPrescriptions(updatedPrescriptions);
-  };
-
-  const handlePrescriptionItemChange = (
-    prescIndex,
-    itemIndex,
-    field,
-    value
-  ) => {
-    const updatedPrescriptions = [...prescriptions];
-
-    // If changing dosage and this is a racikan prescription,
-    // update the shared dosage instead of individual item dosage
-    if (
-      field === "dosage" &&
-      updatedPrescriptions[prescIndex].type === "Racikan"
-    ) {
-      updatedPrescriptions[prescIndex].sharedDosage = value;
-    } else {
-      updatedPrescriptions[prescIndex].items[itemIndex][field] = value;
-    }
-
-    // Existing drug name handling...
-    if (field === "manualDrugName") {
-      updatedPrescriptions[prescIndex].items[itemIndex].drugStoreProductId =
-        null;
-      updatedPrescriptions[prescIndex].items[itemIndex].drugStoreProductName =
-        "";
-    }
-
-    setPrescriptions(updatedPrescriptions);
-  };
-
-  const addPrescriptionItem = (prescIndex) => {
-    const updatedPrescriptions = [...prescriptions];
-    const items = updatedPrescriptions[prescIndex].items;
-    updatedPrescriptions[prescIndex].items = [
-      ...items,
-      {
-        id: items.length + 1,
-        manualDrugName: "",
-        drugStoreProductId: null,
-        drugStoreProductName: "",
-        dosage: updatedPrescriptions[prescIndex].type === "Racikan" ? "" : "",
-        quantity: 1,
-      },
-    ];
-    setPrescriptions(updatedPrescriptions);
-  };
-
-  const removePrescriptionItem = (prescIndex, itemIndex) => {
-    const updatedPrescriptions = [...prescriptions];
-    updatedPrescriptions[prescIndex].items.splice(itemIndex, 1);
-    setPrescriptions(updatedPrescriptions);
-  };
-
-  const addPrescription = (type = "Main") => {
-    setPrescriptions([
-      ...prescriptions,
-      {
-        id: prescriptions.length + 1,
-        type: type, // Menggunakan parameter type
-        notes: "",
-        sharedDosage: "",
-        items: [
-          {
-            id: 1,
-            manualDrugName: "",
-            drugStoreProductId: null,
-            drugStoreProductName: "",
-            dosage: "",
-            quantity: 1,
-          },
-        ],
-      },
-    ]);
-  };
-
-  const removePrescription = (index) => {
-    if (prescriptions.length === 1) {
-      return; // Don't remove if it's the only prescription
-    }
-    const updatedPrescriptions = [...prescriptions];
-    updatedPrescriptions.splice(index, 1);
-    setPrescriptions(updatedPrescriptions);
-  };
-
-  // Format data for submission
-  const formatPrescriptionsForSubmission = () => {
-    return prescriptions
-      .map((prescription) => {
-        const isRacikan = prescription.type === "Racikan";
-        return {
-          type: prescription.type,
-          notes: prescription.notes,
-          dosage: isRacikan ? prescription.sharedDosage : null, // Only include dosage for racikan
-          items: prescription.items
-            .filter((item) => item.manualDrugName)
-            .map((item) => ({
-              manualDrugName: item.manualDrugName,
-              drugStoreProductId: item.drugStoreProductId,
-              dosage: isRacikan ? null : item.dosage, // Only include individual dosage for non-racikan
-              quantity: parseInt(item.quantity),
-            })),
-        };
-      })
-      .filter((prescription) => prescription.items.length > 0);
-  };
-
-  return {
-    // Screening data
-    loading,
-    error,
-    patient,
-    screening,
-
-    // Medical record
-    medicalRecord,
-    setMedicalRecord,
-    handleMedicalRecordChange,
-
-    // Prescriptions
-    prescriptions,
-    setPrescriptions,
-    handlePrescriptionTypeChange,
-    handlePrescriptionNotesChange,
-    handlePrescriptionItemChange,
-    addPrescriptionItem,
-    removePrescriptionItem,
-    addPrescription,
-    removePrescription,
-    handleSharedDosageChange,
-    formatPrescriptionsForSubmission,
-
-    // Drug search
-    drugSearchQuery,
-    drugSearchResults,
-    isSearchingDrugs,
-    searchDrugs,
-    selectDrug,
-  };
-};
-
-
-import React, { useRef, useEffect, useState } from "react";
-import { Minus, Search, Loader2 } from "lucide-react";
-import { DOSAGE_SUGGESTIONS } from "@/data/dosis";
-
-const PrescriptionItem = ({
-  item,
-  itemIndex,
-  prescIndex,
-  itemsLength,
-  handlePrescriptionItemChange,
-  removePrescriptionItem,
-  // Drug search props
-  searchDrugs,
-  drugSearchResults,
-  isSearchingDrugs,
-  selectDrug,
-  drugSearchQuery,
-  // Racikan props
-  isRacikan,
-  sharedDosage,
-}) => {
-  // Refs for handling dropdown
-  const dropdownRef = useRef(null);
-  const inputRef = useRef(null);
-  const dosageInputRef = useRef(null);
-  const dosageDropdownRef = useRef(null);
-
-  // State to control dropdowns visibility
-  const [showDosageSuggestions, setShowDosageSuggestions] = useState(false);
-  const [showDrugSearchResults, setShowDrugSearchResults] = useState(false);
-
-  // State to store filtered dosage suggestions
-  const [filteredDosageSuggestions, setFilteredDosageSuggestions] =
-    useState(DOSAGE_SUGGESTIONS);
-
-  // Close drug search dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target) &&
-        inputRef.current &&
-        !inputRef.current.contains(event.target)
-      ) {
-        setShowDrugSearchResults(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, []);
-
-  // Handle dosage suggestions dropdown
-  useEffect(() => {
-    const handleClickOutsideDosage = (event) => {
-      if (
-        dosageDropdownRef.current &&
-        !dosageDropdownRef.current.contains(event.target) &&
-        dosageInputRef.current &&
-        !dosageInputRef.current.contains(event.target)
-      ) {
-        setShowDosageSuggestions(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutsideDosage);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutsideDosage);
-    };
-  }, []);
-
-  // Handle selecting a dosage suggestion
-  const handleSelectDosage = (suggestion) => {
-    handlePrescriptionItemChange(prescIndex, itemIndex, "dosage", suggestion);
-    setShowDosageSuggestions(false);
-  };
-
-  // Filter dosage suggestions based on input
-  const handleDosageInputChange = (value) => {
-    handlePrescriptionItemChange(prescIndex, itemIndex, "dosage", value);
-
-    // Filter suggestions based on input
-    const filtered = DOSAGE_SUGGESTIONS.filter((suggestion) =>
-      suggestion.toLowerCase().includes(value.toLowerCase())
+  if (loading) {
+    return (
+      <div className="max-w-4xl mx-auto p-4 sm:p-6">
+        <div className="flex justify-center items-center h-64">
+          <div className="text-center">
+            <Loader2 className="h-10 w-10 animate-spin text-blue-500 mx-auto" />
+            <p className="mt-4 text-gray-600">Memuat data pemeriksaan...</p>
+          </div>
+        </div>
+      </div>
     );
-    setFilteredDosageSuggestions(filtered);
+  }
 
-    // Show suggestions dropdown if we have input
-    setShowDosageSuggestions(true);
-  };
-
-  // Handle drug search
-  const handleDrugSearch = (query) => {
-    handlePrescriptionItemChange(
-      prescIndex,
-      itemIndex,
-      "manualDrugName",
-      query
+  if (error && !screening) {
+    return (
+      <div className="max-w-4xl mx-auto p-4 sm:p-6">
+        <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-md">
+          <div className="flex items-start">
+            <AlertTriangle className="h-6 w-6 text-red-500 mr-3 flex-shrink-0" />
+            <div>
+              <h3 className="text-lg font-medium text-red-800">Error</h3>
+              <p className="mt-1 text-red-700">{error}</p>
+              <button
+                onClick={() => router.push("/rawat-jalan/antrian")}
+                className="mt-3 px-4 py-2 bg-white text-red-700 border border-red-300 rounded-md hover:bg-red-50 transition-colors"
+              >
+                Kembali ke Antrian
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
     );
-    searchDrugs(query);
-    setShowDrugSearchResults(true);
-  };
-
-  // Handle drug selection
-  const handleDrugSelection = (drug) => {
-    selectDrug(prescIndex, itemIndex, drug);
-    setShowDrugSearchResults(false);
-  };
+  }
 
   return (
-    <div className="p-4 border border-gray-200 rounded-md bg-gray-50">
-      <div className="flex justify-between items-start mb-3">
-        <h4 className="text-sm font-medium text-gray-700">
-          {isRacikan ? "Komponen #" : "Obat #"}
-          {itemIndex + 1}
-        </h4>
-        <button
-          type="button"
-          onClick={() => removePrescriptionItem(prescIndex, itemIndex)}
-          disabled={itemsLength === 1}
-          className={`p-1 rounded-full ${
-            itemsLength === 1
-              ? "text-gray-400 cursor-not-allowed"
-              : "text-red-500 hover:bg-red-100"
-          }`}
-        >
-          <Minus className="h-4 w-4" />
-        </button>
-      </div>
+    <div className="max-w-4xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
+      {/* Back button */}
+      <BackNavigation />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Drug name with autocomplete */}
-        <div className="relative">
-          <label className="block text-xs font-medium text-gray-700 mb-1">
-            Nama Obat
-          </label>
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search className="h-4 w-4 text-gray-400" />
-            </div>
-            <input
-              ref={inputRef}
-              type="text"
-              value={item.manualDrugName}
-              onChange={(e) => handleDrugSearch(e.target.value)}
-              onFocus={() => {
-                if (drugSearchResults.length > 0 && item.manualDrugName) {
-                  setShowDrugSearchResults(true);
-                }
-              }}
-              className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Cari obat..."
-            />
-            {isSearchingDrugs && (
-              <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                <Loader2 className="h-4 w-4 text-blue-500 animate-spin" />
+      {/* Main content */}
+      <div className="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
+        {/* Header */}
+        <div className="p-5 md:p-6 border-b border-gray-200 bg-gray-50">
+          <h1 className="text-xl font-bold text-gray-800 mb-1">
+            Pemeriksaan oleh Dokter
+          </h1>
+          <p className="text-gray-600">Isi diagnosa dan resep untuk pasien</p>
+        </div>
+
+        {/* Patient info card */}
+        <PatientInfo patient={patient} />
+
+        {/* Screening summary */}
+        <ScreeningResults screening={screening} />
+
+        {/* Form */}
+        <form onSubmit={handleSubmit}>
+          <div className="p-5 md:p-6">
+            {formError && (
+              <div className="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-md">
+                <div className="flex items-start">
+                  <AlertTriangle className="h-5 w-5 text-red-500 mr-2 flex-shrink-0" />
+                  <p className="text-red-700">{formError}</p>
+                </div>
               </div>
             )}
-          </div>
 
-          {/* Dropdown for drug search results */}
-          {showDrugSearchResults && drugSearchResults.length > 0 && (
-            <div
-              ref={dropdownRef}
-              className="absolute z-10 mt-1 w-full bg-white shadow-lg rounded-md border border-gray-200 max-h-48 overflow-y-auto"
-            >
-              {drugSearchResults.map((drug) => (
-                <div
-                  key={drug.id}
-                  onClick={() => handleDrugSelection(drug)}
-                  className="px-4 py-2 hover:bg-blue-50 cursor-pointer text-sm"
-                >
-                  <div className="font-medium">{drug.displayName}</div>
-                </div>
-              ))}
+            {/* Diagnosis section */}
+            <DiagnosisForm
+              medicalRecord={medicalRecord}
+              setMedicalRecord={setMedicalRecord}
+              handleMedicalRecordChange={handleMedicalRecordChange}
+            />
+
+            {/* Multiple Prescriptions section with drug search */}
+            <PrescriptionsForm
+              prescriptions={prescriptions}
+              handlePrescriptionTypeChange={handlePrescriptionTypeChange}
+              handlePrescriptionNotesChange={handlePrescriptionNotesChange}
+              handlePrescriptionItemChange={handlePrescriptionItemChange}
+              handleSharedDosageChange={handleSharedDosageChange}
+              addPrescriptionItem={addPrescriptionItem}
+              removePrescriptionItem={removePrescriptionItem}
+              addPrescription={addPrescription}
+              removePrescription={removePrescription}
+              // Pass the new drug search props
+              searchDrugs={searchDrugs}
+              drugSearchResults={drugSearchResults}
+              isSearchingDrugs={isSearchingDrugs}
+              selectDrug={selectDrug}
+              drugSearchQuery={drugSearchQuery}
+            />
+
+            {/* Doctor name */}
+            <DoctorSignature
+              doctorName={medicalRecord.doctorName}
+              onChange={handleMedicalRecordChange}
+            />
+
+            {/* Submit button */}
+            <div className="flex justify-end">
+              <button
+                type="submit"
+                disabled={submitting}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center shadow-sm"
+              >
+                {submitting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    <span>Menyimpan...</span>
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-4 w-4 mr-2" />
+                    <span>Simpan & Teruskan ke Apoteker</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+import React from "react";
+import { User, FileText, Shield } from "lucide-react";
+
+const PatientInfo = ({ patient }) => {
+  // Function to capitalize each word
+  const capitalizeEachWord = (str) => {
+    if (!str) return "";
+    return str
+      .split(" ")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(" ");
+  };
+
+  if (!patient) return null;
+
+  return (
+    <div className="p-5 bg-blue-50 border-b border-blue-100">
+      <div className="flex flex-wrap items-center justify-between">
+        <div className="flex items-center mb-2 sm:mb-0">
+          <User className="h-5 w-5 text-blue-600 mr-2" />
+          <h2 className="text-lg font-semibold text-blue-800 mr-3">
+            {capitalizeEachWord(patient.name)}
+          </h2>
+          {patient.isBPJS && (
+            <div className="flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-sm font-medium">
+              <Shield className="h-3 w-3" />
+              <span>BPJS</span>
             </div>
           )}
         </div>
-
-        {/* Dosage field - hidden for racikan prescriptions */}
-        {!isRacikan ? (
-          <div className="relative">
-            <label className="block text-xs font-medium text-gray-700 mb-1">
-              Dosis
-            </label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Search className="h-4 w-4 text-gray-400" />
-              </div>
-              <input
-                ref={dosageInputRef}
-                type="text"
-                value={item.dosage}
-                onChange={(e) => handleDosageInputChange(e.target.value)}
-                onFocus={() => setShowDosageSuggestions(true)}
-                className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Cari atau masukkan dosis..."
-              />
-            </div>
-
-            {/* Dropdown for filtered dosage suggestions */}
-            {showDosageSuggestions && filteredDosageSuggestions.length > 0 && (
-              <div
-                ref={dosageDropdownRef}
-                className="absolute z-10 mt-1 w-full bg-white shadow-lg rounded-md border border-gray-200 max-h-48 overflow-y-auto"
-              >
-                {filteredDosageSuggestions.map((suggestion, index) => (
-                  <div
-                    key={index}
-                    onClick={() => handleSelectDosage(suggestion)}
-                    className="px-4 py-2 hover:bg-blue-50 cursor-pointer text-sm"
-                  >
-                    {suggestion}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        ) : null}
-
-        {/* Quantity - adjust column span based on whether it's racikan */}
-        <div className={isRacikan ? "md:col-span-1" : "md:col-span-1"}>
-          <label className="block text-xs font-medium text-gray-700 mb-1">
-            Jumlah
-          </label>
-          <input
-            type="number"
-            min="1"
-            value={item.quantity}
-            onChange={(e) =>
-              handlePrescriptionItemChange(
-                prescIndex,
-                itemIndex,
-                "quantity",
-                e.target.value
-              )
-            }
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
+        <div className="flex items-center text-sm text-gray-600">
+          <FileText className="h-4 w-4 mr-1" />
+          <span>No. RM: </span>
+          <span className="font-mono ml-1 font-medium">{patient.no_rm}</span>
         </div>
       </div>
     </div>
   );
 };
 
-export default PrescriptionItem;
+export default PatientInfo;
 
-import React, { useRef, useEffect, useState } from "react";
-import { Pill, Plus, Clipboard, X, Search } from "lucide-react";
-import PrescriptionItem from "./PrescriptionItem";
-import { DOSAGE_SUGGESTIONS } from "@/data/dosis";
+// Model Patient
+model Patient {
+  id              Int       @id @default(autoincrement())
+  no_rm           Int       @unique
+  name            String
+  gender          String?
+  birthDate       DateTime?
+  address         String?
+  isBPJS          Boolean
+  no_bpjs         String?   @unique
+  nik             String?   @unique
+  phoneNumber     String?   
+  createdAt       DateTime? @default(now())
+  updatedAt       DateTime? @updatedAt
 
-const PrescriptionsForm = ({
-  prescriptions,
-  handlePrescriptionTypeChange,
-  handlePrescriptionNotesChange,
-  handlePrescriptionItemChange,
-  addPrescriptionItem,
-  removePrescriptionItem,
-  addPrescription,
-  removePrescription,
-  handleSharedDosageChange,
-  // Drug search props
-  searchDrugs,
-  drugSearchResults,
-  isSearchingDrugs,
-  selectDrug,
-  drugSearchQuery,
-}) => {
-  // Refs and state for racikan dosage suggestions
-  const [showRacikanDosageSuggestions, setShowRacikanDosageSuggestions] = useState({});
-  const [filteredRacikanDosageSuggestions, setFilteredRacikanDosageSuggestions] = useState({});
+    // Relations
+  screenings      Screening[]
+  medicalRecords  MedicalRecord[]
+}
+
+model Screening {
+  id                Int           @id @default(autoincrement())
+  patientId         Int
+  patient           Patient       @relation(fields: [patientId], references: [id])
+  complaints        String        // Patient's complaints
+  temperature       Decimal?      // Body temperature
+  systolicBP        Int?          // Systolic blood pressure (e.g., 120 in "120/80")
+  diastolicBP       Int?          // Diastolic blood pressure (e.g., 80 in "120/80")
+  pulse             Int?          // Heart rate
+  respiratoryRate   Int?          // Breathing rate
+  weight            Decimal?      // Weight in kg
+  height            Int?          // Height in cm
+  waistCircumference Decimal?     // Lingkar pinggang in cm
+  oxygenSaturation  Decimal?      // Saturasi oksigen in percentage
+  isBPJSActive      Boolean?      // Status BPJS aktif atau tidak
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
   
-  const racikanDosageInputRefs = useRef({});
-  const racikanDosageDropdownRefs = useRef({});
+  // Screening status
+  status            String        @default("waiting") // waiting, in-progress, completed
+  queueNumber       Int?
+  
+  // Relations
+  medicalRecord     MedicalRecord?
+  
+  @@index([patientId])
+  @@index([status])
+  @@index([createdAt])
+}
 
-  // Initialize filteredRacikanDosageSuggestions for each prescription
-  useEffect(() => {
-    const initialSuggestions = {};
-    prescriptions.forEach((prescription, index) => {
-      if (prescription.type === "Racikan") {
-        initialSuggestions[index] = DOSAGE_SUGGESTIONS;
-      }
-    });
-    setFilteredRacikanDosageSuggestions(initialSuggestions);
-  }, [prescriptions.map(p => p.id).join(',')]);
+saya ingin agar patient info juga mengambil screening data bukan hanya pasien. dan yang ditampilkan di patient info antara lain:
+1. nama pasien - no rm
+2. jenis kelamin - umur
+3. alamat
+4. tipe pembayaran
 
-  // Handle click outside for racikan dosage dropdowns
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      prescriptions.forEach((prescription, index) => {
-        if (prescription.type === "Racikan") {
-          if (
-            racikanDosageDropdownRefs.current[index] &&
-            !racikanDosageDropdownRefs.current[index].contains(event.target) &&
-            racikanDosageInputRefs.current[index] &&
-            !racikanDosageInputRefs.current[index].contains(event.target)
-          ) {
-            setShowRacikanDosageSuggestions(prev => ({
-              ...prev,
-              [index]: false
-            }));
-          }
-        }
-      });
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [prescriptions]);
-
-  // Handle selecting a racikan dosage suggestion
-  const handleSelectRacikanDosage = (prescIndex, suggestion) => {
-    handleSharedDosageChange(prescIndex, suggestion);
-    setShowRacikanDosageSuggestions(prev => ({
-      ...prev,
-      [prescIndex]: false
-    }));
-  };
-
-  // Filter racikan dosage suggestions based on input
-  const handleRacikanDosageInputChange = (prescIndex, value) => {
-    handleSharedDosageChange(prescIndex, value);
-
-    // Filter suggestions based on input
-    const filtered = DOSAGE_SUGGESTIONS.filter((suggestion) =>
-      suggestion.toLowerCase().includes(value.toLowerCase())
-    );
-    
-    setFilteredRacikanDosageSuggestions(prev => ({
-      ...prev,
-      [prescIndex]: filtered
-    }));
-
-    // Show suggestions dropdown if we have input
-    setShowRacikanDosageSuggestions(prev => ({
-      ...prev,
-      [prescIndex]: true
-    }));
-  };
-
-  const addRegularPrescription = () => {
-    addPrescription("Main"); // Default type is "Main" (Utama)
-  };
-
-  const addRacikanPrescription = () => {
-    addPrescription("Racikan"); // Add a racikan type prescription
-  };
-
-  return (
-    <div className="mb-8">
-      <div className="flex items-center mb-4">
-        <Pill className="h-5 w-5 text-blue-600 mr-2" />
-        <h3 className="text-lg font-semibold text-gray-800">Resep Obat</h3>
-      </div>
-
-      {/* Multiple prescriptions */}
-      <div className="space-y-6">
-        {prescriptions.map((prescription, prescIndex) => {
-          const isRacikan = prescription.type === "Racikan";
-
-          return (
-            <div
-              key={prescription.id}
-              className="border border-gray-200 rounded-lg bg-white shadow-sm overflow-hidden"
-            >
-              {/* Prescription header */}
-              <div className="bg-gray-50 p-4 border-b border-gray-200 flex justify-between items-center">
-                <div className="flex items-center">
-                  <Clipboard className="h-4 w-4 text-blue-600 mr-2" />
-                  <h4 className="font-medium text-gray-800">
-                    Resep {prescIndex + 1}
-                  </h4>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <select
-                    value={prescription.type}
-                    onChange={(e) =>
-                      handlePrescriptionTypeChange(prescIndex, e.target.value)
-                    }
-                    className="text-sm border border-gray-300 rounded px-2 py-1 bg-white"
-                  >
-                    <option value="Main">Utama</option>
-                    <option value="Alternative">Alternatif</option>
-                    <option value="Follow-up">Lanjutan</option>
-                    <option value="Racikan">Racikan</option>
-                  </select>
-                  <button
-                    type="button"
-                    onClick={() => removePrescription(prescIndex)}
-                    disabled={prescriptions.length === 1}
-                    className={`p-1 rounded ${
-                      prescriptions.length === 1
-                        ? "text-gray-400 cursor-not-allowed"
-                        : "text-red-500 hover:bg-red-50"
-                    }`}
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
-
-              {/* Prescription contents */}
-              <div className="p-4">
-                {/* Prescription items */}
-                <div className="space-y-4 mb-4">
-                  {prescription.items.map((item, itemIndex) => (
-                    <PrescriptionItem
-                      key={item.id}
-                      item={item}
-                      itemIndex={itemIndex}
-                      prescIndex={prescIndex}
-                      itemsLength={prescription.items.length}
-                      handlePrescriptionItemChange={
-                        handlePrescriptionItemChange
-                      }
-                      removePrescriptionItem={removePrescriptionItem}
-                      // Pass drug search props
-                      searchDrugs={searchDrugs}
-                      drugSearchResults={drugSearchResults}
-                      isSearchingDrugs={isSearchingDrugs}
-                      selectDrug={selectDrug}
-                      drugSearchQuery={drugSearchQuery}
-                      // Pass racikan info
-                      isRacikan={isRacikan}
-                      sharedDosage={prescription.sharedDosage}
-                    />
-                  ))}
-                </div>
-
-                {/* Add prescription item button - ENHANCED VISIBILITY */}
-                <button
-                  type="button"
-                  onClick={() => addPrescriptionItem(prescIndex)}
-                  className="w-full py-3 bg-blue-50 border border-blue-200 rounded-md text-blue-600 font-medium hover:bg-blue-100 hover:border-blue-300 transition-colors text-sm flex items-center justify-center shadow-sm"
-                >
-                  <Plus className="h-5 w-5 mr-2" />
-                  <span>Tambah Obat</span>
-                </button>
-
-                {/* For racikan prescriptions, show a shared dosage field with suggestions (now placed after items) */}
-                {isRacikan && (
-                  <div className="mt-4 p-3 bg-blue-50 border border-blue-100 rounded-md">
-                    <label className="block text-sm font-medium text-blue-800 mb-2">
-                      Dosis Racikan
-                    </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Search className="h-4 w-4 text-gray-400" />
-                      </div>
-                      <input
-                        type="text"
-                        ref={el => racikanDosageInputRefs.current[prescIndex] = el}
-                        value={prescription.sharedDosage}
-                        onChange={(e) => handleRacikanDosageInputChange(prescIndex, e.target.value)}
-                        onFocus={() => setShowRacikanDosageSuggestions(prev => ({
-                          ...prev,
-                          [prescIndex]: true
-                        }))}
-                        className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="Cari atau masukkan dosis untuk racikan (contoh: 3 x sehari setelah makan)"
-                      />
-                    </div>
-
-                    {/* Dropdown for racikan dosage suggestions */}
-                    {showRacikanDosageSuggestions[prescIndex] && 
-                      filteredRacikanDosageSuggestions[prescIndex] && 
-                      filteredRacikanDosageSuggestions[prescIndex].length > 0 && (
-                      <div
-                        ref={el => racikanDosageDropdownRefs.current[prescIndex] = el}
-                        className="absolute z-10 mt-1 w-full max-w-md bg-white shadow-lg rounded-md border border-gray-200 max-h-48 overflow-y-auto"
-                      >
-                        {filteredRacikanDosageSuggestions[prescIndex].map((suggestion, index) => (
-                          <div
-                            key={index}
-                            onClick={() => handleSelectRacikanDosage(prescIndex, suggestion)}
-                            className="px-4 py-2 hover:bg-blue-50 cursor-pointer text-sm"
-                          >
-                            {suggestion}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Prescription notes */}
-                <div className="mt-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Catatan Tambahan Resep
-                  </label>
-                  <textarea
-                    value={prescription.notes}
-                    onChange={(e) =>
-                      handlePrescriptionNotesChange(prescIndex, e.target.value)
-                    }
-                    rows="2"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Catatan tambahan untuk apoteker (opsional)"
-                  />
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Buttons moved to bottom */}
-      <div className="flex items-center justify-center mt-6 space-x-3">
-        <button
-          type="button"
-          onClick={addRegularPrescription}
-          className="px-3 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm flex items-center shadow-sm"
-        >
-          <Plus className="h-4 w-4 mr-1" />
-          Tambah Resep Baru
-        </button>
-        <button
-          type="button"
-          onClick={addRacikanPrescription}
-          className="px-3 py-1.5 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors text-sm flex items-center shadow-sm"
-        >
-          <Plus className="h-4 w-4 mr-1" />
-          Tambah Racikan
-        </button>
-      </div>
-    </div>
-  );
-};
-
-export default PrescriptionsForm;
+tipe pembayaran diambil dari model screening. 

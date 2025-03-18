@@ -1,3 +1,4 @@
+//app/rekam-medis/[id]/page.jsx
 "use client";
 
 import React, { useState, useEffect, use } from "react";
@@ -15,9 +16,8 @@ import {
   Pill,
   Shield,
   Printer,
-  Eye,
-  Download,
   Clipboard,
+  Beaker,
 } from "lucide-react";
 import { toast } from "react-toastify";
 
@@ -96,9 +96,36 @@ export default function MedicalRecordView({ params }) {
       .join(" ");
   };
 
+  // Function to format blood pressure from systolic and diastolic values
+  const formatBloodPressure = (systolic, diastolic) => {
+    if (!systolic || !diastolic) return null;
+    return `${systolic}/${diastolic}`;
+  };
+
   // Print medical record
   const handlePrint = () => {
     window.print();
+  };
+
+  // Function to determine if a prescription is a compound prescription (racikan)
+  const isCompoundPrescription = (prescription) => {
+    return prescription.prescriptionType === "Racikan";
+  };
+
+  // Function to get translated prescription type
+  const getPrescriptionTypeLabel = (type) => {
+    switch (type) {
+      case "Main":
+        return "Utama";
+      case "Alternative":
+        return "Alternatif";
+      case "Follow-up":
+        return "Lanjutan";
+      case "Racikan":
+        return "Racikan";
+      default:
+        return type;
+    }
   };
 
   if (loading) {
@@ -276,13 +303,17 @@ export default function MedicalRecordView({ params }) {
                     </div>
                   )}
 
-                  {screening.bloodPressure && (
+                  {screening.systolicBP && screening.diastolicBP && (
                     <div>
                       <h4 className="text-xs font-medium text-gray-500">
                         Tekanan Darah
                       </h4>
                       <p className="text-sm font-medium">
-                        {screening.bloodPressure} mmHg
+                        {formatBloodPressure(
+                          screening.systolicBP,
+                          screening.diastolicBP
+                        )}{" "}
+                        mmHg
                       </p>
                     </div>
                   )}
@@ -330,6 +361,28 @@ export default function MedicalRecordView({ params }) {
                       </p>
                     </div>
                   )}
+
+                  {screening.oxygenSaturation && (
+                    <div>
+                      <h4 className="text-xs font-medium text-gray-500">
+                        Saturasi Oksigen
+                      </h4>
+                      <p className="text-sm font-medium">
+                        {screening.oxygenSaturation}%
+                      </p>
+                    </div>
+                  )}
+
+                  {screening.waistCircumference && (
+                    <div>
+                      <h4 className="text-xs font-medium text-gray-500">
+                        Lingkar Pinggang
+                      </h4>
+                      <p className="text-sm font-medium">
+                        {screening.waistCircumference} cm
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -353,24 +406,38 @@ export default function MedicalRecordView({ params }) {
                   >
                     <div className="flex items-center justify-between mb-3 border-b border-gray-200 pb-2">
                       <div className="flex items-center">
-                        <Clipboard className="h-4 w-4 text-blue-600 mr-2 print:text-gray-700" />
+                        {isCompoundPrescription(prescription) ? (
+                          <Beaker className="h-4 w-4 text-blue-600 mr-2 print:text-gray-700" />
+                        ) : (
+                          <Clipboard className="h-4 w-4 text-blue-600 mr-2 print:text-gray-700" />
+                        )}
                         <h4 className="font-medium text-gray-800">
                           Resep {idx + 1}
                           {prescription.prescriptionType && (
                             <span className="ml-2 text-sm text-gray-500">
                               (
-                              {prescription.prescriptionType === "Main"
-                                ? "Utama"
-                                : prescription.prescriptionType ===
-                                  "Alternative"
-                                ? "Alternatif"
-                                : "Lanjutan"}
+                              {getPrescriptionTypeLabel(
+                                prescription.prescriptionType
+                              )}
                               )
                             </span>
                           )}
                         </h4>
                       </div>
                     </div>
+
+                    {/* For compound prescriptions (Racikan), show the shared dosage */}
+                    {isCompoundPrescription(prescription) &&
+                      prescription.dosage && (
+                        <div className="mb-3 p-2 bg-blue-50 border border-blue-100 rounded">
+                          <h5 className="text-xs font-medium text-blue-800 mb-1">
+                            Dosis Racikan:
+                          </h5>
+                          <p className="text-sm text-blue-900">
+                            {prescription.dosage}
+                          </p>
+                        </div>
+                      )}
 
                     <div className="overflow-x-auto">
                       <table className="min-w-full divide-y divide-gray-200">
@@ -382,9 +449,11 @@ export default function MedicalRecordView({ params }) {
                             <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                               Nama Obat
                             </th>
-                            <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              Dosis
-                            </th>
+                            {!isCompoundPrescription(prescription) && (
+                              <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Dosis
+                              </th>
+                            )}
                             <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                               Jumlah
                             </th>
@@ -397,12 +466,13 @@ export default function MedicalRecordView({ params }) {
                                 {index + 1}
                               </td>
                               <td className="px-2 py-2 whitespace-nowrap text-sm font-medium text-gray-800">
-                                {item.manualDrugName ||
-                                  (item.drug && item.drug.name)}
+                                {item.manualDrugName}
                               </td>
-                              <td className="px-2 py-2 whitespace-nowrap text-sm text-gray-500">
-                                {item.dosage}
-                              </td>
+                              {!isCompoundPrescription(prescription) && (
+                                <td className="px-2 py-2 whitespace-nowrap text-sm text-gray-500">
+                                  {item.dosage}
+                                </td>
+                              )}
                               <td className="px-2 py-2 whitespace-nowrap text-sm text-gray-500">
                                 {item.quantity}
                               </td>
