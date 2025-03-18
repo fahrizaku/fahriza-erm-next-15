@@ -1,11 +1,11 @@
+// File: DoctorExaminationPage.jsx
 "use client";
-
 import React, { useState, use } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import { Loader2, AlertTriangle, Save } from "lucide-react";
 
-// Import komponen yang dipisahkan
+// Import components
 import BackNavigation from "./_components/BackNavigation";
 import PatientInfo from "./_components/PatientInfo";
 import ScreeningResults from "./_components/ScreeningResults";
@@ -33,10 +33,17 @@ export default function DoctorExaminationPage({ params }) {
     handlePrescriptionTypeChange,
     handlePrescriptionNotesChange,
     handlePrescriptionItemChange,
+    handleSharedDosageChange,
     addPrescriptionItem,
     removePrescriptionItem,
     addPrescription,
     removePrescription,
+    // New props for drug search
+    drugSearchQuery,
+    drugSearchResults,
+    isSearchingDrugs,
+    searchDrugs,
+    selectDrug,
   } = useDoctorExamination(id);
 
   const [submitting, setSubmitting] = useState(false);
@@ -61,9 +68,16 @@ export default function DoctorExaminationPage({ params }) {
       // Validate prescription items
       let hasValidPrescription = false;
       for (const prescription of prescriptions) {
+        const isRacikan = prescription.type === "Racikan";
+
+        // For racikan prescriptions, validate shared dosage
+        if (isRacikan && !prescription.sharedDosage) {
+          throw new Error("Dosis racikan harus diisi");
+        }
+
         if (prescription.items.length > 0) {
           const invalidItems = prescription.items.filter(
-            (item) => !item.manualDrugName || !item.dosage
+            (item) => !item.manualDrugName || (!isRacikan && !item.dosage)
           );
           if (invalidItems.length === 0) {
             hasValidPrescription = true;
@@ -83,17 +97,25 @@ export default function DoctorExaminationPage({ params }) {
         screeningId: parseInt(id),
         ...medicalRecord,
         prescriptions: prescriptions
-          .map((prescription) => ({
-            type: prescription.type,
-            notes: prescription.notes,
-            items: prescription.items
-              .filter((item) => item.manualDrugName && item.dosage)
-              .map((item) => ({
-                manualDrugName: item.manualDrugName,
-                dosage: item.dosage,
-                quantity: parseInt(item.quantity),
-              })),
-          }))
+          .map((prescription) => {
+            const isRacikan = prescription.type === "Racikan";
+
+            return {
+              type: prescription.type,
+              notes: prescription.notes,
+              dosage: isRacikan ? prescription.sharedDosage : null, // Only include dosage for racikan
+              items: prescription.items
+                .filter(
+                  (item) => item.manualDrugName && (isRacikan || item.dosage)
+                )
+                .map((item) => ({
+                  manualDrugName: item.manualDrugName,
+                  drugId: item.drugStoreProductId,
+                  dosage: isRacikan ? null : item.dosage, // Only include individual dosage for non-racikan
+                  quantity: parseInt(item.quantity),
+                })),
+            };
+          })
           .filter((prescription) => prescription.items.length > 0),
       };
 
@@ -180,13 +202,13 @@ export default function DoctorExaminationPage({ params }) {
         {/* Header */}
         <div className="p-5 md:p-6 border-b border-gray-200 bg-gray-50">
           <h1 className="text-xl font-bold text-gray-800 mb-1">
-            Pemeriksaan Dokter
+            Pemeriksaan oleh Dokter
           </h1>
           <p className="text-gray-600">Isi diagnosa dan resep untuk pasien</p>
         </div>
 
         {/* Patient info card */}
-        <PatientInfo patient={patient} />
+        <PatientInfo patient={patient} screening={screening} />
 
         {/* Screening summary */}
         <ScreeningResults screening={screening} />
@@ -210,16 +232,23 @@ export default function DoctorExaminationPage({ params }) {
               handleMedicalRecordChange={handleMedicalRecordChange}
             />
 
-            {/* Multiple Prescriptions section */}
+            {/* Multiple Prescriptions section with drug search */}
             <PrescriptionsForm
               prescriptions={prescriptions}
               handlePrescriptionTypeChange={handlePrescriptionTypeChange}
               handlePrescriptionNotesChange={handlePrescriptionNotesChange}
               handlePrescriptionItemChange={handlePrescriptionItemChange}
+              handleSharedDosageChange={handleSharedDosageChange}
               addPrescriptionItem={addPrescriptionItem}
               removePrescriptionItem={removePrescriptionItem}
               addPrescription={addPrescription}
               removePrescription={removePrescription}
+              // Pass the new drug search props
+              searchDrugs={searchDrugs}
+              drugSearchResults={drugSearchResults}
+              isSearchingDrugs={isSearchingDrugs}
+              selectDrug={selectDrug}
+              drugSearchQuery={drugSearchQuery}
             />
 
             {/* Doctor name */}
@@ -243,7 +272,7 @@ export default function DoctorExaminationPage({ params }) {
                 ) : (
                   <>
                     <Save className="h-4 w-4 mr-2" />
-                    <span>Simpan & Buat Rekam Medis</span>
+                    <span>Simpan & Teruskan ke Apoteker</span>
                   </>
                 )}
               </button>

@@ -110,29 +110,36 @@ export const prepareScreeningData = (screening, id, patient) => {
 
 // Submit screening data to API
 export const submitScreeningData = async (screeningData, setError, router) => {
-  const response = await fetch("/api/screenings", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(screeningData),
-  });
+  try {
+    const response = await fetch("/api/screenings", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(screeningData),
+    });
 
-  if (!response.ok) {
-    throw new Error(`HTTP error! status: ${response.status}`);
-  }
+    const data = await response.json();
 
-  const data = await response.json();
+    if (!response.ok) {
+      // Extract error message from the response
+      throw new Error(data.message || `HTTP error! status: ${response.status}`);
+    }
 
-  if (data.success) {
-    // Show success message
-    toast.success("Skrining pasien berhasil disimpan");
+    if (data.success) {
+      // Show success message
+      toast.success("Skrining pasien berhasil disimpan");
 
-    // Redirect to the queue page
-    router.push("/rawat-jalan/antrian");
-  } else {
-    setError(data.message || "Failed to save screening data");
-    toast.error(data.message || "Failed to save screening data");
+      // Redirect to the queue page
+      router.push("/rawat-jalan/antrian");
+    } else {
+      setError(data.message || "Failed to save screening data");
+      throw new Error(data.message || "Failed to save screening data");
+    }
+  } catch (error) {
+    // Just set the error and re-throw it, don't show toast here
+    setError(error.message);
+    throw error;
   }
 };
 

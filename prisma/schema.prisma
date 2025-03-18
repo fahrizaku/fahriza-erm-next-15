@@ -29,14 +29,6 @@ model Patient {
   medicalRecords  MedicalRecord[]
 }
 
-model PatientDouble {
-  id              Int       @id @default(autoincrement())
-  no_rm           Int       
-  name            String
-  address         String?
-}
-
-
 model DrugStoreProduct {
   id            Int         @id @default(autoincrement()) 
   name          String
@@ -50,8 +42,24 @@ model DrugStoreProduct {
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
 
-        // Relations
-  prescriptions PrescriptionItem[]
+  @@index([name])
+  @@index([category])
+  @@index([manufacturer])
+  @@index([expiryDate])
+}
+
+model DrugPrescription {
+  id            Int         @id @default(autoincrement()) 
+  name          String
+  category      String?
+  manufacturer  String?
+  purchasePrice Decimal?
+  price         Decimal
+  stock         Int
+  expiryDate    String?
+  unit          String
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
 
   @@index([name])
   @@index([category])
@@ -141,7 +149,8 @@ model Prescription {
   medicalRecord     MedicalRecord     @relation(fields: [medicalRecordId], references: [id])
   items             PrescriptionItem[]
   notes             String?           // Additional notes about the prescription
-  prescriptionType  String?           // Type of prescription (e.g., "Main", "Follow-up", "Alternative")
+  prescriptionType  String?           // Type of prescription (e.g., "Main", "Follow-up", "Alternative", "Racikan")
+  dosage            String?           // Shared dosage instruction for racikan prescriptions
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt
   
@@ -152,16 +161,13 @@ model PrescriptionItem {
   id                Int               @id @default(autoincrement())
   prescriptionId    Int
   prescription      Prescription      @relation(fields: [prescriptionId], references: [id])
-  drugId            Int?              // Optional if manual entry
-  drug              DrugStoreProduct?             @relation(fields: [drugId], references: [id])
   manualDrugName    String?           // For manual entry when drug not in system
-  dosage            String            // Dosage instructions (e.g., "1 tablet 3 times a day")
+  dosage            String?           // Individual dosage (only used for non-racikan prescriptions)
   quantity          Int
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt
   
   @@index([prescriptionId])
-  @@index([drugId])
 }
 
 // ICD-10 lookup table for diagnosis codes
@@ -169,6 +175,7 @@ model IcdCode {
   id                Int           @id @default(autoincrement())
   code              String        @unique
   description       String
+  version           String?
   
   @@index([code])
 }

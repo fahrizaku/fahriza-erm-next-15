@@ -44,7 +44,10 @@ export async function GET(request) {
           ...queue,
           patientName: screening?.patient?.name || "Unknown",
           noRM: screening?.patient?.no_rm || "N/A",
-          isBPJS: screening?.patient?.isBPJS || false,
+          gender: screening?.patient?.gender || "-",
+          birthDate: screening?.patient?.birthDate || null,
+          address: screening?.patient?.address || "-",
+          isBPJSActive: screening?.isBPJSActive || null,
         };
       })
     );

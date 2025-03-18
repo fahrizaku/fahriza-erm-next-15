@@ -32,7 +32,7 @@ export async function POST(request) {
       },
     });
 
-    // Handle prescriptions (now supporting multiple)
+    // Handle prescriptions (now supporting multiple and racikan type)
     if (
       data.prescriptions &&
       Array.isArray(data.prescriptions) &&
@@ -45,17 +45,23 @@ export async function POST(request) {
           continue; // Skip invalid prescription
         }
 
+        // Check if this is a racikan prescription
+        const isRacikan = prescriptionData.type === "Racikan";
+
         // Create prescription
         await db.prescription.create({
           data: {
             medicalRecordId: medicalRecord.id,
             notes: prescriptionData.notes || null,
             prescriptionType: prescriptionData.type || null,
+            // Add the dosage field for racikan prescriptions
+            dosage: isRacikan ? prescriptionData.dosage : null,
             items: {
               create: prescriptionData.items.map((item) => ({
                 manualDrugName: item.manualDrugName,
-                drugId: item.drugId || null,
-                dosage: item.dosage,
+                // For racikan items, don't store individual dosages
+                // For regular prescriptions, store dosage at item level
+                dosage: isRacikan ? null : item.dosage,
                 quantity: item.quantity,
               })),
             },
@@ -68,6 +74,7 @@ export async function POST(request) {
         data: {
           medicalRecordId: medicalRecord.id,
           notes: data.prescription.notes || null,
+          prescriptionType: data.prescription.type || "Main",
           items: {
             create: data.prescription.items.map((item) => ({
               manualDrugName: item.manualDrugName,
@@ -113,7 +120,7 @@ export async function POST(request) {
   }
 }
 
-// GET endpoint for retrieving all medical records
+// GET endpoint for retrieving all medical records - updated to include dosage field
 export async function GET(request) {
   try {
     // Membaca query parameters

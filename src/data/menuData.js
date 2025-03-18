@@ -40,11 +40,6 @@ const menuCategories = [
         icon: <UserPlus size={20} />, // Tetap menggunakan UserPlus untuk registrasi
         href: "/pasien/tambah",
       },
-      {
-        title: "Riwayat Kunjungan",
-        icon: <History size={20} />, // Tetap menggunakan UserPlus untuk registrasi
-        href: "/pasien/riwayat-kunjungan",
-      },
     ],
   },
   {
@@ -58,12 +53,12 @@ const menuCategories = [
       {
         title: "Laboratorium",
         icon: <Microscope size={20} />,
-        href: "/rawat-jalan/laboratorium",
+        href: "/laboratorium",
       },
       {
-        title: "Pemeriksaan",
+        title: "Doctor's Examination",
         icon: <Stethoscope size={20} />,
-        href: "/rawat-jalan/pemeriksaan",
+        href: "/rawat-jalan/pemeriksaan-dokter",
       },
     ],
   },

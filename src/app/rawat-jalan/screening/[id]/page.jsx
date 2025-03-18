@@ -1,3 +1,4 @@
+//app/rawat-jalan/screening/[id]/page.jsx
 "use client";
 
 import React, { useState, useEffect, use } from "react";
@@ -82,6 +83,8 @@ export default function ScreeningPage({ params }) {
     setScreening((prev) => ({
       ...prev,
       paymentMethod,
+      // Automatically set updatePatientBPJS to true when BPJS is selected for a non-BPJS patient
+      updatePatientBPJS: paymentMethod === "bpjs" && !patient?.isBPJS,
       isBPJSActive:
         paymentMethod === "bpjs" &&
         (prev.bpjsStatusVerified || !patient?.isBPJS),
@@ -90,6 +93,7 @@ export default function ScreeningPage({ params }) {
         ? {
             updatePatientBPJS: false,
             bpjsStatusVerified: false,
+            no_bpjs: "",
           }
         : {}),
     }));
