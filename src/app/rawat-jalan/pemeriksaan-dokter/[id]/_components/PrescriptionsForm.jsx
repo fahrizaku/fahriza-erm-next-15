@@ -1,6 +1,7 @@
-import React from "react";
-import { Pill, Plus, Clipboard, X } from "lucide-react";
+import React, { useRef, useEffect, useState } from "react";
+import { Pill, Plus, Clipboard, X, Search } from "lucide-react";
 import PrescriptionItem from "./PrescriptionItem";
+import { DOSAGE_SUGGESTIONS } from "@/data/dosis";
 
 const PrescriptionsForm = ({
   prescriptions,
@@ -19,6 +20,80 @@ const PrescriptionsForm = ({
   selectDrug,
   drugSearchQuery,
 }) => {
+  // Refs and state for racikan dosage suggestions
+  const [showRacikanDosageSuggestions, setShowRacikanDosageSuggestions] = useState({});
+  const [filteredRacikanDosageSuggestions, setFilteredRacikanDosageSuggestions] = useState({});
+  
+  const racikanDosageInputRefs = useRef({});
+  const racikanDosageDropdownRefs = useRef({});
+
+  // Initialize filteredRacikanDosageSuggestions for each prescription
+  useEffect(() => {
+    const initialSuggestions = {};
+    prescriptions.forEach((prescription, index) => {
+      if (prescription.type === "Racikan") {
+        initialSuggestions[index] = DOSAGE_SUGGESTIONS;
+      }
+    });
+    setFilteredRacikanDosageSuggestions(initialSuggestions);
+  }, [prescriptions.map(p => p.id).join(',')]);
+
+  // Handle click outside for racikan dosage dropdowns
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      prescriptions.forEach((prescription, index) => {
+        if (prescription.type === "Racikan") {
+          if (
+            racikanDosageDropdownRefs.current[index] &&
+            !racikanDosageDropdownRefs.current[index].contains(event.target) &&
+            racikanDosageInputRefs.current[index] &&
+            !racikanDosageInputRefs.current[index].contains(event.target)
+          ) {
+            setShowRacikanDosageSuggestions(prev => ({
+              ...prev,
+              [index]: false
+            }));
+          }
+        }
+      });
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [prescriptions]);
+
+  // Handle selecting a racikan dosage suggestion
+  const handleSelectRacikanDosage = (prescIndex, suggestion) => {
+    handleSharedDosageChange(prescIndex, suggestion);
+    setShowRacikanDosageSuggestions(prev => ({
+      ...prev,
+      [prescIndex]: false
+    }));
+  };
+
+  // Filter racikan dosage suggestions based on input
+  const handleRacikanDosageInputChange = (prescIndex, value) => {
+    handleSharedDosageChange(prescIndex, value);
+
+    // Filter suggestions based on input
+    const filtered = DOSAGE_SUGGESTIONS.filter((suggestion) =>
+      suggestion.toLowerCase().includes(value.toLowerCase())
+    );
+    
+    setFilteredRacikanDosageSuggestions(prev => ({
+      ...prev,
+      [prescIndex]: filtered
+    }));
+
+    // Show suggestions dropdown if we have input
+    setShowRacikanDosageSuggestions(prev => ({
+      ...prev,
+      [prescIndex]: true
+    }));
+  };
+
   const addRegularPrescription = () => {
     addPrescription("Main"); // Default type is "Main" (Utama)
   };
@@ -82,24 +157,6 @@ const PrescriptionsForm = ({
 
               {/* Prescription contents */}
               <div className="p-4">
-                {/* For racikan prescriptions, show a shared dosage field */}
-                {isRacikan && (
-                  <div className="mb-4 p-3 bg-blue-50 border border-blue-100 rounded-md">
-                    <label className="block text-sm font-medium text-blue-800 mb-2">
-                      Dosis Racikan
-                    </label>
-                    <input
-                      type="text"
-                      value={prescription.sharedDosage}
-                      onChange={(e) =>
-                        handleSharedDosageChange(prescIndex, e.target.value)
-                      }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="Dosis untuk semua obat dalam racikan ini (contoh: 3 x sehari setelah makan)"
-                    />
-                  </div>
-                )}
-
                 {/* Prescription items */}
                 <div className="space-y-4 mb-4">
                   {prescription.items.map((item, itemIndex) => (
@@ -126,15 +183,61 @@ const PrescriptionsForm = ({
                   ))}
                 </div>
 
-                {/* Add prescription item button */}
+                {/* Add prescription item button - ENHANCED VISIBILITY */}
                 <button
                   type="button"
                   onClick={() => addPrescriptionItem(prescIndex)}
-                  className="w-full py-2 border border-dashed border-gray-300 rounded-md text-gray-500 hover:text-gray-700 hover:border-gray-400 transition-colors text-sm flex items-center justify-center"
+                  className="w-full py-3 bg-blue-50 border border-blue-200 rounded-md text-blue-600 font-medium hover:bg-blue-100 hover:border-blue-300 transition-colors text-sm flex items-center justify-center shadow-sm"
                 >
-                  <Plus className="h-4 w-4 mr-1" />
+                  <Plus className="h-5 w-5 mr-2" />
                   <span>Tambah Obat</span>
                 </button>
+
+                {/* For racikan prescriptions, show a shared dosage field with suggestions (now placed after items) */}
+                {isRacikan && (
+                  <div className="mt-4 p-3 bg-blue-50 border border-blue-100 rounded-md">
+                    <label className="block text-sm font-medium text-blue-800 mb-2">
+                      Dosis Racikan
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Search className="h-4 w-4 text-gray-400" />
+                      </div>
+                      <input
+                        type="text"
+                        ref={el => racikanDosageInputRefs.current[prescIndex] = el}
+                        value={prescription.sharedDosage}
+                        onChange={(e) => handleRacikanDosageInputChange(prescIndex, e.target.value)}
+                        onFocus={() => setShowRacikanDosageSuggestions(prev => ({
+                          ...prev,
+                          [prescIndex]: true
+                        }))}
+                        className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Cari atau masukkan dosis untuk racikan (contoh: 3 x sehari setelah makan)"
+                      />
+                    </div>
+
+                    {/* Dropdown for racikan dosage suggestions */}
+                    {showRacikanDosageSuggestions[prescIndex] && 
+                      filteredRacikanDosageSuggestions[prescIndex] && 
+                      filteredRacikanDosageSuggestions[prescIndex].length > 0 && (
+                      <div
+                        ref={el => racikanDosageDropdownRefs.current[prescIndex] = el}
+                        className="absolute z-10 mt-1 w-full max-w-md bg-white shadow-lg rounded-md border border-gray-200 max-h-48 overflow-y-auto"
+                      >
+                        {filteredRacikanDosageSuggestions[prescIndex].map((suggestion, index) => (
+                          <div
+                            key={index}
+                            onClick={() => handleSelectRacikanDosage(prescIndex, suggestion)}
+                            className="px-4 py-2 hover:bg-blue-50 cursor-pointer text-sm"
+                          >
+                            {suggestion}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* Prescription notes */}
                 <div className="mt-4">

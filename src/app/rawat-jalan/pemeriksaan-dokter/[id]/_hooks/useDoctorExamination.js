@@ -223,12 +223,12 @@ export const useDoctorExamination = (screeningId) => {
     setPrescriptions(updatedPrescriptions);
   };
 
-  const addPrescription = () => {
+  const addPrescription = (type = "Main") => {
     setPrescriptions([
       ...prescriptions,
       {
         id: prescriptions.length + 1,
-        type: "Main",
+        type: type, // Menggunakan parameter type
         notes: "",
         sharedDosage: "",
         items: [
