@@ -59,7 +59,6 @@ export async function POST(request) {
             items: {
               create: prescriptionData.items.map((item) => ({
                 manualDrugName: item.manualDrugName,
-                drugId: item.drugId || null,
                 // For racikan items, don't store individual dosages
                 // For regular prescriptions, store dosage at item level
                 dosage: isRacikan ? null : item.dosage,

@@ -25,8 +25,10 @@ const PrescriptionItem = ({
   const dosageInputRef = useRef(null);
   const dosageDropdownRef = useRef(null);
 
-  // State to control dosage suggestions visibility
+  // State to control dropdowns visibility
   const [showDosageSuggestions, setShowDosageSuggestions] = useState(false);
+  const [showDrugSearchResults, setShowDrugSearchResults] = useState(false);
+
   // State to store filtered dosage suggestions
   const [filteredDosageSuggestions, setFilteredDosageSuggestions] =
     useState(DOSAGE_SUGGESTIONS);
@@ -40,7 +42,7 @@ const PrescriptionItem = ({
         inputRef.current &&
         !inputRef.current.contains(event.target)
       ) {
-        // Could use a state variable to control dropdown visibility if needed
+        setShowDrugSearchResults(false);
       }
     };
 
@@ -89,6 +91,24 @@ const PrescriptionItem = ({
     setShowDosageSuggestions(true);
   };
 
+  // Handle drug search
+  const handleDrugSearch = (query) => {
+    handlePrescriptionItemChange(
+      prescIndex,
+      itemIndex,
+      "manualDrugName",
+      query
+    );
+    searchDrugs(query);
+    setShowDrugSearchResults(true);
+  };
+
+  // Handle drug selection
+  const handleDrugSelection = (drug) => {
+    selectDrug(prescIndex, itemIndex, drug);
+    setShowDrugSearchResults(false);
+  };
+
   return (
     <div className="p-4 border border-gray-200 rounded-md bg-gray-50">
       <div className="flex justify-between items-start mb-3">
@@ -124,14 +144,11 @@ const PrescriptionItem = ({
               ref={inputRef}
               type="text"
               value={item.manualDrugName}
-              onChange={(e) => {
-                handlePrescriptionItemChange(
-                  prescIndex,
-                  itemIndex,
-                  "manualDrugName",
-                  e.target.value
-                );
-                searchDrugs(e.target.value);
+              onChange={(e) => handleDrugSearch(e.target.value)}
+              onFocus={() => {
+                if (drugSearchResults.length > 0 && item.manualDrugName) {
+                  setShowDrugSearchResults(true);
+                }
               }}
               className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Cari obat..."
@@ -144,7 +161,7 @@ const PrescriptionItem = ({
           </div>
 
           {/* Dropdown for drug search results */}
-          {drugSearchResults.length > 0 && (
+          {showDrugSearchResults && drugSearchResults.length > 0 && (
             <div
               ref={dropdownRef}
               className="absolute z-10 mt-1 w-full bg-white shadow-lg rounded-md border border-gray-200 max-h-48 overflow-y-auto"
@@ -152,7 +169,7 @@ const PrescriptionItem = ({
               {drugSearchResults.map((drug) => (
                 <div
                   key={drug.id}
-                  onClick={() => selectDrug(prescIndex, itemIndex, drug)}
+                  onClick={() => handleDrugSelection(drug)}
                   className="px-4 py-2 hover:bg-blue-50 cursor-pointer text-sm"
                 >
                   <div className="font-medium">{drug.displayName}</div>
@@ -162,7 +179,7 @@ const PrescriptionItem = ({
           )}
         </div>
 
-        {/* Dosage field - only shown for non-racikan prescriptions */}
+        {/* Dosage field - hidden for racikan prescriptions */}
         {!isRacikan ? (
           <div className="relative">
             <label className="block text-xs font-medium text-gray-700 mb-1">
@@ -201,20 +218,10 @@ const PrescriptionItem = ({
               </div>
             )}
           </div>
-        ) : (
-          // For racikan, show a read-only display of the shared dosage
-          <div className="relative">
-            <label className="block text-xs font-medium text-gray-700 mb-1">
-              Dosis
-            </label>
-            <div className="px-3 py-2 border border-gray-200 bg-gray-100 rounded-md text-gray-600 text-sm">
-              {sharedDosage || "Dosis racikan belum diisi"}
-            </div>
-          </div>
-        )}
+        ) : null}
 
-        {/* Quantity */}
-        <div className={isRacikan ? "md:col-span-1" : "md:col-span-2"}>
+        {/* Quantity - adjust column span based on whether it's racikan */}
+        <div className={isRacikan ? "md:col-span-1" : "md:col-span-1"}>
           <label className="block text-xs font-medium text-gray-700 mb-1">
             Jumlah
           </label>

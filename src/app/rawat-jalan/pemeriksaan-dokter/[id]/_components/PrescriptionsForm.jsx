@@ -19,21 +19,19 @@ const PrescriptionsForm = ({
   selectDrug,
   drugSearchQuery,
 }) => {
+  const addRegularPrescription = () => {
+    addPrescription("Main"); // Default type is "Main" (Utama)
+  };
+
+  const addRacikanPrescription = () => {
+    addPrescription("Racikan"); // Add a racikan type prescription
+  };
+
   return (
     <div className="mb-8">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center">
-          <Pill className="h-5 w-5 text-blue-600 mr-2" />
-          <h3 className="text-lg font-semibold text-gray-800">Resep Obat</h3>
-        </div>
-        <button
-          type="button"
-          onClick={addPrescription}
-          className="px-3 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm flex items-center shadow-sm"
-        >
-          <Plus className="h-4 w-4 mr-1" />
-          Tambah Resep Baru
-        </button>
+      <div className="flex items-center mb-4">
+        <Pill className="h-5 w-5 text-blue-600 mr-2" />
+        <h3 className="text-lg font-semibold text-gray-800">Resep Obat</h3>
       </div>
 
       {/* Multiple prescriptions */}
@@ -157,6 +155,26 @@ const PrescriptionsForm = ({
             </div>
           );
         })}
+      </div>
+
+      {/* Buttons moved to bottom */}
+      <div className="flex items-center justify-center mt-6 space-x-3">
+        <button
+          type="button"
+          onClick={addRegularPrescription}
+          className="px-3 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm flex items-center shadow-sm"
+        >
+          <Plus className="h-4 w-4 mr-1" />
+          Tambah Resep Baru
+        </button>
+        <button
+          type="button"
+          onClick={addRacikanPrescription}
+          className="px-3 py-1.5 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors text-sm flex items-center shadow-sm"
+        >
+          <Plus className="h-4 w-4 mr-1" />
+          Tambah Racikan
+        </button>
       </div>
     </div>
   );
