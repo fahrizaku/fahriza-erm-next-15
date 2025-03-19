@@ -171,7 +171,6 @@ model PrescriptionItem {
 model PharmacyQueue {
   id                Int               @id @default(autoincrement())
   medicalRecordId   Int               @unique
-  medicalRecord     MedicalRecord     @relation(fields: [medicalRecordId], references: [id])
   queueNumber       Int
   status            String            @default("waiting") // waiting, preparing, ready, dispensed
   pharmacistName    String?           // Name of the pharmacist handling the prescription
