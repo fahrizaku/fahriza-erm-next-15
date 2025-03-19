@@ -35,11 +35,6 @@ const menuCategories = [
         icon: <User size={20} />, // Mengubah ke icon Users untuk representasi semua pasien
         href: "/pasien",
       },
-      {
-        title: "Registrasi Pasien",
-        icon: <UserPlus size={20} />, // Tetap menggunakan UserPlus untuk registrasi
-        href: "/pasien/tambah",
-      },
     ],
   },
   {

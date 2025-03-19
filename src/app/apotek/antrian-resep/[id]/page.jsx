@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -15,7 +15,7 @@ import { toast } from "react-toastify";
 
 export default function PrescriptionDetailsPage({ params }) {
   const router = useRouter();
-  const { id } = params; // This is the medicalRecordId
+  const { id } = use(params); // This is the medicalRecordId
 
   const [loading, setLoading] = useState(true);
   const [prescription, setPrescription] = useState(null);
@@ -72,7 +72,7 @@ export default function PrescriptionDetailsPage({ params }) {
             <div className="text-red-500 text-xl">⚠️</div>
             <p className="mt-3 text-red-600">{error}</p>
             <button
-              onClick={() => router.push("/farmasi/antrian")}
+              onClick={() => router.push("/apotek/antrian-resep")}
               className="mt-4 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             >
               Kembali ke Antrian
@@ -91,7 +91,7 @@ export default function PrescriptionDetailsPage({ params }) {
             <div className="text-yellow-500 text-xl">⚠️</div>
             <p className="mt-3 text-gray-600">Data resep tidak ditemukan</p>
             <button
-              onClick={() => router.push("/farmasi/antrian")}
+              onClick={() => router.push("/apotek/antrian-resep")}
               className="mt-4 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             >
               Kembali ke Antrian
@@ -107,7 +107,7 @@ export default function PrescriptionDetailsPage({ params }) {
       {/* Back button */}
       <div className="mb-6">
         <Link
-          href="/farmasi/antrian"
+          href="/apotek/antrian-resep"
           className="inline-flex items-center text-blue-600 hover:text-blue-800 transition-colors font-medium"
         >
           <ChevronLeft className="h-5 w-5" />
@@ -284,7 +284,7 @@ export default function PrescriptionDetailsPage({ params }) {
         {/* Action buttons */}
         <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end">
           <button
-            onClick={() => router.push("/farmasi/antrian")}
+            onClick={() => router.push("/apotek/antrian-resep")}
             className="mr-3 inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
           >
             Kembali ke Antrian
@@ -315,7 +315,7 @@ export default function PrescriptionDetailsPage({ params }) {
 
                   if (data.success) {
                     toast.success(`Resep sedang disiapkan`);
-                    router.push("/farmasi/antrian");
+                    router.push("/apotek/antrian-resep");
                   } else {
                     toast.error(
                       data.message || "Failed to prepare prescription"
@@ -354,7 +354,7 @@ export default function PrescriptionDetailsPage({ params }) {
 
                   if (data.success) {
                     toast.success(`Resep siap diambil`);
-                    router.push("/farmasi/antrian");
+                    router.push("/apotek/antrian-resep");
                   } else {
                     toast.error(
                       data.message || "Failed to mark prescription as ready"
@@ -395,7 +395,7 @@ export default function PrescriptionDetailsPage({ params }) {
 
                   if (data.success) {
                     toast.success(`Resep telah diserahkan`);
-                    router.push("/farmasi/antrian");
+                    router.push("/apotek/antrian-resep");
                   } else {
                     toast.error(
                       data.message || "Failed to dispense prescription"
