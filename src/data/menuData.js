@@ -35,11 +35,6 @@ const menuCategories = [
         icon: <User size={20} />, // Mengubah ke icon Users untuk representasi semua pasien
         href: "/pasien",
       },
-      {
-        title: "Registrasi Pasien",
-        icon: <UserPlus size={20} />, // Tetap menggunakan UserPlus untuk registrasi
-        href: "/pasien/tambah",
-      },
     ],
   },
   {
@@ -65,11 +60,11 @@ const menuCategories = [
   {
     category: "Apotek",
     items: [
-      // {
-      //   title: "Resep",
-      //   icon: <FileText size={20} />,
-      //   href: "/apotek/resep",
-      // },
+      {
+        title: "Antrian Resep",
+        icon: <FileText size={20} />,
+        href: "/apotek/antrian-resep",
+      },
       // {
       //   title: "Transaksi",
       //   icon: <ShoppingCart size={20} />,

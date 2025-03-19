@@ -67,8 +67,6 @@ model DrugPrescription {
   @@index([expiryDate])
 }
 
-// New models for outpatient care flow
-
 // Screening model for initial patient assessment
 model Screening {
   id                Int           @id @default(autoincrement())
@@ -133,6 +131,7 @@ model MedicalRecord {
   
   // Relations
   prescriptions     Prescription[]  // Changed from Prescription? to Prescription[]
+  pharmacyQueue     PharmacyQueue?
   
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
@@ -168,6 +167,25 @@ model PrescriptionItem {
   updatedAt         DateTime          @updatedAt
   
   @@index([prescriptionId])
+}
+
+model PharmacyQueue {
+  id                Int               @id @default(autoincrement())
+  medicalRecordId   Int               @unique
+  medicalRecord     MedicalRecord     @relation(fields: [medicalRecordId], references: [id])
+  queueNumber       Int
+  status            String            @default("waiting") // waiting, preparing, ready, dispensed
+  pharmacistName    String?           // Name of the pharmacist handling the prescription
+  notes             String?           // Any special notes for the pharmacist
+  startedAt         DateTime?         // When preparation began
+  completedAt       DateTime?         // When preparation was completed
+  dispensedAt       DateTime?         // When medication was given to patient
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  
+  @@index([status])
+  @@index([createdAt])
+  @@index([queueNumber])
 }
 
 // ICD-10 lookup table for diagnosis codes

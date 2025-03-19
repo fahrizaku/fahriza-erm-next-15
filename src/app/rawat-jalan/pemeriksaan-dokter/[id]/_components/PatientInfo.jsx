@@ -32,51 +32,58 @@ const PatientInfo = ({ patient, screening }) => {
     return screening.isBPJSActive ? "BPJS" : "Umum";
   };
 
+  // Check if payment is BPJS
+  const isBPJS = () => {
+    return screening && screening.isBPJSActive;
+  };
+
   if (!patient) return null;
 
   return (
-    <div className="p-5 bg-blue-50 border-b border-blue-100">
-      {/* Name and Medical Record Number */}
-      <div className="flex flex-wrap items-center justify-between mb-2">
-        <div className="flex items-center">
-          <User className="h-5 w-5 text-blue-600 mr-2" />
-          <h2 className="text-lg font-semibold text-blue-800">
-            {capitalizeEachWord(patient.name)}
-          </h2>
-        </div>
-        <div className="flex items-center text-sm text-gray-600">
-          <FileText className="h-4 w-4 mr-1" />
-          <span>No. RM: </span>
-          <span className="font-mono ml-1 font-medium">{patient.no_rm}</span>
-        </div>
+    <div
+      className={`p-5 ${
+        isBPJS() ? "bg-green-50 border-green-100" : "bg-blue-50 border-blue-100"
+      } border-b`}
+    >
+      {/* Name */}
+      <div className="flex items-center mb-3">
+        <User className="h-5 w-5 text-blue-600 mr-2" />
+        <h2 className="text-lg font-semibold text-blue-800">
+          {capitalizeEachWord(patient.name)}
+        </h2>
       </div>
 
-      {/* Gender and Age */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-2">
+      {/* 1. Gender and Age */}
+      <div className="mb-2 ml-1">
         <div className="flex items-center text-sm text-gray-600">
           <Calendar className="h-4 w-4 mr-2 text-blue-500" />
           <span className="font-medium">{patient.gender || "N/A"}</span>
           <span className="mx-2">•</span>
           <span className="font-medium">{calculateAge(patient.birthDate)}</span>
         </div>
+      </div>
 
-        {/* Payment Type */}
-        <div className="flex items-center text-sm text-gray-600">
-          <CreditCard className="h-4 w-4 mr-2 text-blue-500" />
-          <span className="mr-1">Tipe Pembayaran:</span>
-          <span className="font-medium">
-            {getPaymentType()}
-            {screening && screening.isBPJSActive && patient.no_bpjs && (
-              <span className="ml-1 text-xs">({patient.no_bpjs})</span>
-            )}
-          </span>
+      {/* 2. Address */}
+      <div className="mb-2 ml-1">
+        <div className="flex items-start text-sm text-gray-600">
+          <MapPin className="h-4 w-4 mr-2 mt-0.5 text-blue-500" />
+          <span className="font-medium">{patient.address || "N/A"}</span>
         </div>
       </div>
 
-      {/* Address */}
-      <div className="flex items-start text-sm text-gray-600">
-        <MapPin className="h-4 w-4 mr-2 mt-0.5 text-blue-500" />
-        <span className="font-medium">{patient.address || "N/A"}</span>
+      {/* 3. Payment Type */}
+      <div className="ml-1">
+        <div className="flex items-center text-sm text-gray-600">
+          <CreditCard
+            className={`h-4 w-4 mr-2 ${
+              isBPJS() ? "text-green-500" : "text-blue-500"
+            }`}
+          />
+          <span className="mr-1">Tipe Pembayaran:</span>
+          <span className={`font-medium ${isBPJS() ? "text-green-700" : ""}`}>
+            {getPaymentType()}
+          </span>
+        </div>
       </div>
     </div>
   );
