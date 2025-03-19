@@ -1,4 +1,3 @@
-// /app/api/medical-records/route.js
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 
@@ -33,6 +32,7 @@ export async function POST(request) {
     });
 
     // Handle prescriptions (now supporting multiple and racikan type)
+    let hasPrescriptions = false;
     if (
       data.prescriptions &&
       Array.isArray(data.prescriptions) &&
@@ -67,6 +67,7 @@ export async function POST(request) {
             },
           },
         });
+        hasPrescriptions = true;
       }
     } else if (data.prescription) {
       // For backward compatibility - handle single prescription
@@ -83,6 +84,38 @@ export async function POST(request) {
               quantity: item.quantity,
             })),
           },
+        },
+      });
+      hasPrescriptions = true;
+    }
+
+    // Create pharmacy queue entry if there are prescriptions
+    let pharmacyQueueNumber = null;
+    if (hasPrescriptions) {
+      // Generate pharmacy queue number (get highest queue number for today + 1)
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const latestPharmacyQueue = await db.pharmacyQueue.findFirst({
+        where: {
+          createdAt: {
+            gte: today,
+          },
+        },
+        orderBy: {
+          queueNumber: "desc",
+        },
+      });
+
+      pharmacyQueueNumber = latestPharmacyQueue ? latestPharmacyQueue.queueNumber + 1 : 1;
+
+      // Create pharmacy queue entry
+      await db.pharmacyQueue.create({
+        data: {
+          medicalRecordId: medicalRecord.id,
+          queueNumber: pharmacyQueueNumber,
+          status: "waiting",
+          notes: data.pharmacyNotes || null,
         },
       });
     }
@@ -110,6 +143,8 @@ export async function POST(request) {
     return NextResponse.json({
       success: true,
       medicalRecordId: medicalRecord.id,
+      pharmacyQueueNumber: pharmacyQueueNumber,
+      pharmacyQueueCreated: hasPrescriptions,
     });
   } catch (error) {
     console.error("Error creating medical record:", error);

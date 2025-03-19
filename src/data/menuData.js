@@ -65,11 +65,11 @@ const menuCategories = [
   {
     category: "Apotek",
     items: [
-      // {
-      //   title: "Resep",
-      //   icon: <FileText size={20} />,
-      //   href: "/apotek/resep",
-      // },
+      {
+        title: "Antrian Resep",
+        icon: <FileText size={20} />,
+        href: "/apotek/antrian-resep",
+      },
       // {
       //   title: "Transaksi",
       //   icon: <ShoppingCart size={20} />,
