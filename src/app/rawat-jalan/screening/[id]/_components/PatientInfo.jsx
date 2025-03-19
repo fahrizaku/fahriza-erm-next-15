@@ -1,5 +1,5 @@
 import React from "react";
-import { User, FileText, MapPin, Calendar } from "lucide-react";
+import { User, FileText, MapPin } from "lucide-react";
 import { capitalizeEachWord } from "../_utils/helper-function";
 
 export default function PatientInfo({ patient }) {
