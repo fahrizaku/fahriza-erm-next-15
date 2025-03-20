@@ -4,8 +4,10 @@ import { db } from "@/lib/db";
 
 export async function GET(request, { params }) {
   try {
-    const medicalRecordId = parseInt(params.id);
-    
+    // Await params before accessing the id property
+    const resolvedParams = await params;
+    const medicalRecordId = parseInt(resolvedParams.id);
+
     // Get pharmacy queue and prescription details
     const queueItem = await db.pharmacyQueue.findUnique({
       where: { medicalRecordId },
@@ -15,21 +17,21 @@ export async function GET(request, { params }) {
             patient: true,
             prescriptions: {
               include: {
-                items: true
-              }
-            }
-          }
-        }
-      }
+                items: true,
+              },
+            },
+          },
+        },
+      },
     });
-    
+
     if (!queueItem) {
       return NextResponse.json(
         { success: false, message: "Prescription not found" },
         { status: 404 }
       );
     }
-    
+
     // Format data for the frontend
     const prescription = {
       id: queueItem.id,
@@ -49,25 +51,24 @@ export async function GET(request, { params }) {
       createdAt: queueItem.createdAt,
       updatedAt: queueItem.updatedAt,
       isBPJSActive: queueItem.medicalRecord.patient.isBPJS,
-      prescriptions: queueItem.medicalRecord.prescriptions.map(rx => ({
+      prescriptions: queueItem.medicalRecord.prescriptions.map((rx) => ({
         id: rx.id,
         prescriptionType: rx.prescriptionType,
         notes: rx.notes,
         dosage: rx.dosage, // For racikan prescriptions
-        items: rx.items.map(item => ({
+        items: rx.items.map((item) => ({
           id: item.id,
           manualDrugName: item.manualDrugName,
           dosage: item.dosage, // For regular prescriptions
-          quantity: item.quantity
-        }))
-      }))
+          quantity: item.quantity,
+        })),
+      })),
     };
-    
+
     return NextResponse.json({
       success: true,
-      prescription
+      prescription,
     });
-    
   } catch (error) {
     console.error("Error fetching prescription details:", error);
     return NextResponse.json(

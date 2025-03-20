@@ -5,20 +5,20 @@ export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status") || "all";
-    
+
     // Build query conditions
     const where = {};
     if (status !== "all") {
       where.status = status;
     }
-    
+
     // Get today's date for filtering (optional)
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
+
     // You could add date filtering if needed
     // where.createdAt = { gte: today };
-    
+
     // Fetch pharmacy queue with related data
     const queueData = await db.pharmacyQueue.findMany({
       where,
@@ -28,27 +28,26 @@ export async function GET(request) {
             patient: true,
             prescriptions: {
               include: {
-                items: true
-              }
-            }
-          }
-        }
+                items: true,
+              },
+            },
+          },
+        },
       },
-      orderBy: [
-        { status: "asc" },
-        { queueNumber: "asc" }
-      ]
+      orderBy: [{ status: "asc" }, { queueNumber: "asc" }],
     });
-    
+
     // Transform data for frontend
-    const formattedQueue = queueData.map(item => {
+    const formattedQueue = queueData.map((item) => {
       const patient = item.medicalRecord.patient;
       const prescriptions = item.medicalRecord.prescriptions;
-      
+
       // Count total prescription items
-      const itemCount = prescriptions.reduce((total, rx) => 
-        total + rx.items.length, 0);
-      
+      const itemCount = prescriptions.reduce(
+        (total, rx) => total + rx.items.length,
+        0
+      );
+
       return {
         id: item.id,
         medicalRecordId: item.medicalRecordId,
@@ -65,15 +64,14 @@ export async function GET(request) {
         createdAt: item.createdAt,
         updatedAt: item.updatedAt,
         prescriptionCount: prescriptions.length,
-        prescriptionItemCount: itemCount
+        prescriptionItemCount: itemCount,
       };
     });
-    
+
     return NextResponse.json({
       success: true,
-      queue: formattedQueue
+      queue: formattedQueue,
     });
-    
   } catch (error) {
     console.error("Error fetching pharmacy queue:", error);
     return NextResponse.json(
