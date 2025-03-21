@@ -57,7 +57,7 @@ export default function DoctorExaminationPage({ params }) {
 
     try {
       // Validate required fields
-      if (!medicalRecord.diagnosis) {
+      if (!medicalRecord.icdCode) {
         throw new Error("Diagnosis pasien harus diisi");
       }
 

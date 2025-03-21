@@ -21,10 +21,12 @@ export default function OutpatientQueuePage() {
   const [searchTerm, setSearchTerm] = useState("");
 
   // Fetch queue data
-  const fetchQueueData = async () => {
+  const fetchQueueData = async (isIntervalRefresh = false) => {
     try {
-      const isRefreshing = refreshing;
-      if (!isRefreshing) setLoading(true);
+      // Only set loading to true for initial load or manual refresh
+      if (!isIntervalRefresh) {
+        if (!refreshing) setLoading(true);
+      }
 
       const response = await fetch(`/api/outpatient/queue?status=${filter}`);
 
@@ -38,12 +40,14 @@ export default function OutpatientQueuePage() {
         setQueueList(data.queue);
       } else {
         setError(data.message || "Failed to fetch queue data");
-        toast.error(data.message || "Failed to fetch queue data");
+        if (!isIntervalRefresh) {
+          toast.error(data.message || "Failed to fetch queue data");
+        }
       }
     } catch (error) {
       console.error("Error fetching queue:", error);
       setError("An error occurred while fetching queue data");
-      if (!refreshing) {
+      if (!isIntervalRefresh) {
         toast.error("An error occurred while fetching queue data");
       }
     } finally {
@@ -53,13 +57,13 @@ export default function OutpatientQueuePage() {
   };
 
   useEffect(() => {
+    // Initial data fetch (with loading indicator)
     fetchQueueData();
 
-    // Set up interval to refresh data every 30 seconds
+    // Set up interval to refresh data every 30 seconds (without loading indicator)
     const interval = setInterval(() => {
-      setRefreshing(true);
-      fetchQueueData();
-    }, 30000);
+      fetchQueueData(true); // Pass true to indicate this is an interval refresh
+    }, 3000);
 
     return () => clearInterval(interval);
   }, [filter]);
@@ -67,7 +71,7 @@ export default function OutpatientQueuePage() {
   // Handle manual refresh
   const handleRefresh = () => {
     setRefreshing(true);
-    fetchQueueData();
+    fetchQueueData(false); // Pass false to show loading during manual refresh
   };
 
   // Handle calling a patient (only changes status to "called")

@@ -1,7 +1,16 @@
-import React from "react";
+import React, { useState } from "react";
+import { ChevronDown, ChevronUp } from "lucide-react";
 
 const ScreeningResults = ({ screening }) => {
+  const [showMore, setShowMore] = useState(false);
+
   if (!screening) return null;
+
+  // Format blood pressure from separate systolic and diastolic values
+  const bloodPressure =
+    screening.systolicBP && screening.diastolicBP
+      ? `${screening.systolicBP}/${screening.diastolicBP}`
+      : null;
 
   return (
     <div className="p-5 border-b border-gray-200 bg-gray-50">
@@ -16,37 +25,20 @@ const ScreeningResults = ({ screening }) => {
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          {screening.temperature && (
-            <div>
-              <h4 className="text-xs font-medium text-gray-500">Suhu</h4>
-              <p className="text-sm font-medium">{screening.temperature}°C</p>
-            </div>
-          )}
-
-          {screening.bloodPressure && (
+          {/* Always visible vital signs */}
+          {bloodPressure && (
             <div>
               <h4 className="text-xs font-medium text-gray-500">
                 Tekanan Darah
               </h4>
-              <p className="text-sm font-medium">
-                {screening.bloodPressure} mmHg
-              </p>
+              <p className="text-sm font-medium">{bloodPressure} mmHg</p>
             </div>
           )}
 
-          {screening.pulse && (
+          {screening.temperature && (
             <div>
-              <h4 className="text-xs font-medium text-gray-500">Denyut Nadi</h4>
-              <p className="text-sm font-medium">{screening.pulse} bpm</p>
-            </div>
-          )}
-
-          {screening.respiratoryRate && (
-            <div>
-              <h4 className="text-xs font-medium text-gray-500">Pernapasan</h4>
-              <p className="text-sm font-medium">
-                {screening.respiratoryRate} rpm
-              </p>
+              <h4 className="text-xs font-medium text-gray-500">Suhu</h4>
+              <p className="text-sm font-medium">{screening.temperature}°C</p>
             </div>
           )}
 
@@ -67,6 +59,68 @@ const ScreeningResults = ({ screening }) => {
           )}
         </div>
       </div>
+
+      {/* Show More/Less button */}
+      {(screening.pulse ||
+        screening.respiratoryRate ||
+        screening.waistCircumference ||
+        screening.oxygenSaturation) && (
+        <button
+          type="button"
+          onClick={() => setShowMore(!showMore)}
+          className="mt-4 flex items-center justify-center text-sm font-medium text-blue-600 hover:text-blue-800 focus:outline-none"
+        >
+          <span>{showMore ? "Sembunyikan" : "Tampilkan Lengkap"}</span>
+          {showMore ? (
+            <ChevronUp className="ml-1 h-4 w-4" />
+          ) : (
+            <ChevronDown className="ml-1 h-4 w-4" />
+          )}
+        </button>
+      )}
+
+      {/* Additional vital signs (hidden by default) */}
+      {showMore && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mt-4">
+          {screening.pulse && (
+            <div>
+              <h4 className="text-xs font-medium text-gray-500">Denyut Nadi</h4>
+              <p className="text-sm font-medium">{screening.pulse} bpm</p>
+            </div>
+          )}
+
+          {screening.respiratoryRate && (
+            <div>
+              <h4 className="text-xs font-medium text-gray-500">Pernapasan</h4>
+              <p className="text-sm font-medium">
+                {screening.respiratoryRate} rpm
+              </p>
+            </div>
+          )}
+
+          {screening.waistCircumference && (
+            <div>
+              <h4 className="text-xs font-medium text-gray-500">
+                Lingkar Pinggang
+              </h4>
+              <p className="text-sm font-medium">
+                {screening.waistCircumference} cm
+              </p>
+            </div>
+          )}
+
+          {screening.oxygenSaturation && (
+            <div>
+              <h4 className="text-xs font-medium text-gray-500">
+                Saturasi Oksigen
+              </h4>
+              <p className="text-sm font-medium">
+                {screening.oxygenSaturation}%
+              </p>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };
