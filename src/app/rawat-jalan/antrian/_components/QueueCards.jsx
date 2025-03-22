@@ -1,5 +1,4 @@
-// _components/QueueCards.js
-import React from "react";
+import React, { useState } from "react";
 import {
   Clock,
   User,
@@ -8,6 +7,7 @@ import {
   CheckCircle,
   CreditCard,
   MapPin,
+  Loader2,
 } from "lucide-react";
 
 export default function QueueCards({
@@ -15,6 +15,21 @@ export default function QueueCards({
   onCallPatient,
   onExaminePatient,
 }) {
+  // Track loading state for each button using screeningId as the key
+  const [loadingStates, setLoadingStates] = useState({});
+
+  const handleCallPatient = async (screeningId) => {
+    // Set loading state for this specific button
+    setLoadingStates((prev) => ({ ...prev, [screeningId]: true }));
+
+    try {
+      await onCallPatient(screeningId);
+    } finally {
+      // Clear loading state when operation completes (successful or not)
+      setLoadingStates((prev) => ({ ...prev, [screeningId]: false }));
+    }
+  };
+
   const getStatusBadge = (status) => {
     switch (status) {
       case "waiting":
@@ -55,15 +70,27 @@ export default function QueueCards({
   };
 
   const getActionButton = (item) => {
+    const isLoading = loadingStates[item.screeningId] === true;
+
     switch (item.status) {
       case "waiting":
         return (
           <button
-            onClick={() => onCallPatient(item.screeningId)}
-            className="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            onClick={() => handleCallPatient(item.screeningId)}
+            disabled={isLoading}
+            className="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-70 disabled:cursor-not-allowed"
           >
-            <PhoneCall className="w-3 h-3 mr-1" />
-            Panggil
+            {isLoading ? (
+              <>
+                <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                Memanggil...
+              </>
+            ) : (
+              <>
+                <PhoneCall className="w-3 h-3 mr-1" />
+                Panggil
+              </>
+            )}
           </button>
         );
       case "called":

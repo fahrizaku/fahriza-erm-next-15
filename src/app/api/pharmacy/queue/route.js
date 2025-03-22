@@ -17,7 +17,7 @@ export async function GET(request) {
     today.setHours(0, 0, 0, 0);
 
     // You could add date filtering if needed
-    // where.createdAt = { gte: today };
+    where.createdAt = { gte: today };
 
     // Fetch pharmacy queue with related data
     const queueData = await db.pharmacyQueue.findMany({

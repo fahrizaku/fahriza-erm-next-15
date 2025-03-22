@@ -2,8 +2,15 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { ChevronLeft, RefreshCcw, User, PhoneCall, Stethoscope, CreditCard, MapPin } from "lucide-react";
+import {
+  RefreshCcw,
+  User,
+  PhoneCall,
+  Stethoscope,
+  CreditCard,
+  MapPin,
+  Loader2,
+} from "lucide-react";
 import { toast } from "react-toastify";
 
 export default function RuangPemeriksaanPage() {
@@ -13,16 +20,27 @@ export default function RuangPemeriksaanPage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
+  // Track loading state for each button using screeningId as the key
+  const [buttonLoadingStates, setButtonLoadingStates] = useState({});
 
   // Fetch only patients with "called" or "in-progress" status
-  const fetchExaminationPatients = async () => {
+  const fetchExaminationPatients = async (isIntervalRefresh = false) => {
     try {
-      const isRefreshing = refreshing;
-      if (!isRefreshing) setLoading(true);
+      // Only set loading if it's initial load or manual refresh, not interval refresh
+      if (!isIntervalRefresh) {
+        if (refreshing) {
+          // For manual refresh, keep the refreshing state
+        } else {
+          // For initial load
+          setLoading(true);
+        }
+      }
 
       // Fetch both called and in-progress patients
       const calledResponse = await fetch("/api/outpatient/queue?status=called");
-      const inProgressResponse = await fetch("/api/outpatient/queue?status=in-progress");
+      const inProgressResponse = await fetch(
+        "/api/outpatient/queue?status=in-progress"
+      );
 
       if (!calledResponse.ok || !inProgressResponse.ok) {
         throw new Error(`HTTP error!`);
@@ -33,19 +51,18 @@ export default function RuangPemeriksaanPage() {
 
       if (calledData.success && inProgressData.success) {
         // Combine both types of patients
-        const combinedPatients = [
-          ...calledData.queue,
-          ...inProgressData.queue
-        ];
+        const combinedPatients = [...calledData.queue, ...inProgressData.queue];
         setPatientList(combinedPatients);
       } else {
         setError("Failed to fetch patient data");
-        toast.error("Failed to fetch patient data");
+        if (!isIntervalRefresh) {
+          toast.error("Failed to fetch patient data");
+        }
       }
     } catch (error) {
       console.error("Error fetching patients:", error);
       setError("An error occurred while fetching patient data");
-      if (!refreshing) {
+      if (!isIntervalRefresh) {
         toast.error("An error occurred while fetching patient data");
       }
     } finally {
@@ -55,13 +72,14 @@ export default function RuangPemeriksaanPage() {
   };
 
   useEffect(() => {
+    // Initial fetch when component mounts - show loading indicator
     fetchExaminationPatients();
 
     // Set up interval to refresh data every 30 seconds
     const interval = setInterval(() => {
-      setRefreshing(true);
-      fetchExaminationPatients();
-    }, 30000);
+      // Pass true to indicate this is an interval refresh - don't show loading
+      fetchExaminationPatients(true);
+    }, 3000);
 
     return () => clearInterval(interval);
   }, []);
@@ -69,11 +87,15 @@ export default function RuangPemeriksaanPage() {
   // Handle manual refresh
   const handleRefresh = () => {
     setRefreshing(true);
-    fetchExaminationPatients();
+    // Pass false to indicate this is a manual refresh - show refreshing indicator
+    fetchExaminationPatients(false);
   };
 
   // Handle examining a patient (change status to "in-progress" and redirect)
   const handleExaminePatient = async (screeningId) => {
+    // Set loading state for this specific button
+    setButtonLoadingStates((prev) => ({ ...prev, [screeningId]: true }));
+
     try {
       const response = await fetch(
         `/api/outpatient/queue/${screeningId}/examine`,
@@ -102,6 +124,9 @@ export default function RuangPemeriksaanPage() {
     } catch (error) {
       console.error("Error examining patient:", error);
       toast.error("An error occurred while examining patient");
+    } finally {
+      // Clear loading state when operation completes (successful or not)
+      setButtonLoadingStates((prev) => ({ ...prev, [screeningId]: false }));
     }
   };
 
@@ -151,25 +176,47 @@ export default function RuangPemeriksaanPage() {
 
   // Get action button based on status
   const getActionButton = (patient) => {
+    const isLoading = buttonLoadingStates[patient.screeningId] === true;
+
     switch (patient.status) {
       case "called":
         return (
           <button
             onClick={() => handleExaminePatient(patient.screeningId)}
-            className="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            disabled={isLoading}
+            className="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-70 disabled:cursor-not-allowed"
           >
-            <Stethoscope className="w-3 h-3 mr-1" />
-            Periksa
+            {isLoading ? (
+              <>
+                <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                Memproses...
+              </>
+            ) : (
+              <>
+                <Stethoscope className="w-3 h-3 mr-1" />
+                Periksa
+              </>
+            )}
           </button>
         );
       case "in-progress":
         return (
           <button
             onClick={() => handleExaminePatient(patient.screeningId)}
-            className="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            disabled={isLoading}
+            className="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-70 disabled:cursor-not-allowed"
           >
-            <Stethoscope className="w-3 h-3 mr-1" />
-            Lanjutkan
+            {isLoading ? (
+              <>
+                <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                Memproses...
+              </>
+            ) : (
+              <>
+                <Stethoscope className="w-3 h-3 mr-1" />
+                Lanjutkan
+              </>
+            )}
           </button>
         );
       default:
@@ -215,7 +262,7 @@ export default function RuangPemeriksaanPage() {
         return status;
     }
   };
-  
+
   // UI components for different states
   const LoadingState = ({ message }) => (
     <div className="flex flex-col items-center justify-center py-12">
@@ -229,9 +276,12 @@ export default function RuangPemeriksaanPage() {
       <div className="bg-gray-100 rounded-full p-4 mb-4">
         <PhoneCall className="h-8 w-8 text-gray-400" />
       </div>
-      <h3 className="text-lg font-medium text-gray-900 mb-1">Tidak ada pasien untuk diperiksa</h3>
+      <h3 className="text-lg font-medium text-gray-900 mb-1">
+        Tidak ada pasien untuk diperiksa
+      </h3>
       <p className="text-gray-500 text-center max-w-md">
-        Saat ini tidak ada pasien yang sudah dipanggil atau sedang dalam pemeriksaan.
+        Saat ini tidak ada pasien yang sudah dipanggil atau sedang dalam
+        pemeriksaan.
       </p>
     </div>
   );
@@ -239,11 +289,23 @@ export default function RuangPemeriksaanPage() {
   const ErrorState = ({ error }) => (
     <div className="flex flex-col items-center justify-center py-12">
       <div className="bg-red-100 rounded-full p-4 mb-4">
-        <svg className="h-8 w-8 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        <svg
+          className="h-8 w-8 text-red-500"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+          />
         </svg>
       </div>
-      <h3 className="text-lg font-medium text-gray-900 mb-1">Terjadi kesalahan</h3>
+      <h3 className="text-lg font-medium text-gray-900 mb-1">
+        Terjadi kesalahan
+      </h3>
       <p className="text-gray-500 text-center max-w-md">{error}</p>
     </div>
   );
@@ -252,14 +314,14 @@ export default function RuangPemeriksaanPage() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
-   
-
       {/* Main content */}
       <div className="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
         {/* Header */}
         <div className="px-6 py-4 bg-white border-b border-gray-200 flex justify-between items-center">
           <div>
-            <h2 className="text-lg font-medium text-gray-900">Ruang Pemeriksaan</h2>
+            <h2 className="text-lg font-medium text-gray-900">
+              Ruang Pemeriksaan
+            </h2>
             <p className="mt-1 text-sm text-gray-500">
               Pasien yang sudah dipanggil dan sedang dalam pemeriksaan
             </p>
@@ -308,9 +370,7 @@ export default function RuangPemeriksaanPage() {
                               {patient.patientName}
                             </h3>
                           </div>
-                          <div>
-                            {getStatusBadge(patient.status)}
-                          </div>
+                          <div>{getStatusBadge(patient.status)}</div>
                         </div>
 
                         <div className="p-3">
@@ -318,13 +378,16 @@ export default function RuangPemeriksaanPage() {
                             <div className="flex items-center">
                               <User className="h-4 w-4 text-gray-500 mr-2" />
                               <p>
-                                {patient.gender || "N/A"} · {calculateAge(patient.birthDate)} tahun
+                                {patient.gender || "N/A"} ·{" "}
+                                {calculateAge(patient.birthDate)} tahun
                               </p>
                             </div>
 
                             <div className="flex items-start">
                               <MapPin className="h-4 w-4 text-gray-500 mr-2 mt-0.5" />
-                              <p className="line-clamp-2">{patient.address || "N/A"}</p>
+                              <p className="line-clamp-2">
+                                {patient.address || "N/A"}
+                              </p>
                             </div>
 
                             <div className="flex items-center">
@@ -338,7 +401,9 @@ export default function RuangPemeriksaanPage() {
                                     BPJS
                                   </span>
                                 ) : (
-                                  <span className="ml-1 font-medium text-gray-900">Umum</span>
+                                  <span className="ml-1 font-medium text-gray-900">
+                                    Umum
+                                  </span>
                                 )}
                               </div>
                             </div>

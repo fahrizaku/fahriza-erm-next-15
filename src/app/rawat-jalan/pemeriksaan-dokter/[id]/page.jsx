@@ -139,7 +139,8 @@ export default function DoctorExaminationPage({ params }) {
         toast.success("Rekam medis berhasil disimpan");
 
         // Redirect to medical record view
-        router.push(`/rekam-medis/${data.medicalRecordId}`);
+        // router.push(`/rekam-medis/${data.medicalRecordId}`);
+        router.push(`/rawat-jalan/pemeriksaan-dokter`);
       } else {
         setFormError(data.message || "Failed to save medical record");
         toast.error(data.message || "Failed to save medical record");
