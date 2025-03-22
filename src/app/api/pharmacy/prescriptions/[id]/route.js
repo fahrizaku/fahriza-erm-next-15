@@ -15,6 +15,7 @@ export async function GET(request, { params }) {
         medicalRecord: {
           include: {
             patient: true,
+            screening: true,
             prescriptions: {
               include: {
                 items: true,
@@ -50,7 +51,10 @@ export async function GET(request, { params }) {
       notes: queueItem.notes,
       createdAt: queueItem.createdAt,
       updatedAt: queueItem.updatedAt,
-      isBPJSActive: queueItem.medicalRecord.patient.isBPJS,
+      isBPJSActive: queueItem.medicalRecord.screening.isBPJSActive,
+      paymentType: queueItem.medicalRecord.screening.isBPJSActive
+        ? "BPJS"
+        : "Umum",
       prescriptions: queueItem.medicalRecord.prescriptions.map((rx) => ({
         id: rx.id,
         prescriptionType: rx.prescriptionType,

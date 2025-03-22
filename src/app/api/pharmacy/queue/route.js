@@ -26,6 +26,7 @@ export async function GET(request) {
         medicalRecord: {
           include: {
             patient: true,
+            screening: true, // Include the screening to access isBPJSActive
             prescriptions: {
               include: {
                 items: true,
@@ -40,6 +41,7 @@ export async function GET(request) {
     // Transform data for frontend
     const formattedQueue = queueData.map((item) => {
       const patient = item.medicalRecord.patient;
+      const screening = item.medicalRecord.screening;
       const prescriptions = item.medicalRecord.prescriptions;
 
       // Count total prescription items
@@ -57,7 +59,7 @@ export async function GET(request) {
         patientName: patient.name,
         birthDate: patient.birthDate,
         gender: patient.gender,
-        isBPJSActive: patient.isBPJS,
+        isBPJSActive: screening?.isBPJSActive || false, // Get from screening instead of patient
         diagnosis: item.medicalRecord.diagnosis,
         pharmacistName: item.pharmacistName,
         notes: item.notes,

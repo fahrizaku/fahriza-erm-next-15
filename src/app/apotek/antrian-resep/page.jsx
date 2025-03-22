@@ -19,12 +19,21 @@ export default function PharmacyQueuePage() {
   const [error, setError] = useState(null);
   const [filter, setFilter] = useState("all"); // waiting, preparing, ready, dispensed
   const [searchTerm, setSearchTerm] = useState("");
+  // Add loading state tracking for buttons
+  const [processingId, setProcessingId] = useState(null);
 
   // Fetch queue data
-  const fetchQueueData = async () => {
+  const fetchQueueData = async (
+    isInitialLoad = false,
+    isManualRefresh = false
+  ) => {
     try {
-      const isRefreshing = refreshing;
-      if (!isRefreshing) setLoading(true);
+      // Only set loading to true on initial load or manual refresh
+      if (isInitialLoad) {
+        setLoading(true);
+      } else if (isManualRefresh) {
+        setRefreshing(true);
+      }
 
       const response = await fetch(`/api/pharmacy/queue?status=${filter}`);
 
@@ -38,12 +47,14 @@ export default function PharmacyQueuePage() {
         setQueueList(data.queue);
       } else {
         setError(data.message || "Failed to fetch queue data");
-        toast.error(data.message || "Failed to fetch queue data");
+        if (isInitialLoad || isManualRefresh) {
+          toast.error(data.message || "Failed to fetch queue data");
+        }
       }
     } catch (error) {
       console.error("Error fetching queue:", error);
       setError("An error occurred while fetching queue data");
-      if (!refreshing) {
+      if (isInitialLoad || isManualRefresh) {
         toast.error("An error occurred while fetching queue data");
       }
     } finally {
@@ -53,26 +64,29 @@ export default function PharmacyQueuePage() {
   };
 
   useEffect(() => {
-    fetchQueueData();
+    // Initial load
+    fetchQueueData(true, false);
 
     // Set up interval to refresh data every 30 seconds
+    // This will not show loading indicators
     const interval = setInterval(() => {
-      setRefreshing(true);
-      fetchQueueData();
-    }, 30000);
+      fetchQueueData(false, false);
+    }, 3000);
 
     return () => clearInterval(interval);
   }, [filter]);
 
-  // Handle manual refresh
+  // Handle manual refresh - will show the refreshing indicator
   const handleRefresh = () => {
-    setRefreshing(true);
-    fetchQueueData();
+    fetchQueueData(false, true);
   };
 
-  // Handle preparing a prescription
-  const handlePrepareRx = async (medicalRecordId) => {
+  // Handle preparing a prescription - modified to accept pharmacist name
+  const handlePrepareRx = async (medicalRecordId, pharmacistName) => {
     try {
+      // Set processing state
+      setProcessingId(medicalRecordId);
+
       const response = await fetch(
         `/api/pharmacy/queue/${medicalRecordId}/prepare`,
         {
@@ -81,7 +95,7 @@ export default function PharmacyQueuePage() {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            pharmacistName: "Apoteker", // You might want to get this from a form or context
+            pharmacistName: pharmacistName, // Use passed pharmacist name
           }),
         }
       );
@@ -97,24 +111,33 @@ export default function PharmacyQueuePage() {
         setQueueList(
           queueList.map((item) =>
             item.medicalRecordId === medicalRecordId
-              ? { ...item, status: "preparing", pharmacistName: "Apoteker" }
+              ? { ...item, status: "preparing", pharmacistName: pharmacistName }
               : item
           )
         );
 
         toast.success(`Resep pasien ${data.patientName} sedang disiapkan`);
+        return data; // Return data for further processing
       } else {
         toast.error(data.message || "Failed to prepare prescription");
+        throw new Error(data.message || "Failed to prepare prescription");
       }
     } catch (error) {
       console.error("Error preparing prescription:", error);
       toast.error("An error occurred while preparing prescription");
+      throw error; // Re-throw to handle in the caller
+    } finally {
+      // Clear processing state
+      setProcessingId(null);
     }
   };
 
   // Handle marking a prescription as ready
   const handleReadyRx = async (medicalRecordId) => {
     try {
+      // Set processing state
+      setProcessingId(medicalRecordId);
+
       const response = await fetch(
         `/api/pharmacy/queue/${medicalRecordId}/ready`,
         {
@@ -148,12 +171,18 @@ export default function PharmacyQueuePage() {
     } catch (error) {
       console.error("Error marking prescription as ready:", error);
       toast.error("An error occurred while marking prescription as ready");
+    } finally {
+      // Clear processing state
+      setProcessingId(null);
     }
   };
 
   // Handle dispensing a prescription
   const handleDispenseRx = async (medicalRecordId) => {
     try {
+      // Set processing state
+      setProcessingId(medicalRecordId);
+
       const response = await fetch(
         `/api/pharmacy/queue/${medicalRecordId}/dispense`,
         {
@@ -187,6 +216,9 @@ export default function PharmacyQueuePage() {
     } catch (error) {
       console.error("Error dispensing prescription:", error);
       toast.error("An error occurred while dispensing prescription");
+    } finally {
+      // Clear processing state
+      setProcessingId(null);
     }
   };
 
@@ -261,7 +293,7 @@ export default function PharmacyQueuePage() {
       <div className="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
         {/* Header */}
         <QueueHeader
-          title="Antrian Farmasi"
+          title="Antrian Farmasi Hari ini"
           subtitle="Kelola antrian resep pasien setelah pemeriksaan dokter"
           onRefresh={handleRefresh}
           refreshing={refreshing}
@@ -308,6 +340,7 @@ export default function PharmacyQueuePage() {
                     onPrepareRx={handlePrepareRx}
                     onReadyRx={handleReadyRx}
                     onDispenseRx={handleDispenseRx}
+                    processingId={processingId}
                     router={router}
                   />
                 </div>

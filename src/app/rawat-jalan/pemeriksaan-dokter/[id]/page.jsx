@@ -56,9 +56,9 @@ export default function DoctorExaminationPage({ params }) {
     setFormError(null);
 
     try {
-      // Validate required fields
-      if (!medicalRecord.icdCode) {
-        throw new Error("Diagnosis pasien harus diisi");
+      // Updated validation: Either ICD code or manual diagnosis must be provided
+      if (!medicalRecord.icdCode && !medicalRecord.diagnosis) {
+        throw new Error("Diagnosis pasien harus diisi (ICD code atau manual)");
       }
 
       if (!medicalRecord.doctorName) {
@@ -103,7 +103,7 @@ export default function DoctorExaminationPage({ params }) {
             return {
               type: prescription.type,
               notes: prescription.notes,
-              dosage: isRacikan ? prescription.sharedDosage : null, // Only include dosage for racikan
+              dosage: isRacikan ? prescription.sharedDosage : null,
               items: prescription.items
                 .filter(
                   (item) => item.manualDrugName && (isRacikan || item.dosage)
@@ -111,7 +111,7 @@ export default function DoctorExaminationPage({ params }) {
                 .map((item) => ({
                   manualDrugName: item.manualDrugName,
                   drugId: item.drugStoreProductId,
-                  dosage: isRacikan ? null : item.dosage, // Only include individual dosage for non-racikan
+                  dosage: isRacikan ? null : item.dosage,
                   quantity: parseInt(item.quantity),
                 })),
             };

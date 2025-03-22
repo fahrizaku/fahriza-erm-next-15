@@ -71,7 +71,7 @@ const DiagnosisForm = ({
       {/* ICD-10 search */}
       <div className="mb-4 relative">
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          Diagnosis
+          ICD-10 Code (Opsional jika diagnosis manual diisi)
         </label>
         <div className="flex">
           <input
@@ -147,7 +147,7 @@ const DiagnosisForm = ({
       {/* Manual diagnosis input */}
       <div className="mb-4">
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          Diagnosis Manual
+          Diagnosis Manual (Wajib jika ICD code tidak diisi)
         </label>
         <textarea
           name="diagnosis"

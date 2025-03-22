@@ -10,6 +10,8 @@ import {
   Calendar,
   Pill,
   Clock,
+  Loader2,
+  CreditCard,
 } from "lucide-react";
 import { toast } from "react-toastify";
 
@@ -20,6 +22,7 @@ export default function PrescriptionDetailsPage({ params }) {
   const [loading, setLoading] = useState(true);
   const [prescription, setPrescription] = useState(null);
   const [error, setError] = useState(null);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
     async function fetchPrescriptionDetails() {
@@ -50,6 +53,80 @@ export default function PrescriptionDetailsPage({ params }) {
 
     fetchPrescriptionDetails();
   }, [id]);
+
+  const handleMarkAsReady = async () => {
+    try {
+      setIsProcessing(true);
+      const response = await fetch(
+        `/api/pharmacy/queue/${prescription.medicalRecordId}/ready`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Update the prescription state locally instead of redirecting
+        setPrescription({
+          ...prescription,
+          status: "ready",
+        });
+        toast.success(`Resep siap diambil`);
+      } else {
+        toast.error(data.message || "Failed to mark prescription as ready");
+      }
+    } catch (error) {
+      console.error("Error marking prescription as ready:", error);
+      toast.error("An error occurred while marking prescription as ready");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleDispense = async () => {
+    try {
+      setIsProcessing(true);
+      const response = await fetch(
+        `/api/pharmacy/queue/${prescription.medicalRecordId}/dispense`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Update the prescription state locally
+        setPrescription({
+          ...prescription,
+          status: "dispensed",
+        });
+        toast.success(`Resep telah diserahkan`);
+      } else {
+        toast.error(data.message || "Failed to dispense prescription");
+      }
+    } catch (error) {
+      console.error("Error dispensing prescription:", error);
+      toast.error("An error occurred while dispensing prescription");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -102,6 +179,53 @@ export default function PrescriptionDetailsPage({ params }) {
     );
   }
 
+  const getStatusBadge = (status) => {
+    switch (status) {
+      case "preparing":
+        return (
+          <div className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+            <Clock className="w-4 h-4 mr-1" />
+            Sedang Disiapkan
+          </div>
+        );
+      case "ready":
+        return (
+          <div className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-indigo-100 text-indigo-800">
+            <Clock className="w-4 h-4 mr-1" />
+            Siap Diambil
+          </div>
+        );
+      case "dispensed":
+        return (
+          <div className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+            <Clock className="w-4 h-4 mr-1" />
+            Telah Diserahkan
+          </div>
+        );
+      default:
+        return (
+          <div className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
+            <Clock className="w-4 h-4 mr-1" />
+            Menunggu
+          </div>
+        );
+    }
+  };
+
+  const getPaymentTypeBadge = (isBPJSActive) => {
+    return isBPJSActive ? (
+      <div className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+        <CreditCard className="w-4 h-4 mr-1" />
+        BPJS
+      </div>
+    ) : (
+      <div className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-orange-100 text-orange-800">
+        <CreditCard className="w-4 h-4 mr-1" />
+        Umum
+      </div>
+    );
+  };
+
   return (
     <div className="max-w-6xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
       {/* Back button */}
@@ -128,9 +252,10 @@ export default function PrescriptionDetailsPage({ params }) {
                 Informasi resep dan obat pasien
               </p>
             </div>
-            <div className="mt-3 md:mt-0 flex items-center">
-              <div className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
-                <Clock className="w-4 h-4 mr-1" />
+            <div className="mt-3 md:mt-0 flex flex-wrap items-center gap-2">
+              {getStatusBadge(prescription.status)}
+              {getPaymentTypeBadge(prescription.isBPJSActive)}
+              <div className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800">
                 Nomor Antrian: {prescription.queueNumber}
               </div>
             </div>
@@ -186,6 +311,15 @@ export default function PrescriptionDetailsPage({ params }) {
                   </p>
                 </div>
               </div>
+              {prescription.pharmacistName && (
+                <div className="flex items-center">
+                  <User className="h-5 w-5 text-gray-500 mr-2" />
+                  <div>
+                    <p className="text-sm text-gray-500">Petugas Farmasi</p>
+                    <p className="font-medium">{prescription.pharmacistName}</p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -290,127 +424,37 @@ export default function PrescriptionDetailsPage({ params }) {
             Kembali ke Antrian
           </button>
 
-          {prescription.status === "waiting" && (
-            <button
-              onClick={async () => {
-                try {
-                  const response = await fetch(
-                    `/api/pharmacy/queue/${prescription.medicalRecordId}/prepare`,
-                    {
-                      method: "PUT",
-                      headers: {
-                        "Content-Type": "application/json",
-                      },
-                      body: JSON.stringify({
-                        pharmacistName: "Apoteker", // You might want to get this from a form
-                      }),
-                    }
-                  );
-
-                  if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                  }
-
-                  const data = await response.json();
-
-                  if (data.success) {
-                    toast.success(`Resep sedang disiapkan`);
-                    router.push("/apotek/antrian-resep");
-                  } else {
-                    toast.error(
-                      data.message || "Failed to prepare prescription"
-                    );
-                  }
-                } catch (error) {
-                  console.error("Error preparing prescription:", error);
-                  toast.error("An error occurred while preparing prescription");
-                }
-              }}
-              className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-            >
-              Siapkan Resep
-            </button>
-          )}
-
           {prescription.status === "preparing" && (
             <button
-              onClick={async () => {
-                try {
-                  const response = await fetch(
-                    `/api/pharmacy/queue/${prescription.medicalRecordId}/ready`,
-                    {
-                      method: "PUT",
-                      headers: {
-                        "Content-Type": "application/json",
-                      },
-                    }
-                  );
-
-                  if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                  }
-
-                  const data = await response.json();
-
-                  if (data.success) {
-                    toast.success(`Resep siap diambil`);
-                    router.push("/apotek/antrian-resep");
-                  } else {
-                    toast.error(
-                      data.message || "Failed to mark prescription as ready"
-                    );
-                  }
-                } catch (error) {
-                  console.error("Error marking prescription as ready:", error);
-                  toast.error(
-                    "An error occurred while marking prescription as ready"
-                  );
-                }
-              }}
-              className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              onClick={handleMarkAsReady}
+              disabled={isProcessing}
+              className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-indigo-400 disabled:cursor-not-allowed"
             >
-              Tandai Siap Diambil
+              {isProcessing ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Memproses...
+                </>
+              ) : (
+                "Tandai Siap Diambil"
+              )}
             </button>
           )}
 
           {prescription.status === "ready" && (
             <button
-              onClick={async () => {
-                try {
-                  const response = await fetch(
-                    `/api/pharmacy/queue/${prescription.medicalRecordId}/dispense`,
-                    {
-                      method: "PUT",
-                      headers: {
-                        "Content-Type": "application/json",
-                      },
-                    }
-                  );
-
-                  if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                  }
-
-                  const data = await response.json();
-
-                  if (data.success) {
-                    toast.success(`Resep telah diserahkan`);
-                    router.push("/apotek/antrian-resep");
-                  } else {
-                    toast.error(
-                      data.message || "Failed to dispense prescription"
-                    );
-                  }
-                } catch (error) {
-                  console.error("Error dispensing prescription:", error);
-                  toast.error(
-                    "An error occurred while dispensing prescription"
-                  );
-                }
-              }}
-              className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+              onClick={handleDispense}
+              disabled={isProcessing}
+              className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:bg-green-400 disabled:cursor-not-allowed"
             >
-              Serahkan Resep
+              {isProcessing ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Memproses...
+                </>
+              ) : (
+                "Serahkan Resep"
+              )}
             </button>
           )}
         </div>
