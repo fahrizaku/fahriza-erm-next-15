@@ -171,27 +171,36 @@ export default function PharmacyQueueCards({
         );
       case "ready":
         return (
-          <button
-            onClick={handleClick(onDispenseRx, item.medicalRecordId)}
-            disabled={isLoading}
-            className={`${baseButtonClasses} ${
-              isLoading
-                ? "bg-green-400 text-white cursor-not-allowed"
-                : "text-white bg-green-600 hover:bg-green-700 focus:ring-green-500"
-            }`}
-          >
-            {isLoading ? (
-              <>
-                <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                Menyerahkan...
-              </>
-            ) : (
-              <>
-                <CheckCircle className="w-3 h-3 mr-1" />
-                Serahkan
-              </>
-            )}
-          </button>
+          <div className="flex space-x-2">
+            <button
+              onClick={(e) => handleViewDetailClick(e, item.medicalRecordId)}
+              className={`${baseButtonClasses} text-indigo-700 bg-indigo-100 hover:bg-indigo-200 focus:ring-indigo-500`}
+            >
+              <Eye className="w-3 h-3 mr-1" />
+              Lihat Detail
+            </button>
+            <button
+              onClick={handleClick(onDispenseRx, item.medicalRecordId)}
+              disabled={isLoading}
+              className={`${baseButtonClasses} ${
+                isLoading
+                  ? "bg-green-400 text-white cursor-not-allowed"
+                  : "text-white bg-green-600 hover:bg-green-700 focus:ring-green-500"
+              }`}
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                  Menyerahkan...
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="w-3 h-3 mr-1" />
+                  Serahkan
+                </>
+              )}
+            </button>
+          </div>
         );
       case "dispensed":
         return (

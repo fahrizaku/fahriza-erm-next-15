@@ -35,6 +35,11 @@ const menuCategories = [
         icon: <User size={20} />, // Mengubah ke icon Users untuk representasi semua pasien
         href: "/pasien",
       },
+      {
+        title: "Riwayat Kunjungan",
+        icon: <History size={20} />, // Menggunakan ikon History untuk riwayat kunjungan
+        href: "/pasien/riwayat-kunjungan",
+      },
     ],
   },
   {
