@@ -242,7 +242,7 @@ export default function PrescriptionDetailsPage({ params }) {
       {/* Main content */}
       <div className="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
         {/* Header */}
-        <div className="px-6 py-5 border-b border-gray-200 bg-gray-50">
+        <div className="px-4 sm:px-6 py-5 border-b border-gray-200 bg-gray-50">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between">
             <div>
               <h1 className="text-xl font-semibold text-gray-900">
@@ -252,7 +252,9 @@ export default function PrescriptionDetailsPage({ params }) {
                 Informasi resep dan obat pasien
               </p>
             </div>
-            <div className="mt-3 md:mt-0 flex flex-wrap items-center gap-2">
+
+            {/* Status badges - Stacked on mobile */}
+            <div className="mt-3 md:mt-0 flex flex-wrap gap-2">
               {getStatusBadge(prescription.status)}
               {getPaymentTypeBadge(prescription.isBPJSActive)}
               <div className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800">
@@ -263,21 +265,21 @@ export default function PrescriptionDetailsPage({ params }) {
         </div>
 
         {/* Patient Info */}
-        <div className="px-6 py-4 border-b border-gray-200">
+        <div className="px-4 sm:px-6 py-4 border-b border-gray-200">
           <h2 className="text-lg font-medium text-gray-900 mb-3">
             Informasi Pasien
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <div className="flex items-center">
-                <User className="h-5 w-5 text-gray-500 mr-2" />
+                <User className="h-5 w-5 text-gray-500 mr-2 flex-shrink-0" />
                 <div>
                   <p className="text-sm text-gray-500">Nama Pasien</p>
                   <p className="font-medium">{prescription.patientName}</p>
                 </div>
               </div>
               <div className="flex items-center">
-                <Calendar className="h-5 w-5 text-gray-500 mr-2" />
+                <Calendar className="h-5 w-5 text-gray-500 mr-2 flex-shrink-0" />
                 <div>
                   <p className="text-sm text-gray-500">Tanggal Kunjungan</p>
                   <p className="font-medium">
@@ -296,14 +298,14 @@ export default function PrescriptionDetailsPage({ params }) {
             </div>
             <div className="space-y-2">
               <div className="flex items-start">
-                <FileText className="h-5 w-5 text-gray-500 mr-2 mt-0.5" />
+                <FileText className="h-5 w-5 text-gray-500 mr-2 mt-0.5 flex-shrink-0" />
                 <div>
                   <p className="text-sm text-gray-500">Diagnosis</p>
                   <p className="font-medium">{prescription.diagnosis}</p>
                 </div>
               </div>
               <div className="flex items-center">
-                <Pill className="h-5 w-5 text-gray-500 mr-2" />
+                <Pill className="h-5 w-5 text-gray-500 mr-2 flex-shrink-0" />
                 <div>
                   <p className="text-sm text-gray-500">Jumlah Resep</p>
                   <p className="font-medium">
@@ -313,7 +315,7 @@ export default function PrescriptionDetailsPage({ params }) {
               </div>
               {prescription.pharmacistName && (
                 <div className="flex items-center">
-                  <User className="h-5 w-5 text-gray-500 mr-2" />
+                  <User className="h-5 w-5 text-gray-500 mr-2 flex-shrink-0" />
                   <div>
                     <p className="text-sm text-gray-500">Petugas Farmasi</p>
                     <p className="font-medium">{prescription.pharmacistName}</p>
@@ -325,7 +327,7 @@ export default function PrescriptionDetailsPage({ params }) {
         </div>
 
         {/* Prescriptions */}
-        <div className="px-6 py-4">
+        <div className="px-4 sm:px-6 py-4">
           <h2 className="text-lg font-medium text-gray-900 mb-3">
             Daftar Resep
           </h2>
@@ -360,48 +362,74 @@ export default function PrescriptionDetailsPage({ params }) {
                   </div>
                 )}
 
-                {/* Items */}
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th
-                        scope="col"
-                        className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                      >
-                        Nama Obat
-                      </th>
-                      <th
-                        scope="col"
-                        className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                      >
-                        Dosis
-                      </th>
-                      <th
-                        scope="col"
-                        className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
-                      >
-                        Jumlah
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {rx.items.map((item) => (
-                      <tr key={item.id}>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm font-medium text-gray-900">
+                {/* Mobile-friendly table */}
+                <div className="overflow-x-auto -mx-4 sm:mx-0">
+                  <div className="inline-block min-w-full align-middle">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th
+                            scope="col"
+                            className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                          >
+                            Nama Obat
+                          </th>
+                          <th
+                            scope="col"
+                            className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                          >
+                            Dosis
+                          </th>
+                          <th
+                            scope="col"
+                            className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
+                          >
+                            Jumlah
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {rx.items.map((item) => (
+                          <tr key={item.id}>
+                            <td className="px-3 py-2 text-sm font-medium text-gray-900">
+                              {item.manualDrugName}
+                            </td>
+                            <td className="px-3 py-2 text-sm text-gray-500">
+                              {rx.prescriptionType === "Racikan"
+                                ? "-"
+                                : item.dosage || "-"}
+                            </td>
+                            <td className="px-3 py-2 text-sm text-gray-500 text-right">
+                              {item.quantity}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Mobile alternative for very small screens */}
+                <div className="block sm:hidden mt-4">
+                  {rx.items.map((item) => (
+                    <div
+                      key={item.id}
+                      className="border-b border-gray-200 py-3"
+                    >
+                      <div className="flex justify-between">
+                        <div className="font-medium text-gray-900">
                           {item.manualDrugName}
-                        </td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">
-                          {rx.prescriptionType === "Racikan"
-                            ? "-"
-                            : item.dosage || "-"}
-                        </td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500 text-right">
-                          {item.quantity}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                        </div>
+                        <div className="text-gray-500">{item.quantity}</div>
+                      </div>
+                      {rx.prescriptionType !== "Racikan" && item.dosage && (
+                        <div className="text-sm text-gray-500 mt-1">
+                          Dosis: {item.dosage}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
 
                 {/* Notes */}
                 {rx.notes && (
@@ -416,10 +444,10 @@ export default function PrescriptionDetailsPage({ params }) {
         </div>
 
         {/* Action buttons */}
-        <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end">
+        <div className="px-4 sm:px-6 py-4 bg-gray-50 border-t border-gray-200 flex flex-col sm:flex-row sm:justify-end gap-3">
           <button
             onClick={() => router.push("/apotek/antrian-resep")}
-            className="mr-3 inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            className="w-full sm:w-auto inline-flex justify-center items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
           >
             Kembali ke Antrian
           </button>
@@ -428,7 +456,7 @@ export default function PrescriptionDetailsPage({ params }) {
             <button
               onClick={handleMarkAsReady}
               disabled={isProcessing}
-              className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-indigo-400 disabled:cursor-not-allowed"
+              className="w-full sm:w-auto inline-flex justify-center items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-indigo-400 disabled:cursor-not-allowed"
             >
               {isProcessing ? (
                 <>
@@ -445,7 +473,7 @@ export default function PrescriptionDetailsPage({ params }) {
             <button
               onClick={handleDispense}
               disabled={isProcessing}
-              className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:bg-green-400 disabled:cursor-not-allowed"
+              className="w-full sm:w-auto inline-flex justify-center items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:bg-green-400 disabled:cursor-not-allowed"
             >
               {isProcessing ? (
                 <>
