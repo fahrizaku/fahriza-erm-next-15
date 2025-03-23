@@ -131,6 +131,7 @@ model MedicalRecord {
   
   // Relations
   prescriptions     Prescription[]  // Changed from Prescription? to Prescription[]
+  pharmacyQueue     PharmacyQueue?
   
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
@@ -171,6 +172,7 @@ model PrescriptionItem {
 model PharmacyQueue {
   id                Int               @id @default(autoincrement())
   medicalRecordId   Int               @unique
+  medicalRecord     MedicalRecord     @relation(fields: [medicalRecordId], references: [id])
   queueNumber       Int
   status            String            @default("waiting") // waiting, preparing, ready, dispensed
   pharmacistName    String?           // Name of the pharmacist handling the prescription
@@ -196,807 +198,599 @@ model IcdCode {
   @@index([code])
 }
 
-// /app/api/screenings/route.js
-import { NextResponse } from "next/server";
-import { db } from "@/lib/db";
 
-// Create a new screening entry
-export async function POST(request) {
-  try {
-    const data = await request.json();
-
-    // Validate required fields
-    if (!data.patientId || !data.complaints) {
-      return NextResponse.json(
-        { success: false, message: "Missing required fields" },
-        { status: 400 }
-      );
-    }
-
-    // If trying to update patient with BPJS, check if the BPJS number already exists
-    if (data.isBPJSActive && data.no_bpjs && data.updatePatientBPJS) {
-      // Check if BPJS number already exists for another patient
-      const existingPatient = await db.patient.findFirst({
-        where: {
-          no_bpjs: data.no_bpjs,
-          id: {
-            not: data.patientId, // Exclude current patient
-          },
-        },
-      });
-
-      if (existingPatient) {
-        return NextResponse.json(
-          {
-            success: false,
-            message: "Nomor BPJS telah terdaftar pada pasien lain",
-          },
-          { status: 400 }
-        );
-      }
-    }
-
-    // Generate a queue number (get highest queue number for today + 1)
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const latestQueue = await db.outpatientQueue.findFirst({
-      where: {
-        createdAt: {
-          gte: today,
-        },
-      },
-      orderBy: {
-        queueNumber: "desc",
-      },
-    });
-
-    const queueNumber = latestQueue ? latestQueue.queueNumber + 1 : 1;
-
-    // If isBPJSActive is true and the patient doesn't have BPJS information,
-    // update patient record with BPJS number
-    if (data.isBPJSActive && data.no_bpjs && data.updatePatientBPJS) {
-      await db.patient.update({
-        where: { id: data.patientId },
-        data: {
-          isBPJS: true,
-          no_bpjs: data.no_bpjs,
-        },
-      });
-    }
-
-    // Create the screening entry with the updated schema fields
-    const screening = await db.screening.create({
-      data: {
-        patientId: data.patientId,
-        complaints: data.complaints,
-        temperature: data.temperature ? parseFloat(data.temperature) : null,
-        systolicBP: data.systolicBP ? parseInt(data.systolicBP) : null,
-        diastolicBP: data.diastolicBP ? parseInt(data.diastolicBP) : null,
-        pulse: data.pulse ? parseInt(data.pulse) : null,
-        respiratoryRate: data.respiratoryRate
-          ? parseInt(data.respiratoryRate)
-          : null,
-        weight: data.weight ? parseFloat(data.weight) : null,
-        height: data.height ? parseInt(data.height) : null,
-        waistCircumference: data.waistCircumference
-          ? parseFloat(data.waistCircumference)
-          : null,
-        oxygenSaturation: data.oxygenSaturation
-          ? parseFloat(data.oxygenSaturation)
-          : null,
-        isBPJSActive: data.isBPJSActive || false,
-        status: "waiting",
-        queueNumber: queueNumber,
-      },
-    });
-
-    // Create a queue entry
-    await db.outpatientQueue.create({
-      data: {
-        screeningId: screening.id,
-        queueNumber: queueNumber,
-        status: "waiting",
-      },
-    });
-
-    return NextResponse.json({
-      success: true,
-      screening,
-      queueNumber,
-    });
-  } catch (error) {
-    console.error("Error creating screening:", error);
-    return NextResponse.json(
-      {
-        success: false,
-        message: "Failed to create screening",
-        error: error.message,
-      },
-      { status: 500 }
-    );
-  }
-}
-
-
-// /app/api/medical-records/route.js
-import { NextResponse } from "next/server";
-import { db } from "@/lib/db";
-
-export async function POST(request) {
-  try {
-    const data = await request.json();
-
-    // Validate required fields
-    if (
-      !data.patientId ||
-      !data.screeningId ||
-      !data.diagnosis ||
-      !data.doctorName
-    ) {
-      return NextResponse.json(
-        { success: false, message: "Missing required fields" },
-        { status: 400 }
-      );
-    }
-
-    // Create medical record first
-    const medicalRecord = await db.medicalRecord.create({
-      data: {
-        patientId: data.patientId,
-        screeningId: data.screeningId,
-        diagnosis: data.diagnosis,
-        icdCode: data.icdCode || null,
-        clinicalNotes: data.clinicalNotes || null,
-        doctorName: data.doctorName,
-        visitType: "outpatient",
-      },
-    });
-
-    // Handle prescriptions (now supporting multiple and racikan type)
-    if (
-      data.prescriptions &&
-      Array.isArray(data.prescriptions) &&
-      data.prescriptions.length > 0
-    ) {
-      // Create each prescription
-      for (const prescriptionData of data.prescriptions) {
-        // Validate prescription data
-        if (!prescriptionData.items || !Array.isArray(prescriptionData.items)) {
-          continue; // Skip invalid prescription
-        }
-
-        // Check if this is a racikan prescription
-        const isRacikan = prescriptionData.type === "Racikan";
-
-        // Create prescription
-        await db.prescription.create({
-          data: {
-            medicalRecordId: medicalRecord.id,
-            notes: prescriptionData.notes || null,
-            prescriptionType: prescriptionData.type || null,
-            // Add the dosage field for racikan prescriptions
-            dosage: isRacikan ? prescriptionData.dosage : null,
-            items: {
-              create: prescriptionData.items.map((item) => ({
-                manualDrugName: item.manualDrugName,
-                // For racikan items, don't store individual dosages
-                // For regular prescriptions, store dosage at item level
-                dosage: isRacikan ? null : item.dosage,
-                quantity: item.quantity,
-              })),
-            },
-          },
-        });
-      }
-    } else if (data.prescription) {
-      // For backward compatibility - handle single prescription
-      await db.prescription.create({
-        data: {
-          medicalRecordId: medicalRecord.id,
-          notes: data.prescription.notes || null,
-          prescriptionType: data.prescription.type || "Main",
-          items: {
-            create: data.prescription.items.map((item) => ({
-              manualDrugName: item.manualDrugName,
-              drugId: item.drugId || null,
-              dosage: item.dosage,
-              quantity: item.quantity,
-            })),
-          },
-        },
-      });
-    }
-
-    // Update screening status to "completed"
-    await db.screening.update({
-      where: {
-        id: data.screeningId,
-      },
-      data: {
-        status: "completed",
-      },
-    });
-
-    // Update queue status
-    await db.outpatientQueue.updateMany({
-      where: {
-        screeningId: data.screeningId,
-      },
-      data: {
-        status: "completed",
-      },
-    });
-
-    return NextResponse.json({
-      success: true,
-      medicalRecordId: medicalRecord.id,
-    });
-  } catch (error) {
-    console.error("Error creating medical record:", error);
-    return NextResponse.json(
-      { success: false, message: "Failed to create medical record" },
-      { status: 500 }
-    );
-  }
-}
-
-// GET endpoint for retrieving all medical records - updated to include dosage field
-export async function GET(request) {
-  try {
-    // Membaca query parameters
-    const { searchParams } = new URL(request.url);
-    const search = searchParams.get("search");
-    const startDate = searchParams.get("startDate");
-    const endDate = searchParams.get("endDate");
-    const page = parseInt(searchParams.get("page") || "1");
-    const limit = parseInt(searchParams.get("limit") || "20");
-
-    // Menghitung offset untuk pagination
-    const skip = (page - 1) * limit;
-
-    // Membuat kondisi filter
-    const where = {};
-
-    if (search) {
-      where.OR = [
-        {
-          patient: {
-            name: {
-              contains: search,
-              mode: "insensitive",
-            },
-          },
-        },
-        {
-          patient: {
-            no_rm: {
-              equals: isNaN(parseInt(search)) ? undefined : parseInt(search),
-            },
-          },
-        },
-        {
-          patient: {
-            nik: {
-              contains: search,
-            },
-          },
-        },
-      ];
-    }
-
-    // Filter tanggal kunjungan
-    if (startDate || endDate) {
-      where.visitDate = {};
-
-      if (startDate) {
-        where.visitDate.gte = new Date(startDate);
-      }
-
-      if (endDate) {
-        // Atur waktu ke akhir hari
-        const endDateTime = new Date(endDate);
-        endDateTime.setHours(23, 59, 59, 999);
-        where.visitDate.lte = endDateTime;
-      }
-    }
-
-    // Mengambil total count untuk pagination
-    const totalCount = await db.medicalRecord.count({ where });
-
-    // Mengambil data berdasarkan filter
-    const medicalRecords = await db.medicalRecord.findMany({
-      where,
-      include: {
-        patient: true,
-        screening: true,
-        prescriptions: {
-          include: {
-            items: {
-              include: {
-                drug: true,
-              },
-            },
-          },
-        },
-      },
-      orderBy: {
-        visitDate: "desc",
-      },
-      skip,
-      take: limit,
-    });
-
-    return NextResponse.json({
-      data: medicalRecords,
-      meta: {
-        total: totalCount,
-        page,
-        limit,
-        totalPages: Math.ceil(totalCount / limit),
-      },
-    });
-  } catch (error) {
-    console.error("Error fetching medical records:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch medical records" },
-      { status: 500 }
-    );
-  } finally {
-    await db.$disconnect();
-  }
-}
-
-
-saya ingin untuk medical record, setelah selesai di buat menambahkan antrian, tapi antrian farmasi
-
-ini adalah contoh antrian
+//app/rekam-medis/[id]/page.jsx
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ChevronLeft } from "lucide-react";
+import {
+  User,
+  FileText,
+  ChevronLeft,
+  Loader2,
+  AlertTriangle,
+  Calendar,
+  Clock,
+  Stethoscope,
+  Pill,
+  Shield,
+  Printer,
+  Clipboard,
+  Beaker,
+} from "lucide-react";
 import { toast } from "react-toastify";
-import QueueHeader from "./_components/QueueHeader";
-import QueueFilters from "./_components/QueueFilters";
-import QueueCards from "./_components/QueueCards";
-import { LoadingState, EmptyState, ErrorState } from "./_components/UIStates";
 
-export default function OutpatientQueuePage() {
+export default function MedicalRecordView({ params }) {
   const router = useRouter();
+  const { id } = use(params);
 
-  const [queueList, setQueueList] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
-  const [filter, setFilter] = useState("all"); // waiting, called, in-progress, completed
-  const [searchTerm, setSearchTerm] = useState("");
+  const [medicalRecord, setMedicalRecord] = useState(null);
+  const [patient, setPatient] = useState(null);
+  const [screening, setScreening] = useState(null);
+  const [prescriptions, setPrescriptions] = useState([]);
 
-  // Fetch queue data
-  const fetchQueueData = async () => {
-    try {
-      const isRefreshing = refreshing;
-      if (!isRefreshing) setLoading(true);
-
-      const response = await fetch(`/api/outpatient/queue?status=${filter}`);
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-
-      if (data.success) {
-        setQueueList(data.queue);
-      } else {
-        setError(data.message || "Failed to fetch queue data");
-        toast.error(data.message || "Failed to fetch queue data");
-      }
-    } catch (error) {
-      console.error("Error fetching queue:", error);
-      setError("An error occurred while fetching queue data");
-      if (!refreshing) {
-        toast.error("An error occurred while fetching queue data");
-      }
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
-
+  // Fetch medical record data
   useEffect(() => {
-    fetchQueueData();
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch(`/api/medical-records/${id}`);
 
-    // Set up interval to refresh data every 30 seconds
-    const interval = setInterval(() => {
-      setRefreshing(true);
-      fetchQueueData();
-    }, 30000);
-
-    return () => clearInterval(interval);
-  }, [filter]);
-
-  // Handle manual refresh
-  const handleRefresh = () => {
-    setRefreshing(true);
-    fetchQueueData();
-  };
-
-  // Handle calling a patient (only changes status to "called")
-  const handleCallPatient = async (screeningId) => {
-    try {
-      const response = await fetch(
-        `/api/outpatient/queue/${screeningId}/call`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
         }
-      );
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+        const data = await response.json();
 
-      const data = await response.json();
-
-      if (data.success) {
-        // Update the queue list
-        setQueueList(
-          queueList.map((item) =>
-            item.screeningId === screeningId
-              ? { ...item, status: "called" }
-              : item
-          )
-        );
-
-        toast.success(`Pasien ${data.patientName} berhasil dipanggil`);
-      } else {
-        toast.error(data.message || "Failed to call patient");
-      }
-    } catch (error) {
-      console.error("Error calling patient:", error);
-      toast.error("An error occurred while calling patient");
-    }
-  };
-
-  // Handle examining a patient (change status to "in-progress" and redirect)
-  const handleExaminePatient = async (screeningId) => {
-    try {
-      const response = await fetch(
-        `/api/outpatient/queue/${screeningId}/examine`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
+        if (data.success) {
+          setMedicalRecord(data.medicalRecord);
+          setPatient(data.patient);
+          setScreening(data.screening);
+          setPrescriptions(data.prescriptions);
+        } else {
+          setError(data.message || "Failed to fetch medical record data");
+          toast.error(data.message || "Failed to fetch medical record data");
         }
-      );
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+        setError("An error occurred while fetching data");
+        toast.error("An error occurred while fetching data");
+      } finally {
+        setLoading(false);
       }
+    };
 
-      const data = await response.json();
-
-      if (data.success) {
-        // Update the queue list
-        setQueueList(
-          queueList.map((item) =>
-            item.screeningId === screeningId
-              ? { ...item, status: "in-progress" }
-              : item
-          )
-        );
-
-        toast.success(`Pasien ${data.patientName} sedang diperiksa`);
-
-        // Redirect to doctor's examination page
-        router.push(`/rawat-jalan/pemeriksaan-dokter/${screeningId}`);
-      } else {
-        toast.error(data.message || "Failed to examine patient");
-      }
-    } catch (error) {
-      console.error("Error examining patient:", error);
-      toast.error("An error occurred while examining patient");
+    if (id) {
+      fetchData();
     }
+  }, [id]);
+
+  // Format date
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    return new Intl.DateTimeFormat("id-ID", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    }).format(date);
   };
 
-  // Filter queue items based on search term
-  const filteredQueue = queueList.filter(
-    (item) =>
-      item.patientName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (item.queueNumber?.toString() || "").includes(searchTerm)
-  );
-
-  // Group queue items by status when filter is "all"
-  const getGroupedQueue = () => {
-    if (filter !== "all") return [{ status: filter, items: filteredQueue }];
-
-    // Define the order of status groups
-    const statusOrder = ["in-progress", "called", "waiting", "completed"];
-
-    // Group items by status
-    const groupedByStatus = filteredQueue.reduce((groups, item) => {
-      const group = groups[item.status] || [];
-      group.push(item);
-      groups[item.status] = group;
-      return groups;
-    }, {});
-
-    // Convert to array ordered by our status priority
-    return statusOrder
-      .filter(
-        (status) =>
-          groupedByStatus[status] && groupedByStatus[status].length > 0
-      )
-      .map((status) => ({
-        status,
-        items: groupedByStatus[status].sort(
-          (a, b) => a.queueNumber - b.queueNumber
-        ),
-      }));
+  // Format time
+  const formatTime = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleTimeString("id-ID", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
   };
 
-  // Get status text for display
-  const getStatusText = (status) => {
-    switch (status) {
-      case "waiting":
-        return "Menunggu";
-      case "called":
-        return "Dipanggil";
-      case "in-progress":
-        return "Sedang Diperiksa";
-      case "completed":
-        return "Selesai";
+  // Function to capitalize each word
+  const capitalizeEachWord = (str) => {
+    if (!str) return "";
+    return str
+      .split(" ")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(" ");
+  };
+
+  // Function to format blood pressure from systolic and diastolic values
+  const formatBloodPressure = (systolic, diastolic) => {
+    if (!systolic || !diastolic) return null;
+    return `${systolic}/${diastolic}`;
+  };
+
+  // Print medical record
+  const handlePrint = () => {
+    window.print();
+  };
+
+  // Function to determine if a prescription is a compound prescription (racikan)
+  const isCompoundPrescription = (prescription) => {
+    return prescription.prescriptionType === "Racikan";
+  };
+
+  // Function to get translated prescription type
+  const getPrescriptionTypeLabel = (type) => {
+    switch (type) {
+      case "Main":
+        return "Utama";
+      case "Alternative":
+        return "Alternatif";
+      case "Follow-up":
+        return "Lanjutan";
+      case "Racikan":
+        return "Racikan";
       default:
-        return status;
+        return type;
     }
   };
 
-  const groupedQueue = getGroupedQueue();
+  if (loading) {
+    return (
+      <div className="max-w-4xl mx-auto p-4 sm:p-6">
+        <div className="flex justify-center items-center h-64">
+          <div className="text-center">
+            <Loader2 className="h-10 w-10 animate-spin text-blue-500 mx-auto" />
+            <p className="mt-4 text-gray-600">Memuat rekam medis...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error && !medicalRecord) {
+    return (
+      <div className="max-w-4xl mx-auto p-4 sm:p-6">
+        <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-md">
+          <div className="flex items-start">
+            <AlertTriangle className="h-6 w-6 text-red-500 mr-3 flex-shrink-0" />
+            <div>
+              <h3 className="text-lg font-medium text-red-800">Error</h3>
+              <p className="mt-1 text-red-700">{error}</p>
+              <button
+                onClick={() => router.push("/rekam-medis")}
+                className="mt-3 px-4 py-2 bg-white text-red-700 border border-red-300 rounded-md hover:bg-red-50 transition-colors"
+              >
+                Kembali ke Daftar Rekam Medis
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
+    <div className="max-w-4xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
       {/* Back button */}
-      <div className="mb-6">
+      <div className="mb-6 print:hidden">
         <Link
-          href="/pasien"
+          href="/rekam-medis"
           className="inline-flex items-center text-blue-600 hover:text-blue-800 transition-colors font-medium"
         >
           <ChevronLeft className="h-5 w-5" />
-          <span>Kembali ke Daftar Pasien</span>
+          <span>Kembali ke Daftar Rekam Medis</span>
         </Link>
       </div>
 
+      {/* Actions bar */}
+      <div className="mb-6 flex justify-end space-x-3 print:hidden">
+        <button
+          onClick={handlePrint}
+          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center shadow-sm"
+        >
+          <Printer className="h-4 w-4 mr-2" />
+          <span>Cetak</span>
+        </button>
+      </div>
+
       {/* Main content */}
-      <div className="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
+      <div className="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden print:shadow-none print:border-none">
         {/* Header */}
-        <QueueHeader
-          title="Antrian Rawat Jalan"
-          subtitle="Kelola antrian pasien yang telah melalui skrining"
-          onRefresh={handleRefresh}
-          refreshing={refreshing}
-        />
+        <div className="p-5 md:p-6 border-b border-gray-200 bg-gray-50 print:bg-white">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+            <h1 className="text-xl font-bold text-gray-800 mb-2 sm:mb-0">
+              Rekam Medis
+            </h1>
+            <div className="flex items-center text-sm text-gray-600">
+              <Calendar className="h-4 w-4 mr-1" />
+              <span className="mr-2">
+                {medicalRecord && formatDate(medicalRecord.visitDate)}
+              </span>
+              <Clock className="h-4 w-4 mr-1" />
+              <span>
+                {medicalRecord && formatTime(medicalRecord.visitDate)}
+              </span>
+            </div>
+          </div>
+        </div>
 
-        {/* Filters and search */}
-        <QueueFilters
-          filter={filter}
-          setFilter={setFilter}
-          searchTerm={searchTerm}
-          setSearchTerm={setSearchTerm}
-        />
-
-        {/* Queue list */}
-        <div className="p-4">
-          {loading ? (
-            <LoadingState message="Memuat data antrian..." />
-          ) : error ? (
-            <ErrorState error={error} />
-          ) : filteredQueue.length === 0 ? (
-            <EmptyState
-              message={`Tidak ada pasien dalam antrian ${
-                filter !== "all" ? getStatusText(filter).toLowerCase() : ""
-              }`}
-            />
-          ) : (
-            <div>
-              {groupedQueue.map((group, index) => (
-                <div key={group.status} className={index > 0 ? "mt-8" : ""}>
-                  {filter === "all" && (
-                    <h3 className="text-lg font-medium text-gray-900 mb-3 pb-2 border-b">
-                      {getStatusText(group.status)}
-                    </h3>
-                  )}
-                  <QueueCards
-                    queueData={group.items}
-                    onCallPatient={handleCallPatient}
-                    onExaminePatient={handleExaminePatient}
-                    router={router}
-                  />
+        {/* Patient info card */}
+        <div className="p-5 bg-blue-50 border-b border-blue-100 print:bg-white print:border-b print:border-gray-300">
+          <div className="flex flex-wrap items-center justify-between">
+            <div className="flex items-center mb-2 sm:mb-0">
+              <User className="h-5 w-5 text-blue-600 mr-2 print:text-gray-700" />
+              <h2 className="text-lg font-semibold text-blue-800 mr-3 print:text-gray-900">
+                {patient && capitalizeEachWord(patient.name)}
+              </h2>
+              {patient && patient.isBPJS && (
+                <div className="flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-sm font-medium print:bg-gray-100 print:text-gray-700">
+                  <Shield className="h-3 w-3" />
+                  <span>BPJS</span>
                 </div>
-              ))}
+              )}
+            </div>
+            <div className="flex items-center text-sm text-gray-600">
+              <FileText className="h-4 w-4 mr-1" />
+              <span>No. RM: </span>
+              <span className="font-mono ml-1 font-medium">
+                {patient && patient.no_rm}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Medical record content */}
+        <div className="p-5 md:p-6 space-y-6">
+          {/* Diagnosis section */}
+          <div>
+            <div className="flex items-center mb-4">
+              <Stethoscope className="h-5 w-5 text-blue-600 mr-2 print:text-gray-700" />
+              <h3 className="text-lg font-semibold text-gray-800">Diagnosis</h3>
+            </div>
+
+            <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 print:bg-white">
+              {medicalRecord && medicalRecord.icdCode && (
+                <div className="mb-3">
+                  <span className="text-sm font-medium text-gray-600 mr-2">
+                    Kode ICD-10:
+                  </span>
+                  <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded font-mono text-sm print:bg-gray-100 print:text-gray-800">
+                    {medicalRecord.icdCode}
+                  </span>
+                </div>
+              )}
+
+              <div className="mb-3">
+                <h4 className="text-sm font-medium text-gray-600 mb-1">
+                  Diagnosis:
+                </h4>
+                <p className="text-gray-800">
+                  {medicalRecord && medicalRecord.diagnosis}
+                </p>
+              </div>
+
+              {medicalRecord && medicalRecord.clinicalNotes && (
+                <div>
+                  <h4 className="text-sm font-medium text-gray-600 mb-1">
+                    Catatan Klinis:
+                  </h4>
+                  <p className="text-gray-800 whitespace-pre-line">
+                    {medicalRecord.clinicalNotes}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Complaints and vitals section */}
+          {screening && (
+            <div>
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">
+                Keluhan dan Tanda Vital
+              </h3>
+
+              <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 print:bg-white">
+                <div className="mb-4">
+                  <h4 className="text-sm font-medium text-gray-600 mb-1">
+                    Keluhan Pasien:
+                  </h4>
+                  <p className="text-gray-800">{screening.complaints}</p>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {screening.temperature && (
+                    <div>
+                      <h4 className="text-xs font-medium text-gray-500">
+                        Suhu
+                      </h4>
+                      <p className="text-sm font-medium">
+                        {screening.temperature}°C
+                      </p>
+                    </div>
+                  )}
+
+                  {screening.systolicBP && screening.diastolicBP && (
+                    <div>
+                      <h4 className="text-xs font-medium text-gray-500">
+                        Tekanan Darah
+                      </h4>
+                      <p className="text-sm font-medium">
+                        {formatBloodPressure(
+                          screening.systolicBP,
+                          screening.diastolicBP
+                        )}{" "}
+                        mmHg
+                      </p>
+                    </div>
+                  )}
+
+                  {screening.pulse && (
+                    <div>
+                      <h4 className="text-xs font-medium text-gray-500">
+                        Denyut Nadi
+                      </h4>
+                      <p className="text-sm font-medium">
+                        {screening.pulse} bpm
+                      </p>
+                    </div>
+                  )}
+
+                  {screening.respiratoryRate && (
+                    <div>
+                      <h4 className="text-xs font-medium text-gray-500">
+                        Pernapasan
+                      </h4>
+                      <p className="text-sm font-medium">
+                        {screening.respiratoryRate} rpm
+                      </p>
+                    </div>
+                  )}
+
+                  {screening.weight && (
+                    <div>
+                      <h4 className="text-xs font-medium text-gray-500">
+                        Berat Badan
+                      </h4>
+                      <p className="text-sm font-medium">
+                        {screening.weight} kg
+                      </p>
+                    </div>
+                  )}
+
+                  {screening.height && (
+                    <div>
+                      <h4 className="text-xs font-medium text-gray-500">
+                        Tinggi Badan
+                      </h4>
+                      <p className="text-sm font-medium">
+                        {screening.height} cm
+                      </p>
+                    </div>
+                  )}
+
+                  {screening.oxygenSaturation && (
+                    <div>
+                      <h4 className="text-xs font-medium text-gray-500">
+                        Saturasi Oksigen
+                      </h4>
+                      <p className="text-sm font-medium">
+                        {screening.oxygenSaturation}%
+                      </p>
+                    </div>
+                  )}
+
+                  {screening.waistCircumference && (
+                    <div>
+                      <h4 className="text-xs font-medium text-gray-500">
+                        Lingkar Pinggang
+                      </h4>
+                      <p className="text-sm font-medium">
+                        {screening.waistCircumference} cm
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           )}
+
+          {/* Prescriptions section */}
+          {prescriptions && prescriptions.length > 0 && (
+            <div>
+              <div className="flex items-center mb-4">
+                <Pill className="h-5 w-5 text-blue-600 mr-2 print:text-gray-700" />
+                <h3 className="text-lg font-semibold text-gray-800">
+                  Resep Obat
+                </h3>
+              </div>
+
+              <div className="space-y-4">
+                {prescriptions.map((prescription, idx) => (
+                  <div
+                    key={prescription.id}
+                    className="bg-gray-50 p-4 rounded-lg border border-gray-200 print:bg-white"
+                  >
+                    <div className="flex items-center justify-between mb-3 border-b border-gray-200 pb-2">
+                      <div className="flex items-center">
+                        {isCompoundPrescription(prescription) ? (
+                          <Beaker className="h-4 w-4 text-blue-600 mr-2 print:text-gray-700" />
+                        ) : (
+                          <Clipboard className="h-4 w-4 text-blue-600 mr-2 print:text-gray-700" />
+                        )}
+                        <h4 className="font-medium text-gray-800">
+                          Resep {idx + 1}
+                          {prescription.prescriptionType && (
+                            <span className="ml-2 text-sm text-gray-500">
+                              (
+                              {getPrescriptionTypeLabel(
+                                prescription.prescriptionType
+                              )}
+                              )
+                            </span>
+                          )}
+                        </h4>
+                      </div>
+                    </div>
+
+                    {/* For compound prescriptions (Racikan), show the shared dosage */}
+                    {isCompoundPrescription(prescription) &&
+                      prescription.dosage && (
+                        <div className="mb-3 p-2 bg-blue-50 border border-blue-100 rounded">
+                          <h5 className="text-xs font-medium text-blue-800 mb-1">
+                            Dosis Racikan:
+                          </h5>
+                          <p className="text-sm text-blue-900">
+                            {prescription.dosage}
+                          </p>
+                        </div>
+                      )}
+
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-gray-200">
+                        <thead>
+                          <tr>
+                            <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              No
+                            </th>
+                            <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Nama Obat
+                            </th>
+                            {!isCompoundPrescription(prescription) && (
+                              <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Dosis
+                              </th>
+                            )}
+                            <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Jumlah
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {prescription.items.map((item, index) => (
+                            <tr key={item.id}>
+                              <td className="px-2 py-2 whitespace-nowrap text-sm text-gray-500">
+                                {index + 1}
+                              </td>
+                              <td className="px-2 py-2 whitespace-nowrap text-sm font-medium text-gray-800">
+                                {item.manualDrugName}
+                              </td>
+                              {!isCompoundPrescription(prescription) && (
+                                <td className="px-2 py-2 whitespace-nowrap text-sm text-gray-500">
+                                  {item.dosage}
+                                </td>
+                              )}
+                              <td className="px-2 py-2 whitespace-nowrap text-sm text-gray-500">
+                                {item.quantity}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {prescription.notes && (
+                      <div className="mt-3 text-sm">
+                        <h5 className="font-medium text-gray-600">Catatan:</h5>
+                        <p className="text-gray-800">{prescription.notes}</p>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Doctor signature */}
+          <div className="mt-8 text-right print:mt-20">
+            <p className="text-gray-600 mb-10">
+              Dokter Pemeriksa,
+              <br />
+              <br />
+              <br />
+              <br />
+              <span className="font-medium text-gray-800">
+                {medicalRecord && medicalRecord.doctorName}
+              </span>
+            </p>
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
-// _components/QueueCards.js
-import React from "react";
-import {
-  Clock,
-  User,
-  PhoneCall,
-  Stethoscope,
-  CheckCircle,
-  CreditCard,
-  MapPin,
-} from "lucide-react";
 
-export default function QueueCards({
-  queueData,
-  onCallPatient,
-  onExaminePatient,
-}) {
-  const getStatusBadge = (status) => {
-    switch (status) {
-      case "waiting":
-        return (
-          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-            <Clock className="w-3 h-3 mr-1" />
-            Menunggu
-          </span>
-        );
-      case "called":
-        return (
-          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-            <PhoneCall className="w-3 h-3 mr-1" />
-            Dipanggil
-          </span>
-        );
-      case "in-progress":
-        return (
-          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
-            <Stethoscope className="w-3 h-3 mr-1" />
-            Sedang Diperiksa
-          </span>
-        );
-      case "completed":
-        return (
-          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-            <CheckCircle className="w-3 h-3 mr-1" />
-            Selesai
-          </span>
-        );
-      default:
-        return (
-          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-            {status}
-          </span>
-        );
-    }
-  };
+// /app/api/medical-records/[id]/route.js
+import { NextResponse } from "next/server";
+import { db } from "@/lib/db";
 
-  const getActionButton = (item) => {
-    switch (item.status) {
-      case "waiting":
-        return (
-          <button
-            onClick={() => onCallPatient(item.screeningId)}
-            className="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          >
-            <PhoneCall className="w-3 h-3 mr-1" />
-            Panggil
-          </button>
-        );
-      case "called":
-        return (
-          // <button
-          //   onClick={() => onExaminePatient(item.screeningId)}
-          //   className="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-          // >
-          //   <Stethoscope className="w-3 h-3 mr-1" />
-          //   Periksa
-          // </button>
-          <></>
-        );
-      case "in-progress":
-        return (
-          // <button
-          //   onClick={() => onExaminePatient(item.screeningId)}
-          //   className="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-          // >
-          //   <Stethoscope className="w-3 h-3 mr-1" />
-          //   Lanjutkan
-          // </button>
-          <></>
-        );
-      default:
-        return null;
-    }
-  };
+// Get medical record by ID
+export async function GET(request, { params }) {
+  try {
+    const resolvedParams = await params;
+    const id = parseInt(resolvedParams.id);
 
-  // Helper function to calculate age from birthDate
-  const calculateAge = (birthDate) => {
-    if (!birthDate) return "N/A";
-    const today = new Date();
-    const birth = new Date(birthDate);
-    let age = today.getFullYear() - birth.getFullYear();
-    const monthDiff = today.getMonth() - birth.getMonth();
+    // Check if the ID is for a medical record or a screening
+    let medicalRecord;
 
-    if (
-      monthDiff < 0 ||
-      (monthDiff === 0 && today.getDate() < birth.getDate())
-    ) {
-      age--;
+    // Try to find as medical record ID first
+    medicalRecord = await db.medicalRecord.findUnique({
+      where: {
+        id: parseInt(id),
+      },
+    });
+
+    // If not found, try to find by screening ID
+    if (!medicalRecord) {
+      medicalRecord = await db.medicalRecord.findUnique({
+        where: {
+          screeningId: parseInt(id),
+        },
+      });
     }
 
-    return age;
-  };
+    if (!medicalRecord) {
+      return NextResponse.json(
+        { success: false, message: "Medical record not found" },
+        { status: 404 }
+      );
+    }
 
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-      {queueData.map((item) => (
-        <div
-          key={item.screeningId}
-          className="bg-white border border-gray-200 rounded-lg shadow-sm"
-        >
-          <div className="flex justify-between items-center px-3 py-2 border-b border-gray-200 bg-gray-50 rounded-t-lg">
-            <div className="flex items-center space-x-2">
-              <div className="inline-flex items-center justify-center h-6 w-6 bg-blue-100 text-blue-800 rounded-full text-xs font-semibold">
-                {item.queueNumber}
-              </div>
-              <h3 className="text-sm font-medium text-gray-900">
-                {item.patientName}
-              </h3>
-            </div>
-            <div>{getStatusBadge(item.status)}</div>
-          </div>
+    // Get related data
+    const patient = await db.patient.findUnique({
+      where: {
+        id: medicalRecord.patientId,
+      },
+    });
 
-          <div className="p-3">
-            <div className="space-y-2 text-sm">
-              <div className="flex items-center">
-                <User className="h-4 w-4 text-gray-500 mr-2" />
-                <p>
-                  {item.gender || "N/A"} · {calculateAge(item.birthDate)} tahun
-                </p>
-              </div>
+    const screening = await db.screening.findUnique({
+      where: {
+        id: medicalRecord.screeningId,
+      },
+    });
 
-              <div className="flex items-start">
-                <MapPin className="h-4 w-4 text-gray-500 mr-2 mt-0.5" />
-                <p className="line-clamp-2">{item.address || "N/A"}</p>
-              </div>
+    // Get all prescriptions for this medical record (modified to get multiple)
+    const prescriptions = await db.prescription.findMany({
+      where: {
+        medicalRecordId: medicalRecord.id,
+      },
+      include: {
+        items: true,
+      },
+      orderBy: {
+        createdAt: "asc",
+      },
+    });
 
-              <div className="flex items-center">
-                <CreditCard className="h-4 w-4 text-gray-500 mr-2" />
-                <div className="flex items-center">
-                  <span className="text-xs text-gray-500">
-                    Tipe Pembayaran:
-                  </span>
-                  {item.isBPJSActive ? (
-                    <span className="ml-1 px-1.5 py-0.5 bg-green-100 text-green-800 font-medium rounded text-xs">
-                      BPJS
-                    </span>
-                  ) : (
-                    <span className="ml-1 font-medium text-gray-900">Umum</span>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-3 pt-2 border-t border-gray-200 flex justify-end">
-              {getActionButton(item)}
-            </div>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
+    return NextResponse.json({
+      success: true,
+      medicalRecord,
+      patient,
+      screening,
+      prescriptions,
+    });
+  } catch (error) {
+    console.error("Error fetching medical record:", error);
+    return NextResponse.json(
+      { success: false, message: "Failed to fetch medical record" },
+      { status: 500 }
+    );
+  }
 }
 
 

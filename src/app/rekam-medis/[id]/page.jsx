@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import { toast } from "react-toastify";
 
-export default function MedicalRecordView({ params }) {
+export default function MedicalRecordDetailPage({ params }) {
   const router = useRouter();
   const { id } = use(params);
 
@@ -31,6 +31,7 @@ export default function MedicalRecordView({ params }) {
   const [patient, setPatient] = useState(null);
   const [screening, setScreening] = useState(null);
   const [prescriptions, setPrescriptions] = useState([]);
+  const [pharmacyQueue, setPharmacyQueue] = useState(null);
 
   // Fetch medical record data
   useEffect(() => {
@@ -50,6 +51,7 @@ export default function MedicalRecordView({ params }) {
           setPatient(data.patient);
           setScreening(data.screening);
           setPrescriptions(data.prescriptions);
+          setPharmacyQueue(data.pharmacyQueue); // Set pharmacy queue data
         } else {
           setError(data.message || "Failed to fetch medical record data");
           toast.error(data.message || "Failed to fetch medical record data");
@@ -141,6 +143,22 @@ export default function MedicalRecordView({ params }) {
     );
   }
 
+  // Add this function to format pharmacy queue status
+  const formatPharmacyStatus = (status) => {
+    switch (status) {
+      case "waiting":
+        return "Menunggu";
+      case "preparing":
+        return "Sedang Disiapkan";
+      case "ready":
+        return "Siap Diambil";
+      case "dispensed":
+        return "Telah Diberikan";
+      default:
+        return status;
+    }
+  };
+
   if (error && !medicalRecord) {
     return (
       <div className="max-w-4xl mx-auto p-4 sm:p-6">
@@ -151,10 +169,10 @@ export default function MedicalRecordView({ params }) {
               <h3 className="text-lg font-medium text-red-800">Error</h3>
               <p className="mt-1 text-red-700">{error}</p>
               <button
-                onClick={() => router.push("/rekam-medis")}
+                onClick={() => router.push("/pasien/riwayat-kunjungan")}
                 className="mt-3 px-4 py-2 bg-white text-red-700 border border-red-300 rounded-md hover:bg-red-50 transition-colors"
               >
-                Kembali ke Daftar Rekam Medis
+                Kembali ke Riwayat Kunjugan
               </button>
             </div>
           </div>
@@ -168,11 +186,11 @@ export default function MedicalRecordView({ params }) {
       {/* Back button */}
       <div className="mb-6 print:hidden">
         <Link
-          href="/rekam-medis"
+          href="/pasien/riwayat-kunjungan"
           className="inline-flex items-center text-blue-600 hover:text-blue-800 transition-colors font-medium"
         >
           <ChevronLeft className="h-5 w-5" />
-          <span>Kembali ke Daftar Rekam Medis</span>
+          <span>Kembali ke Riwayat Kunjungan</span>
         </Link>
       </div>
 
@@ -490,6 +508,122 @@ export default function MedicalRecordView({ params }) {
                     )}
                   </div>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {pharmacyQueue && (
+            <div>
+              <div className="flex items-center mb-4">
+                <Beaker className="h-5 w-5 text-blue-600 mr-2 print:text-gray-700" />
+                <h3 className="text-lg font-semibold text-gray-800">
+                  Informasi Farmasi
+                </h3>
+              </div>
+
+              <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 print:bg-white">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-600 mb-1">
+                      Nomor Antrian:
+                    </h4>
+                    <p className="text-gray-800 font-medium">
+                      {pharmacyQueue.queueNumber}
+                    </p>
+                  </div>
+
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-600 mb-1">
+                      Status:
+                    </h4>
+                    <div className="flex items-center">
+                      <span
+                        className={`px-2 py-1 rounded-full text-sm font-medium
+              ${
+                pharmacyQueue.status === "waiting"
+                  ? "bg-yellow-100 text-yellow-800"
+                  : ""
+              }
+              ${
+                pharmacyQueue.status === "preparing"
+                  ? "bg-blue-100 text-blue-800"
+                  : ""
+              }
+              ${
+                pharmacyQueue.status === "ready"
+                  ? "bg-green-100 text-green-800"
+                  : ""
+              }
+              ${
+                pharmacyQueue.status === "dispensed"
+                  ? "bg-gray-100 text-gray-800"
+                  : ""
+              }
+            `}
+                      >
+                        {formatPharmacyStatus(pharmacyQueue.status)}
+                      </span>
+                    </div>
+                  </div>
+
+                  {pharmacyQueue.pharmacistName && (
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-600 mb-1">
+                        Apoteker:
+                      </h4>
+                      <p className="text-gray-800">
+                        {pharmacyQueue.pharmacistName}
+                      </p>
+                    </div>
+                  )}
+
+                  {pharmacyQueue.startedAt && (
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-600 mb-1">
+                        Mulai Diproses:
+                      </h4>
+                      <p className="text-gray-800">
+                        {formatDate(pharmacyQueue.startedAt)}{" "}
+                        {formatTime(pharmacyQueue.startedAt)}
+                      </p>
+                    </div>
+                  )}
+
+                  {pharmacyQueue.completedAt && (
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-600 mb-1">
+                        Selesai Diproses:
+                      </h4>
+                      <p className="text-gray-800">
+                        {formatDate(pharmacyQueue.completedAt)}{" "}
+                        {formatTime(pharmacyQueue.completedAt)}
+                      </p>
+                    </div>
+                  )}
+
+                  {pharmacyQueue.dispensedAt && (
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-600 mb-1">
+                        Telah Diberikan:
+                      </h4>
+                      <p className="text-gray-800">
+                        {formatDate(pharmacyQueue.dispensedAt)}{" "}
+                        {formatTime(pharmacyQueue.dispensedAt)}
+                      </p>
+                    </div>
+                  )}
+
+                  {pharmacyQueue.notes && (
+                    <div className="col-span-1 md:col-span-2">
+                      <h4 className="text-sm font-medium text-gray-600 mb-1">
+                        Catatan Farmasi:
+                      </h4>
+                      <p className="text-gray-800 whitespace-pre-line">
+                        {pharmacyQueue.notes}
+                      </p>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           )}

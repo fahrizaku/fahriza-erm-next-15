@@ -47,7 +47,7 @@ export async function GET(request, { params }) {
       },
     });
 
-    // Get all prescriptions for this medical record (modified to get multiple)
+    // Get all prescriptions for this medical record
     const prescriptions = await db.prescription.findMany({
       where: {
         medicalRecordId: medicalRecord.id,
@@ -60,12 +60,20 @@ export async function GET(request, { params }) {
       },
     });
 
+    // Get pharmacy queue information
+    const pharmacyQueue = await db.pharmacyQueue.findUnique({
+      where: {
+        medicalRecordId: medicalRecord.id,
+      },
+    });
+
     return NextResponse.json({
       success: true,
       medicalRecord,
       patient,
       screening,
       prescriptions,
+      pharmacyQueue, // Include pharmacy queue information in the response
     });
   } catch (error) {
     console.error("Error fetching medical record:", error);
