@@ -1,5 +1,6 @@
 // helper-functions.js
 import { toast } from "react-toastify";
+
 // Fetch patient data from API
 export const fetchPatientData = async (
   id,
@@ -33,12 +34,16 @@ export const fetchPatientData = async (
       }
     } else {
       setError(data.message || "Failed to fetch patient data");
-      toast.error(data.message || "Failed to fetch patient data");
+      toast.error(data.message || "Failed to fetch patient data", {
+        autoClose: 200,
+      });
     }
   } catch (error) {
     console.error("Error fetching patient:", error);
     setError("An error occurred while fetching patient data");
-    toast.error("An error occurred while fetching patient data");
+    toast.error("An error occurred while fetching patient data", {
+      autoClose: 200,
+    });
   } finally {
     setLoading(false);
   }
@@ -128,7 +133,7 @@ export const submitScreeningData = async (screeningData, setError, router) => {
 
     if (data.success) {
       // Show success message
-      toast.success("Skrining pasien berhasil disimpan");
+      toast.success("Skrining pasien berhasil disimpan", { autoClose: 200 });
 
       // Redirect to the queue page
       router.push("/rawat-jalan/antrian");
@@ -147,7 +152,10 @@ export const submitScreeningData = async (screeningData, setError, router) => {
 export const handleSubmissionError = (error, setError) => {
   console.error("Error saving screening:", error);
   setError(error.message || "An error occurred while saving screening data");
-  toast.error(error.message || "An error occurred while saving screening data");
+  toast.error(
+    error.message || "An error occurred while saving screening data",
+    { autoClose: 200 }
+  );
 };
 
 // Function to capitalize each word

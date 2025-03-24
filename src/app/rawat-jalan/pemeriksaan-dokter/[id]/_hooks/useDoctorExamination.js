@@ -60,12 +60,16 @@ export const useDoctorExamination = (screeningId) => {
           setPatient(data.patient);
         } else {
           setError(data.message || "Failed to fetch screening data");
-          toast.error(data.message || "Failed to fetch screening data");
+          toast.error(data.message || "Failed to fetch screening data", {
+            autoClose: 200,
+          });
         }
       } catch (error) {
         console.error("Error fetching data:", error);
         setError("An error occurred while fetching data");
-        toast.error("An error occurred while fetching data");
+        toast.error("An error occurred while fetching data", {
+          autoClose: 200,
+        });
       } finally {
         setLoading(false);
       }

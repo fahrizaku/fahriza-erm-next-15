@@ -136,14 +136,16 @@ export default function DoctorExaminationPage({ params }) {
 
       if (data.success) {
         // Show success message
-        toast.success("Rekam medis berhasil disimpan");
+        toast.success("Rekam medis berhasil disimpan", { autoClose: 200 });
 
         // Redirect to medical record view
         // router.push(`/rekam-medis/${data.medicalRecordId}`);
         router.push(`/rawat-jalan/pemeriksaan-dokter`);
       } else {
         setFormError(data.message || "Failed to save medical record");
-        toast.error(data.message || "Failed to save medical record");
+        toast.error(data.message || "Failed to save medical record", {
+          autoClose: 200,
+        });
       }
     } catch (error) {
       console.error("Error saving medical record:", error);
@@ -151,7 +153,8 @@ export default function DoctorExaminationPage({ params }) {
         error.message || "An error occurred while saving medical record"
       );
       toast.error(
-        error.message || "An error occurred while saving medical record"
+        error.message || "An error occurred while saving medical record",
+        { autoClose: 200 }
       );
     } finally {
       setSubmitting(false);
