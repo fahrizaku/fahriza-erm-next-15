@@ -17,7 +17,7 @@ import {
   Stethoscope,
   Search,
   ArrowLeft,
-  Filter,
+  Building,
   PlusCircle,
 } from "lucide-react";
 import { toast } from "react-toastify";
@@ -78,11 +78,44 @@ const MedicalRecordCard = ({ record }) => {
       : text;
   };
 
-  // Format blood pressure
-  const formatBP = (systolic, diastolic) => {
-    if (!systolic || !diastolic) return "-";
-    return `${systolic}/${diastolic} mmHg`;
+  // Translate visitType to Indonesian
+  const getVisitTypeLabel = (visitType) => {
+    switch (visitType.toLowerCase()) {
+      case "outpatient":
+        return "Rawat Jalan";
+      case "inpatient":
+        return "Rawat Inap";
+      default:
+        return capitalizeEachWord(visitType);
+    }
   };
+
+  // Get appropriate icon and color for visit type
+  const getVisitTypeStyles = (visitType) => {
+    switch (visitType.toLowerCase()) {
+      case "outpatient":
+        return {
+          bgColor: "bg-blue-100",
+          textColor: "text-blue-700",
+          Icon: Building,
+        };
+      case "inpatient":
+        return {
+          bgColor: "bg-purple-100",
+          textColor: "text-purple-700",
+          Icon: Bed,
+        };
+      default:
+        return {
+          bgColor: "bg-gray-100",
+          textColor: "text-gray-700",
+          Icon: Building,
+        };
+    }
+  };
+
+  const visitTypeStyles = getVisitTypeStyles(record.visitType);
+  const VisitTypeIcon = visitTypeStyles.Icon;
 
   return (
     <Link href={`/rekam-medis/${record.id}`} className="block">
@@ -90,26 +123,55 @@ const MedicalRecordCard = ({ record }) => {
         <div className="flex items-center justify-between p-3 md:p-4 border-b border-gray-100 bg-gray-50">
           <div className="flex items-center space-x-2">
             <FileText className="h-5 w-5 text-blue-600" />
-            <span className="font-medium text-gray-800">
-              Kunjungan: {formatDate(record.visitDate)}
-            </span>
+            <div className="flex flex-col md:flex-row md:items-center">
+              <span className="font-medium text-gray-800">
+                No. RM: {record.patient.no_rm}
+              </span>
+            </div>
           </div>
-          <div className="flex items-center text-xs text-gray-500">
-            <Clock className="h-3 w-3 mr-1" />
-            <span>{formatTime(record.visitDate)}</span>
+          <div className="flex flex-col items-end text-xs text-gray-500">
+            <div className="flex items-center">
+              <Calendar className="h-3 w-3 mr-1" />
+              <span>{formatDate(record.visitDate)}</span>
+            </div>
+            <div className="flex items-center mt-1">
+              <Clock className="h-3 w-3 mr-1" />
+              <span>{formatTime(record.visitDate)}</span>
+            </div>
           </div>
         </div>
 
         <div className="p-3 md:p-4">
+          <div className="flex flex-wrap items-center justify-between mb-3">
+            <div className="flex items-center">
+              <User className="h-4 w-4 text-gray-500 mr-2" />
+              <h3 className="font-medium text-gray-900">
+                {capitalizeEachWord(record.patient.name)}
+                <span className="text-sm text-gray-500 ml-2">
+                  {record.patient.gender}
+                  {record.patient.birthDate &&
+                    `, ${calculateAge(record.patient.birthDate)}`}
+                </span>
+              </h3>
+            </div>
+
+            <div
+              className={`flex items-center gap-1 px-2 py-1 ${visitTypeStyles.bgColor} ${visitTypeStyles.textColor} rounded-full text-xs mt-1 md:mt-0`}
+            >
+              <VisitTypeIcon className="h-3 w-3" />
+              <span>{getVisitTypeLabel(record.visitType)}</span>
+            </div>
+          </div>
+
           {record.icdCode && (
-            <div className="mb-3 flex items-start">
-              <Stethoscope className="h-4 w-4 text-gray-500 mr-2 mt-1" />
+            <div className="mb-2 flex items-center">
+              <Stethoscope className="h-4 w-4 text-gray-500 mr-2" />
               <div>
                 <span className="text-xs font-medium text-gray-500 mr-1">
                   Diagnosis:
                 </span>
-                <span className="text-sm font-medium text-gray-900">
-                  {truncateText(record.diagnosis, 100)}
+                <span className="text-sm">
+                  {truncateText(record.diagnosis, 60)}
                 </span>
                 <span className="ml-1 bg-blue-100 text-blue-800 px-1 py-0.5 rounded text-xs font-mono">
                   {record.icdCode}
@@ -119,92 +181,11 @@ const MedicalRecordCard = ({ record }) => {
           )}
 
           {record.screening?.complaints && (
-            <div className="mb-3 flex items-start">
-              <div className="h-4 w-4 text-gray-500 mr-2 mt-1 flex items-center justify-center">
-                <span className="text-xs">🗣️</span>
-              </div>
-              <div>
-                <span className="text-xs font-medium text-gray-500 mr-1">
-                  Keluhan:
-                </span>
-                <span className="text-sm text-gray-800">
-                  {truncateText(record.screening.complaints, 120)}
-                </span>
-              </div>
-            </div>
-          )}
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-3 text-xs text-gray-600">
-            {record.screening?.temperature && (
-              <div className="flex items-center">
-                <span className="mr-1">🌡️</span>
-                <span className="font-medium mr-1">Suhu:</span>
-                <span>{record.screening.temperature}°C</span>
-              </div>
-            )}
-
-            {(record.screening?.systolicBP ||
-              record.screening?.diastolicBP) && (
-              <div className="flex items-center">
-                <span className="mr-1">❤️</span>
-                <span className="font-medium mr-1">TD:</span>
-                <span>
-                  {formatBP(
-                    record.screening.systolicBP,
-                    record.screening.diastolicBP
-                  )}
-                </span>
-              </div>
-            )}
-
-            {record.screening?.pulse && (
-              <div className="flex items-center">
-                <span className="mr-1">💓</span>
-                <span className="font-medium mr-1">Nadi:</span>
-                <span>{record.screening.pulse} bpm</span>
-              </div>
-            )}
-
-            {record.screening?.respiratoryRate && (
-              <div className="flex items-center">
-                <span className="mr-1">🫁</span>
-                <span className="font-medium mr-1">RR:</span>
-                <span>{record.screening.respiratoryRate} /menit</span>
-              </div>
-            )}
-          </div>
-
-          {record.prescriptions && record.prescriptions.length > 0 && (
-            <div className="mt-3 pt-3 border-t border-gray-100">
-              <div className="flex items-center mb-2">
-                <span className="mr-1">💊</span>
-                <span className="text-xs font-medium text-gray-500">
-                  Resep ({record.prescriptions.length}):
-                </span>
-              </div>
-              <div className="text-xs text-gray-600">
-                {record.prescriptions.slice(0, 2).map((prescription, idx) => (
-                  <div key={idx} className="mb-1">
-                    <span className="font-medium">
-                      {prescription.prescriptionType || "Umum"}:
-                    </span>{" "}
-                    {prescription.items.slice(0, 2).map((item, i) => (
-                      <span key={i}>
-                        {item.manualDrugName || "Obat"}
-                        {i < Math.min(prescription.items.length, 2) - 1
-                          ? ", "
-                          : ""}
-                      </span>
-                    ))}
-                    {prescription.items.length > 2 && " ..."}
-                  </div>
-                ))}
-                {record.prescriptions.length > 2 && (
-                  <div className="text-gray-500">
-                    + {record.prescriptions.length - 2} resep lainnya
-                  </div>
-                )}
-              </div>
+            <div className="text-sm text-gray-600">
+              <span className="text-xs font-medium text-gray-500 mr-1">
+                Keluhan:
+              </span>
+              {truncateText(record.screening.complaints, 80)}
             </div>
           )}
         </div>
@@ -578,21 +559,10 @@ export default function PatientMedicalRecordsHistory() {
               </button>
             </Link>
             <h1 className="text-2xl font-bold text-gray-800">
-              Riwayat Kunjungan Pasien
+              Riwayat Rekam Medis Pasien
             </h1>
           </div>
-          <p className="text-gray-600">
-            Riwayat kunjungan dan rekam medis pasien
-          </p>
-        </div>
-
-        <div className="flex space-x-2">
-          <Link href={`/pasien/${patientId}/screening`}>
-            <button className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-              <PlusCircle className="h-4 w-4 mr-2" />
-              <span>Kunjungan Baru</span>
-            </button>
-          </Link>
+          <p className="text-gray-600">Riwayat rekam medis pasien</p>
         </div>
       </div>
 
@@ -661,21 +631,13 @@ export default function PatientMedicalRecordsHistory() {
             <div className="text-center py-12 bg-gray-50 rounded-lg border border-gray-200">
               <FileText className="h-12 w-12 text-gray-400 mx-auto mb-3" />
               <h3 className="text-lg font-medium text-gray-800 mb-2">
-                Tidak ada riwayat kunjungan
+                Tidak ada riwayat rekam medis tersimpan
               </h3>
               <p className="text-gray-600">
                 {searchTerm
                   ? "Tidak ada hasil yang cocok dengan pencarian Anda."
                   : "Pasien belum memiliki riwayat kunjungan."}
               </p>
-              {!searchTerm && (
-                <Link href={`/pasien/${patientId}/screening`}>
-                  <button className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center mx-auto">
-                    <PlusCircle className="h-4 w-4 mr-2" />
-                    <span>Buat Kunjungan Baru</span>
-                  </button>
-                </Link>
-              )}
             </div>
           )}
 

@@ -52,7 +52,7 @@ const DrugStoreProduct = () => {
         sortOrder: sortOrder,
       });
 
-      const response = await fetch(`/api/drugs?${params}`);
+      const response = await fetch(`/api/drugs-resep?${params}`);
       const data = await response.json();
 
       const formattedData = data.map((drug) => ({
@@ -101,7 +101,7 @@ const DrugStoreProduct = () => {
 
     setIsDeleting(true);
     try {
-      const response = await fetch(`/api/drugs/${drugToDelete.id}`, {
+      const response = await fetch(`/api/drugs-resep/${drugToDelete.id}`, {
         method: "DELETE",
       });
 
@@ -175,11 +175,11 @@ const DrugStoreProduct = () => {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div>
             <h1 className="text-xl sm:text-2xl font-bold text-gray-800">
-              Semua Produk Apotek
+              Data Obat Resep 💊
             </h1>
           </div>
           {/* Tombol Tambah Obat */}
-          <Link href="/apotek/produk/tambah">
+          <Link href="/apotek/obat-resep/tambah">
             <button
               className="px-4 py-2 sm:px-5 sm:py-3 bg-gradient-to-r from-blue-600 to-cyan-500 text-white rounded-lg sm:rounded-xl hover:shadow-lg transition-all font-medium flex items-center gap-2"
               onClick={handleAddButtonClick}
@@ -326,7 +326,7 @@ const DrugStoreProduct = () => {
                     <td className="px-4 sm:px-6 py-3">
                       <div className="flex justify-center gap-3">
                         <Link
-                          href={`/apotek/produk/${drug.id}`}
+                          href={`/apotek/obat-resep/${drug.id}`}
                           className="text-cyan-700 hover:text-cyan-800 transition-colors p-2 sm:p-1.5 rounded-md hover:bg-blue-100 flex items-center"
                           onClick={() => handleLinkClick(drug.id, "detail")}
                         >
@@ -349,7 +349,7 @@ const DrugStoreProduct = () => {
                         </Link>
 
                         <Link
-                          href={`/apotek/produk/edit/${drug.id}`}
+                          href={`/apotek/obat-resep/edit/${drug.id}`}
                           className="text-blue-700 hover:text-blue-800 transition-colors p-2 sm:p-1.5 rounded-md hover:bg-blue-100 flex items-center"
                           onClick={() => handleLinkClick(drug.id, "edit")}
                         >
