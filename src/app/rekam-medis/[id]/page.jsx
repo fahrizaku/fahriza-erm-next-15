@@ -183,28 +183,6 @@ export default function MedicalRecordDetailPage({ params }) {
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
-      {/* Back button */}
-      <div className="mb-6 print:hidden">
-        <Link
-          href="/pasien/riwayat-kunjungan"
-          className="inline-flex items-center text-blue-600 hover:text-blue-800 transition-colors font-medium"
-        >
-          <ChevronLeft className="h-5 w-5" />
-          <span>Kembali ke Riwayat Kunjungan</span>
-        </Link>
-      </div>
-
-      {/* Actions bar */}
-      <div className="mb-6 flex justify-end space-x-3 print:hidden">
-        <button
-          onClick={handlePrint}
-          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center shadow-sm"
-        >
-          <Printer className="h-4 w-4 mr-2" />
-          <span>Cetak</span>
-        </button>
-      </div>
-
       {/* Main content */}
       <div className="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden print:shadow-none print:border-none">
         {/* Header */}
