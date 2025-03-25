@@ -13,8 +13,8 @@ import {
   ChevronRight,
   User,
   RefreshCw,
-  Shield,
   Stethoscope,
+  Building,
 } from "lucide-react";
 import { toast } from "react-toastify";
 
@@ -74,6 +74,45 @@ const MedicalRecordCard = ({ record }) => {
       : text;
   };
 
+  // Translate visitType to Indonesian
+  const getVisitTypeLabel = (visitType) => {
+    switch (visitType.toLowerCase()) {
+      case "outpatient":
+        return "Rawat Jalan";
+      case "inpatient":
+        return "Rawat Inap";
+      default:
+        return capitalizeEachWord(visitType);
+    }
+  };
+
+  // Get appropriate icon and color for visit type
+  const getVisitTypeStyles = (visitType) => {
+    switch (visitType.toLowerCase()) {
+      case "outpatient":
+        return {
+          bgColor: "bg-blue-100",
+          textColor: "text-blue-700",
+          Icon: Building,
+        };
+      case "inpatient":
+        return {
+          bgColor: "bg-purple-100",
+          textColor: "text-purple-700",
+          Icon: Bed,
+        };
+      default:
+        return {
+          bgColor: "bg-gray-100",
+          textColor: "text-gray-700",
+          Icon: Building,
+        };
+    }
+  };
+
+  const visitTypeStyles = getVisitTypeStyles(record.visitType);
+  const VisitTypeIcon = visitTypeStyles.Icon;
+
   return (
     <Link href={`/rekam-medis/${record.id}`} className="block">
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow overflow-hidden">
@@ -84,12 +123,6 @@ const MedicalRecordCard = ({ record }) => {
               <span className="font-medium text-gray-800">
                 No. RM: {record.patient.no_rm}
               </span>
-              {record.patient.isBPJS && (
-                <div className="flex items-center gap-1 md:ml-2 px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs w-fit">
-                  <Shield className="h-3 w-3" />
-                  <span>BPJS</span>
-                </div>
-              )}
             </div>
           </div>
           <div className="flex flex-col items-end text-xs text-gray-500">
@@ -105,16 +138,25 @@ const MedicalRecordCard = ({ record }) => {
         </div>
 
         <div className="p-3 md:p-4">
-          <div className="flex items-center mb-3">
-            <User className="h-4 w-4 text-gray-500 mr-2" />
-            <h3 className="font-medium text-gray-900">
-              {capitalizeEachWord(record.patient.name)}
-              <span className="text-sm text-gray-500 ml-2">
-                {record.patient.gender}
-                {record.patient.birthDate &&
-                  `, ${calculateAge(record.patient.birthDate)}`}
-              </span>
-            </h3>
+          <div className="flex flex-wrap items-center justify-between mb-3">
+            <div className="flex items-center">
+              <User className="h-4 w-4 text-gray-500 mr-2" />
+              <h3 className="font-medium text-gray-900">
+                {capitalizeEachWord(record.patient.name)}
+                <span className="text-sm text-gray-500 ml-2">
+                  {record.patient.gender}
+                  {record.patient.birthDate &&
+                    `, ${calculateAge(record.patient.birthDate)}`}
+                </span>
+              </h3>
+            </div>
+
+            <div
+              className={`flex items-center gap-1 px-2 py-1 ${visitTypeStyles.bgColor} ${visitTypeStyles.textColor} rounded-full text-xs mt-1 md:mt-0`}
+            >
+              <VisitTypeIcon className="h-3 w-3" />
+              <span>{getVisitTypeLabel(record.visitType)}</span>
+            </div>
           </div>
 
           {record.icdCode && (
@@ -351,7 +393,7 @@ export default function MedicalRecordsHistory() {
     <div className="max-w-4xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-800 mb-2">
-          Riwayat Rekam Medis
+          Riwayat Kunjungan dan Rekam Medis
         </h1>
         <p className="text-gray-600">Riwayat rekam medis pasien</p>
       </div>
