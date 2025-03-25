@@ -83,10 +83,7 @@ export default function PatientDetailPage({ params }) {
   // Handle medical record navigation with loading state
   const handleMedicalRecordClick = () => {
     setActionLoadingStates((prev) => ({ ...prev, medicalRecord: true }));
-    toast.error("Tidak ada riwayat rekam medis tersimpan!");
-    setTimeout(() => {
-      setActionLoadingStates((prev) => ({ ...prev, medicalRecord: false }));
-    }, 500);
+    router.push(`/pasien/${id}/riwayat-kunjungan`);
   };
 
   // Handle patient deletion

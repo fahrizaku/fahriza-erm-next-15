@@ -110,7 +110,7 @@ const MedicalRecordCard = ({ record }) => {
             <h3 className="font-medium text-gray-900">
               {capitalizeEachWord(record.patient.name)}
               <span className="text-sm text-gray-500 ml-2">
-                {record.patient.gender === "male" ? "L" : "P"}
+                {record.patient.gender}
                 {record.patient.birthDate &&
                   `, ${calculateAge(record.patient.birthDate)}`}
               </span>
