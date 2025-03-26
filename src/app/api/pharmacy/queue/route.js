@@ -61,6 +61,7 @@ export async function GET(request) {
         gender: patient.gender,
         isBPJSActive: screening?.isBPJSActive || false, // Get from screening instead of patient
         diagnosis: item.medicalRecord.diagnosis,
+        visitType: item.medicalRecord.visitType, // Added visitType from medicalRecord
         pharmacistName: item.pharmacistName,
         notes: item.notes,
         createdAt: item.createdAt,

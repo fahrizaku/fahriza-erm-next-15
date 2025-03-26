@@ -1,244 +1,73 @@
-// app/rekam-medis/[id]/page.jsx
-"use client";
-
-import { useState, useEffect, use } from "react";
-import { useRouter } from "next/navigation";
-import { toast } from "react-toastify";
-import PatientInfoCard from "./_components/PatientInfoCard";
-import { LoadingState, ErrorState } from "./_components/UIState";
-import DiagnosisSection from "./_components/DiagnosisSection";
-import VitalsSection from "./_components/VitalsSection";
-import PrescriptionsSection from "./_components/PrescriptionsSection";
-import PharmacySection from "./_components/PharmacySection";
-import DoctorSignature from "./_components/DoctorSignature";
-import PageHeader from "./_components/PageHeader";
-
-export default function MedicalRecordDetailPage({ params }) {
-  const router = useRouter();
-  const { id } = use(params);
-
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [medicalRecord, setMedicalRecord] = useState(null);
-  const [patient, setPatient] = useState(null);
-  const [screening, setScreening] = useState(null);
-  const [prescriptions, setPrescriptions] = useState([]);
-  const [pharmacyQueue, setPharmacyQueue] = useState(null);
-
-  // Fetch medical record data
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const response = await fetch(`/api/medical-records/${id}`);
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const data = await response.json();
-
-        if (data.success) {
-          setMedicalRecord(data.medicalRecord);
-          setPatient(data.patient);
-          setScreening(data.screening);
-          setPrescriptions(data.prescriptions);
-          setPharmacyQueue(data.pharmacyQueue);
-        } else {
-          setError(data.message || "Failed to fetch medical record data");
-          toast.error(data.message || "Failed to fetch medical record data");
-        }
-      } catch (error) {
-        console.error("Error fetching data:", error);
-        setError("An error occurred while fetching data");
-        toast.error("An error occurred while fetching data");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (id) {
-      fetchData();
-    }
-  }, [id]);
-
-  // Handle print function
-  const handlePrint = () => {
-    window.print();
-  };
-
-  if (loading) {
-    return <LoadingState />;
-  }
-
-  if (error && !medicalRecord) {
-    return <ErrorState error={error} router={router} />;
-  }
-
-  return (
-    <div className="max-w-4xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
-      {/* Main content */}
-      <div className="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden print:shadow-none print:border-none">
-        <PageHeader visitDate={medicalRecord?.visitDate} />
-
-        <PatientInfoCard patient={patient} />
-
-        {/* Medical record content */}
-        <div className="p-5 md:p-6 space-y-6">
-          <DiagnosisSection medicalRecord={medicalRecord} />
-
-          {screening && <VitalsSection screening={screening} />}
-
-          {prescriptions && prescriptions.length > 0 && (
-            <PrescriptionsSection prescriptions={prescriptions} />
-          )}
-
-          {pharmacyQueue && <PharmacySection pharmacyQueue={pharmacyQueue} />}
-
-          <DoctorSignature doctorName={medicalRecord?.doctorName} />
-        </div>
-      </div>
-    </div>
-  );
+// Prisma schema
+// Generator dan Datasource
+generator client {
+  provider = "prisma-client-js"
 }
 
-// app/rekam-medis/[id]/components/PharmacySection.jsx
-import React from "react";
-import { Beaker } from "lucide-react";
-import { formatDate, formatTime } from "../utils/formatters";
-
-export default function PharmacySection({ pharmacyQueue }) {
-  if (!pharmacyQueue) return null;
-
-  // Format pharmacy queue status
-  const formatPharmacyStatus = (status) => {
-    switch (status) {
-      case "waiting":
-        return "Menunggu";
-      case "preparing":
-        return "Sedang Disiapkan";
-      case "ready":
-        return "Siap Diambil";
-      case "dispensed":
-        return "Telah Diberikan";
-      default:
-        return status;
-    }
-  };
-
-  return (
-    <div>
-      <div className="flex items-center mb-4">
-        <Beaker className="h-5 w-5 text-blue-600 mr-2 print:text-gray-700" />
-        <h3 className="text-lg font-semibold text-gray-800">
-          Informasi Farmasi
-        </h3>
-      </div>
-
-      <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 print:bg-white">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <h4 className="text-sm font-medium text-gray-600 mb-1">
-              Nomor Antrian:
-            </h4>
-            <p className="text-gray-800 font-medium">
-              {pharmacyQueue.queueNumber}
-            </p>
-          </div>
-
-          <div>
-            <h4 className="text-sm font-medium text-gray-600 mb-1">Status:</h4>
-            <div className="flex items-center">
-              <span
-                className={`px-2 py-1 rounded-full text-sm font-medium
-                  ${
-                    pharmacyQueue.status === "waiting"
-                      ? "bg-yellow-100 text-yellow-800"
-                      : ""
-                  }
-                  ${
-                    pharmacyQueue.status === "preparing"
-                      ? "bg-blue-100 text-blue-800"
-                      : ""
-                  }
-                  ${
-                    pharmacyQueue.status === "ready"
-                      ? "bg-green-100 text-green-800"
-                      : ""
-                  }
-                  ${
-                    pharmacyQueue.status === "dispensed"
-                      ? "bg-gray-100 text-gray-800"
-                      : ""
-                  }
-                `}
-              >
-                {formatPharmacyStatus(pharmacyQueue.status)}
-              </span>
-            </div>
-          </div>
-
-          {pharmacyQueue.pharmacistName && (
-            <div>
-              <h4 className="text-sm font-medium text-gray-600 mb-1">
-                Apoteker:
-              </h4>
-              <p className="text-gray-800">{pharmacyQueue.pharmacistName}</p>
-            </div>
-          )}
-
-          {pharmacyQueue.startedAt && (
-            <div>
-              <h4 className="text-sm font-medium text-gray-600 mb-1">
-                Mulai Diproses:
-              </h4>
-              <p className="text-gray-800">
-                {formatDate(pharmacyQueue.startedAt)}{" "}
-                {formatTime(pharmacyQueue.startedAt)}
-              </p>
-            </div>
-          )}
-
-          {pharmacyQueue.completedAt && (
-            <div>
-              <h4 className="text-sm font-medium text-gray-600 mb-1">
-                Selesai Diproses:
-              </h4>
-              <p className="text-gray-800">
-                {formatDate(pharmacyQueue.completedAt)}{" "}
-                {formatTime(pharmacyQueue.completedAt)}
-              </p>
-            </div>
-          )}
-
-          {pharmacyQueue.dispensedAt && (
-            <div>
-              <h4 className="text-sm font-medium text-gray-600 mb-1">
-                Telah Diberikan:
-              </h4>
-              <p className="text-gray-800">
-                {formatDate(pharmacyQueue.dispensedAt)}{" "}
-                {formatTime(pharmacyQueue.dispensedAt)}
-              </p>
-            </div>
-          )}
-
-          {pharmacyQueue.notes && (
-            <div className="col-span-1 md:col-span-2">
-              <h4 className="text-sm font-medium text-gray-600 mb-1">
-                Catatan Farmasi:
-              </h4>
-              <p className="text-gray-800 whitespace-pre-line">
-                {pharmacyQueue.notes}
-              </p>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
+// Model Patient
+model Patient {
+  id              Int       @id @default(autoincrement())
+  no_rm           Int       @unique
+  name            String
+  gender          String?
+  birthDate       DateTime?
+  address         String?
+  isBPJS          Boolean
+  no_bpjs         String?   @unique
+  nik             String?   @unique
+  phoneNumber     String?   
+  createdAt       DateTime? @default(now())
+  updatedAt       DateTime? @updatedAt
+
+    // Relations
+  screenings      Screening[]
+  medicalRecords  MedicalRecord[]
+}
+
+model DrugStoreProduct {
+  id            Int         @id @default(autoincrement()) 
+  name          String
+  category      String?
+  manufacturer  String?
+  purchasePrice Decimal?
+  price         Decimal
+  stock         Int
+  expiryDate    String?
+  unit          String
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@index([name])
+  @@index([category])
+  @@index([manufacturer])
+  @@index([expiryDate])
+}
+
+model DrugPrescription {
+  id            Int         @id @default(autoincrement()) 
+  name          String
+  category      String?
+  manufacturer  String?
+  purchasePrice Decimal?
+  price         Decimal
+  stock         Int
+  expiryDate    String?
+  unit          String
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@index([name])
+  @@index([category])
+  @@index([manufacturer])
+  @@index([expiryDate])
+}
+
+// Screening model for initial patient assessment
 model Screening {
   id                Int           @id @default(autoincrement())
   patientId         Int
@@ -265,6 +94,19 @@ model Screening {
   medicalRecord     MedicalRecord?
   
   @@index([patientId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// Queue model for managing patient queue
+model OutpatientQueue {
+  id                Int           @id @default(autoincrement())
+  screeningId       Int           @unique
+  queueNumber       Int
+  status            String        @default("waiting") // waiting, called, in-progress, completed
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  
   @@index([status])
   @@index([createdAt])
 }
@@ -345,3 +187,183 @@ model PharmacyQueue {
   @@index([createdAt])
   @@index([queueNumber])
 }
+
+// ICD-10 lookup table for diagnosis codes
+model IcdCode {
+  id                Int           @id @default(autoincrement())
+  code              String        @unique
+  description       String
+  version           String?
+  
+  @@index([code])
+}
+
+"use client";
+
+import React, { use, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { ChevronLeft } from "lucide-react";
+import { toast } from "react-toastify";
+import { LoadingState, ErrorState, NotFoundState } from "./_components/UIState";
+import PrescriptionHeader from "./_components/PrescriptionHeader";
+import PatientInfo from "./_components/PatientInfo";
+import PrescriptionList from "./_components/PrescriptionList";
+import ActionButtons from "./_components/ActionButtons";
+
+export default function PrescriptionDetailsPage({ params }) {
+  const router = useRouter();
+  const { id } = use(params); // This is the medicalRecordId
+
+  const [loading, setLoading] = useState(true);
+  const [prescription, setPrescription] = useState(null);
+  const [error, setError] = useState(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  useEffect(() => {
+    async function fetchPrescriptionDetails() {
+      try {
+        setLoading(true);
+        const response = await fetch(`/api/pharmacy/prescriptions/${id}`);
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        if (data.success) {
+          setPrescription(data.prescription);
+        } else {
+          setError(data.message || "Failed to fetch prescription details");
+          toast.error(data.message || "Failed to fetch prescription details");
+        }
+      } catch (error) {
+        console.error("Error fetching prescription details:", error);
+        setError("An error occurred while fetching prescription details");
+        toast.error("An error occurred while fetching prescription details");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchPrescriptionDetails();
+  }, [id]);
+
+  const handleMarkAsReady = async () => {
+    try {
+      setIsProcessing(true);
+      const response = await fetch(
+        `/api/pharmacy/queue/${prescription.medicalRecordId}/ready`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Update the prescription state locally instead of redirecting
+        setPrescription({
+          ...prescription,
+          status: "ready",
+        });
+        toast.success(`Resep siap diambil`);
+      } else {
+        toast.error(data.message || "Failed to mark prescription as ready");
+      }
+    } catch (error) {
+      console.error("Error marking prescription as ready:", error);
+      toast.error("An error occurred while marking prescription as ready");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleDispense = async () => {
+    try {
+      setIsProcessing(true);
+      const response = await fetch(
+        `/api/pharmacy/queue/${prescription.medicalRecordId}/dispense`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Update the prescription state locally
+        setPrescription({
+          ...prescription,
+          status: "dispensed",
+        });
+        toast.success(`Resep telah diserahkan`);
+      } else {
+        toast.error(data.message || "Failed to dispense prescription");
+      }
+    } catch (error) {
+      console.error("Error dispensing prescription:", error);
+      toast.error("An error occurred while dispensing prescription");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  if (loading) {
+    return <LoadingState />;
+  }
+
+  if (error) {
+    return <ErrorState error={error} router={router} />;
+  }
+
+  if (!prescription) {
+    return <NotFoundState router={router} />;
+  }
+
+  return (
+    <div className="max-w-6xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
+      {/* Back button */}
+      <div className="mb-6">
+        <Link
+          href="/apotek/antrian-resep"
+          className="inline-flex items-center text-blue-600 hover:text-blue-800 transition-colors font-medium"
+        >
+          <ChevronLeft className="h-5 w-5" />
+          <span>Kembali ke Antrian Farmasi</span>
+        </Link>
+      </div>
+
+      {/* Main content */}
+      <div className="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
+        <PrescriptionHeader prescription={prescription} />
+        <PatientInfo prescription={prescription} />
+        <PrescriptionList prescriptions={prescription.prescriptions} />
+        <ActionButtons
+          router={router}
+          prescription={prescription}
+          isProcessing={isProcessing}
+          handleMarkAsReady={handleMarkAsReady}
+          handleDispense={handleDispense}
+        />
+      </div>
+    </div>
+  );
+}
+
+

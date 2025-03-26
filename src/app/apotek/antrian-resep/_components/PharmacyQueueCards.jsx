@@ -11,6 +11,7 @@ import {
   Loader2,
   ArrowRight,
   Eye,
+  Building,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -63,6 +64,20 @@ export default function PharmacyQueueCards({
             {status}
           </span>
         );
+    }
+  };
+
+  // Function to get visit type in Indonesian
+  const getVisitTypeLabel = (visitType) => {
+    switch (visitType) {
+      case "outpatient":
+        return "Rawat Jalan";
+      case "inpatient":
+        return "Rawat Inap";
+      case "emergency":
+        return "Gawat Darurat";
+      default:
+        return visitType || "N/A";
     }
   };
 
@@ -267,6 +282,11 @@ export default function PharmacyQueueCards({
                     {item.gender || "N/A"} · {calculateAge(item.birthDate)}{" "}
                     tahun
                   </p>
+                </div>
+
+                <div className="flex items-center">
+                  <Building className="h-4 w-4 text-gray-500 mr-2" />
+                  <p>{getVisitTypeLabel(item.visitType)}</p>
                 </div>
 
                 <div className="flex items-center">
