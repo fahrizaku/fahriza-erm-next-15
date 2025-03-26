@@ -192,7 +192,7 @@ const DrugStoreProduct = () => {
               ) : (
                 <>
                   <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
-                  <span className="text-sm sm:text-base">Tambah Obat</span>
+                  <span className="text-sm sm:text-base">Tambah Produk</span>
                 </>
               )}
             </button>
