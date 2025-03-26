@@ -144,7 +144,7 @@ export default function TambahProduk() {
       }
 
       toast.success("Obat berhasil ditambahkan");
-      router.push("/apotek/obat");
+      router.push("/apotek/produk");
     } catch (error) {
       console.error("Form submission error:", error);
       toast.error(error.message || "Terjadi kesalahan sistem");
@@ -193,13 +193,13 @@ export default function TambahProduk() {
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Nama Obat */}
+            {/* Nama Produk */}
             <div>
               <label
                 htmlFor="name"
                 className="block text-sm font-medium text-gray-700 mb-1"
               >
-                Nama Obat <span className="text-red-500">*</span>
+                Nama Produk <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
