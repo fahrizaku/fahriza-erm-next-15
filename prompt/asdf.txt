@@ -1,425 +1,582 @@
-import React from "react";
-import { Pill, Plus, Clipboard, X } from "lucide-react";
-import PrescriptionItem from "./PrescriptionItem";
+"use client";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { ArrowLeft, Save } from "lucide-react";
+import { toast } from "react-toastify";
 
-const PrescriptionsForm = ({
-  prescriptions,
-  handlePrescriptionTypeChange,
-  handlePrescriptionNotesChange,
-  handlePrescriptionItemChange,
-  addPrescriptionItem,
-  removePrescriptionItem,
-  addPrescription,
-  removePrescription,
-  handleSharedDosageChange,
-  // Drug search props
-  searchDrugs,
-  drugSearchResults,
-  isSearchingDrugs,
-  selectDrug,
-  drugSearchQuery,
-}) => {
-  return (
-    <div className="mb-8">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center">
-          <Pill className="h-5 w-5 text-blue-600 mr-2" />
-          <h3 className="text-lg font-semibold text-gray-800">Resep Obat</h3>
-        </div>
-        <button
-          type="button"
-          onClick={addPrescription}
-          className="px-3 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm flex items-center shadow-sm"
-        >
-          <Plus className="h-4 w-4 mr-1" />
-          Tambah Resep Baru
-        </button>
-      </div>
+export default function TambahProduk() {
+  const router = useRouter();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [errors, setErrors] = useState({});
+  const [formData, setFormData] = useState({
+    name: "",
+    category: "",
+    manufacturer: "",
+    purchasePrice: "",
+    price: "",
+    stock: "",
+    expiryDate: "",
+    unit: "",
+  });
 
-      {/* Multiple prescriptions */}
-      <div className="space-y-6">
-        {prescriptions.map((prescription, prescIndex) => {
-          const isRacikan = prescription.type === "Racikan";
+  // Add useEffect to simulate data loading
+  useEffect(() => {
+    const initializeForm = async () => {
+      try {
+        // Add any initial data fetching here if needed
+        // For example, fetching categories, units, etc.
 
-          return (
-            <div
-              key={prescription.id}
-              className="border border-gray-200 rounded-lg bg-white shadow-sm overflow-hidden"
-            >
-              {/* Prescription header */}
-              <div className="bg-gray-50 p-4 border-b border-gray-200 flex justify-between items-center">
-                <div className="flex items-center">
-                  <Clipboard className="h-4 w-4 text-blue-600 mr-2" />
-                  <h4 className="font-medium text-gray-800">
-                    Resep {prescIndex + 1}
-                  </h4>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <select
-                    value={prescription.type}
-                    onChange={(e) =>
-                      handlePrescriptionTypeChange(prescIndex, e.target.value)
-                    }
-                    className="text-sm border border-gray-300 rounded px-2 py-1 bg-white"
-                  >
-                    <option value="Main">Utama</option>
-                    <option value="Alternative">Alternatif</option>
-                    <option value="Follow-up">Lanjutan</option>
-                    <option value="Racikan">Racikan</option>
-                  </select>
-                  <button
-                    type="button"
-                    onClick={() => removePrescription(prescIndex)}
-                    disabled={prescriptions.length === 1}
-                    className={`p-1 rounded ${
-                      prescriptions.length === 1
-                        ? "text-gray-400 cursor-not-allowed"
-                        : "text-red-500 hover:bg-red-50"
-                    }`}
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
+        // Simulate loading delay
+        await new Promise((resolve) => setTimeout(resolve, 200));
+      } catch (error) {
+        console.error("Error initializing form:", error);
+        toast.error("Gagal memuat data");
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-              {/* Prescription contents */}
-              <div className="p-4">
-                {/* For racikan prescriptions, show a shared dosage field */}
-                {isRacikan && (
-                  <div className="mb-4 p-3 bg-blue-50 border border-blue-100 rounded-md">
-                    <label className="block text-sm font-medium text-blue-800 mb-2">
-                      Dosis Racikan
-                    </label>
-                    <input
-                      type="text"
-                      value={prescription.sharedDosage}
-                      onChange={(e) =>
-                        handleSharedDosageChange(prescIndex, e.target.value)
-                      }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="Dosis untuk semua obat dalam racikan ini (contoh: 3 x sehari setelah makan)"
-                    />
-                  </div>
-                )}
+    initializeForm();
+  }, []);
 
-                {/* Prescription items */}
-                <div className="space-y-4 mb-4">
-                  {prescription.items.map((item, itemIndex) => (
-                    <PrescriptionItem
-                      key={item.id}
-                      item={item}
-                      itemIndex={itemIndex}
-                      prescIndex={prescIndex}
-                      itemsLength={prescription.items.length}
-                      handlePrescriptionItemChange={
-                        handlePrescriptionItemChange
-                      }
-                      removePrescriptionItem={removePrescriptionItem}
-                      // Pass drug search props
-                      searchDrugs={searchDrugs}
-                      drugSearchResults={drugSearchResults}
-                      isSearchingDrugs={isSearchingDrugs}
-                      selectDrug={selectDrug}
-                      drugSearchQuery={drugSearchQuery}
-                      // Pass racikan info
-                      isRacikan={isRacikan}
-                      sharedDosage={prescription.sharedDosage}
-                    />
-                  ))}
-                </div>
+  const validateForm = () => {
+    const newErrors = {};
 
-                {/* Add prescription item button */}
-                <button
-                  type="button"
-                  onClick={() => addPrescriptionItem(prescIndex)}
-                  className="w-full py-2 border border-dashed border-gray-300 rounded-md text-gray-500 hover:text-gray-700 hover:border-gray-400 transition-colors text-sm flex items-center justify-center"
-                >
-                  <Plus className="h-4 w-4 mr-1" />
-                  <span>Tambah Obat</span>
-                </button>
+    // Required fields validation - only name, price, stock, and unit are required
+    const requiredFields = ["name", "price", "stock", "unit"];
+    requiredFields.forEach((field) => {
+      if (!formData[field] && formData[field] !== 0) {
+        newErrors[field] = "Field ini wajib diisi";
+      }
+    });
 
-                {/* Prescription notes */}
-                <div className="mt-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Catatan Tambahan Resep
-                  </label>
-                  <textarea
-                    value={prescription.notes}
-                    onChange={(e) =>
-                      handlePrescriptionNotesChange(prescIndex, e.target.value)
-                    }
-                    rows="2"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Catatan tambahan untuk apoteker (opsional)"
-                  />
-                </div>
-              </div>
-            </div>
+    // Numeric validation
+    if (
+      formData.purchasePrice &&
+      (isNaN(parseFloat(formData.purchasePrice)) ||
+        parseFloat(formData.purchasePrice) < 0)
+    ) {
+      newErrors.purchasePrice = "Harus berupa angka positif";
+    }
+
+    if (
+      formData.price &&
+      (isNaN(parseFloat(formData.price)) || parseFloat(formData.price) < 0)
+    ) {
+      newErrors.price = "Harus berupa angka positif";
+    }
+
+    if (
+      formData.stock &&
+      (isNaN(parseInt(formData.stock)) ||
+        parseInt(formData.stock) < 0 ||
+        !Number.isInteger(parseFloat(formData.stock)))
+    ) {
+      newErrors.stock = "Harus berupa bilangan bulat positif";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+
+    // Clear error when field is edited
+    if (errors[name]) {
+      setErrors({
+        ...errors,
+        [name]: undefined,
+      });
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    // Validate form first
+    if (!validateForm()) {
+      toast.error("Harap perbaiki error pada form");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      // Ensure all fields have at least some value to pass backend validation
+      const dataToSubmit = {
+        ...formData,
+        // Set default values for non-required fields if they're empty
+        category: formData.category || "Lainnya",
+        manufacturer: formData.manufacturer || "-",
+        purchasePrice: formData.purchasePrice
+          ? parseFloat(formData.purchasePrice)
+          : 0,
+        price: parseFloat(formData.price),
+        stock: parseInt(formData.stock),
+        expiryDate: formData.expiryDate || null,
+      };
+
+      const response = await fetch("/api/drugs/add", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(dataToSubmit),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        // Check if the error is from backend validation
+        if (result.error && result.error.includes("category")) {
+          throw new Error(
+            "Field 'category' harus diisi. Silakan pilih kategori."
           );
-        })}
+        } else {
+          throw new Error(result.error || "Gagal menambahkan obat");
+        }
+      }
+
+      toast.success("Obat berhasil ditambahkan");
+      router.push("/apotek/produk");
+    } catch (error) {
+      console.error("Form submission error:", error);
+      toast.error(error.message || "Terjadi kesalahan sistem");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="max-w-7xl mx-auto pt-4 px-4 sm:px-6 lg:px-8">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+          <div className="animate-pulse space-y-4">
+            <div className="h-8 bg-gray-200 rounded w-1/4"></div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="h-40 bg-gray-200 rounded"></div>
+              <div className="h-40 bg-gray-200 rounded"></div>
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
-  );
-};
-
-export default PrescriptionsForm;
-
-
-import React, { useRef, useEffect, useState } from "react";
-import { Minus, Search, Loader2 } from "lucide-react";
-import { DOSAGE_SUGGESTIONS } from "@/data/dosis";
-
-const PrescriptionItem = ({
-  item,
-  itemIndex,
-  prescIndex,
-  itemsLength,
-  handlePrescriptionItemChange,
-  removePrescriptionItem,
-  // Drug search props
-  searchDrugs,
-  drugSearchResults,
-  isSearchingDrugs,
-  selectDrug,
-  drugSearchQuery,
-  // Racikan props
-  isRacikan,
-  sharedDosage,
-}) => {
-  // Refs for handling dropdown
-  const dropdownRef = useRef(null);
-  const inputRef = useRef(null);
-  const dosageInputRef = useRef(null);
-  const dosageDropdownRef = useRef(null);
-
-  // State to control dropdowns visibility
-  const [showDosageSuggestions, setShowDosageSuggestions] = useState(false);
-  const [showDrugSearchResults, setShowDrugSearchResults] = useState(false);
-
-  // State to store filtered dosage suggestions
-  const [filteredDosageSuggestions, setFilteredDosageSuggestions] =
-    useState(DOSAGE_SUGGESTIONS);
-
-  // Close drug search dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target) &&
-        inputRef.current &&
-        !inputRef.current.contains(event.target)
-      ) {
-        setShowDrugSearchResults(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, []);
-
-  // Handle dosage suggestions dropdown
-  useEffect(() => {
-    const handleClickOutsideDosage = (event) => {
-      if (
-        dosageDropdownRef.current &&
-        !dosageDropdownRef.current.contains(event.target) &&
-        dosageInputRef.current &&
-        !dosageInputRef.current.contains(event.target)
-      ) {
-        setShowDosageSuggestions(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutsideDosage);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutsideDosage);
-    };
-  }, []);
-
-  // Handle selecting a dosage suggestion
-  const handleSelectDosage = (suggestion) => {
-    handlePrescriptionItemChange(prescIndex, itemIndex, "dosage", suggestion);
-    setShowDosageSuggestions(false);
-  };
-
-  // Filter dosage suggestions based on input
-  const handleDosageInputChange = (value) => {
-    handlePrescriptionItemChange(prescIndex, itemIndex, "dosage", value);
-
-    // Filter suggestions based on input
-    const filtered = DOSAGE_SUGGESTIONS.filter((suggestion) =>
-      suggestion.toLowerCase().includes(value.toLowerCase())
     );
-    setFilteredDosageSuggestions(filtered);
-
-    // Show suggestions dropdown if we have input
-    setShowDosageSuggestions(true);
-  };
-
-  // Handle drug search
-  const handleDrugSearch = (query) => {
-    handlePrescriptionItemChange(
-      prescIndex,
-      itemIndex,
-      "manualDrugName",
-      query
-    );
-    searchDrugs(query);
-    setShowDrugSearchResults(true);
-  };
-
-  // Handle drug selection
-  const handleDrugSelection = (drug) => {
-    selectDrug(prescIndex, itemIndex, drug);
-    setShowDrugSearchResults(false);
-  };
+  }
 
   return (
-    <div className="p-4 border border-gray-200 rounded-md bg-gray-50">
-      <div className="flex justify-between items-start mb-3">
-        <h4 className="text-sm font-medium text-gray-700">
-          {isRacikan ? "Komponen #" : "Obat #"}
-          {itemIndex + 1}
-        </h4>
-        <button
-          type="button"
-          onClick={() => removePrescriptionItem(prescIndex, itemIndex)}
-          disabled={itemsLength === 1}
-          className={`p-1 rounded-full ${
-            itemsLength === 1
-              ? "text-gray-400 cursor-not-allowed"
-              : "text-red-500 hover:bg-red-100"
-          }`}
-        >
-          <Minus className="h-4 w-4" />
-        </button>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Drug name with autocomplete */}
-        <div className="relative">
-          <label className="block text-xs font-medium text-gray-700 mb-1">
-            Nama Obat
-          </label>
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search className="h-4 w-4 text-gray-400" />
-            </div>
-            <input
-              ref={inputRef}
-              type="text"
-              value={item.manualDrugName}
-              onChange={(e) => handleDrugSearch(e.target.value)}
-              onFocus={() => {
-                if (drugSearchResults.length > 0 && item.manualDrugName) {
-                  setShowDrugSearchResults(true);
-                }
-              }}
-              className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Cari obat..."
-            />
-            {isSearchingDrugs && (
-              <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                <Loader2 className="h-4 w-4 text-blue-500 animate-spin" />
-              </div>
-            )}
-          </div>
-
-          {/* Dropdown for drug search results */}
-          {showDrugSearchResults && drugSearchResults.length > 0 && (
-            <div
-              ref={dropdownRef}
-              className="absolute z-10 mt-1 w-full bg-white shadow-lg rounded-md border border-gray-200 max-h-48 overflow-y-auto"
-            >
-              {drugSearchResults.map((drug) => (
-                <div
-                  key={drug.id}
-                  onClick={() => handleDrugSelection(drug)}
-                  className="px-4 py-2 hover:bg-blue-50 cursor-pointer text-sm"
-                >
-                  <div className="font-medium">{drug.displayName}</div>
-                </div>
-              ))}
-            </div>
-          )}
+    <div className="max-w-7xl mx-auto pt-4 px-4 sm:px-6 lg:px-8">
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6">
+        {/* Header */}
+        <div className="mb-6">
+          <button
+            onClick={() => router.back()}
+            className="flex items-center text-gray-600 hover:text-blue-600 transition-colors mb-4"
+          >
+            <ArrowLeft className="w-4 h-4 mr-1" />
+            <span>Kembali</span>
+          </button>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-800">
+            Tambah Obat Baru
+          </h1>
+          <p className="text-sm text-gray-600 mt-1">
+            Field dengan tanda <span className="text-red-500">*</span> wajib
+            diisi
+          </p>
         </div>
 
-        {/* Dosage field - only shown for non-racikan prescriptions */}
-        {!isRacikan ? (
-          <div className="relative">
-            <label className="block text-xs font-medium text-gray-700 mb-1">
-              Dosis
-            </label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Search className="h-4 w-4 text-gray-400" />
-              </div>
-              <input
-                ref={dosageInputRef}
-                type="text"
-                value={item.dosage}
-                onChange={(e) => handleDosageInputChange(e.target.value)}
-                onFocus={() => setShowDosageSuggestions(true)}
-                className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Cari atau masukkan dosis..."
-              />
-            </div>
-
-            {/* Dropdown for filtered dosage suggestions */}
-            {showDosageSuggestions && filteredDosageSuggestions.length > 0 && (
-              <div
-                ref={dosageDropdownRef}
-                className="absolute z-10 mt-1 w-full bg-white shadow-lg rounded-md border border-gray-200 max-h-48 overflow-y-auto"
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Nama Produk */}
+            <div>
+              <label
+                htmlFor="name"
+                className="block text-sm font-medium text-gray-700 mb-1"
               >
-                {filteredDosageSuggestions.map((suggestion, index) => (
-                  <div
-                    key={index}
-                    onClick={() => handleSelectDosage(suggestion)}
-                    className="px-4 py-2 hover:bg-blue-50 cursor-pointer text-sm"
-                  >
-                    {suggestion}
-                  </div>
-                ))}
+                Nama Produk <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                id="name"
+                name="name"
+                value={formData.name}
+                onChange={handleChange}
+                className={`w-full px-4 py-2 bg-white rounded-lg border ${
+                  errors.name
+                    ? "border-red-500 focus:ring-red-500"
+                    : "border-gray-300 focus:ring-cyan-500"
+                } focus:outline-none focus:ring-2 focus:border-transparent`}
+                placeholder="Masukkan nama obat"
+              />
+              {errors.name && (
+                <p className="mt-1 text-sm text-red-500">{errors.name}</p>
+              )}
+            </div>
+
+            {/* Kategori */}
+            <div>
+              <label
+                htmlFor="category"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                Kategori <span className="text-gray-400">(opsional)</span>
+              </label>
+              <select
+                id="category"
+                name="category"
+                value={formData.category}
+                onChange={handleChange}
+                className={`w-full px-4 py-2 bg-white rounded-lg border ${
+                  errors.category
+                    ? "border-red-500 focus:ring-red-500"
+                    : "border-gray-300 focus:ring-cyan-500"
+                } focus:outline-none focus:ring-2 focus:border-transparent`}
+              >
+                <option value="Lainnya">Pilih kategori</option>
+                <option value="Antibiotik">Antibiotik</option>
+                <option value="Analgesik">Analgesik</option>
+                <option value="Antipiretik">Antipiretik</option>
+                <option value="Antihipertensi">Antihipertensi</option>
+                <option value="Vitamin">Vitamin</option>
+                <option value="Suplemen">Suplemen</option>
+                <option value="Lainnya">Lainnya</option>
+              </select>
+              {errors.category && (
+                <p className="mt-1 text-sm text-red-500">{errors.category}</p>
+              )}
+            </div>
+
+            {/* Produsen */}
+            <div>
+              <label
+                htmlFor="manufacturer"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                Produsen <span className="text-gray-400">(opsional)</span>
+              </label>
+              <input
+                type="text"
+                id="manufacturer"
+                name="manufacturer"
+                value={formData.manufacturer}
+                onChange={handleChange}
+                className={`w-full px-4 py-2 bg-white rounded-lg border ${
+                  errors.manufacturer
+                    ? "border-red-500 focus:ring-red-500"
+                    : "border-gray-300 focus:ring-cyan-500"
+                } focus:outline-none focus:ring-2 focus:border-transparent`}
+                placeholder="Masukkan nama produsen"
+              />
+              {errors.manufacturer && (
+                <p className="mt-1 text-sm text-red-500">
+                  {errors.manufacturer}
+                </p>
+              )}
+            </div>
+
+            {/* Harga Beli */}
+            <div>
+              <label
+                htmlFor="purchasePrice"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                Harga Beli (Rp){" "}
+                <span className="text-gray-400">(opsional)</span>
+              </label>
+              <div className="relative">
+                <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
+                  Rp
+                </span>
+                <input
+                  type="number"
+                  id="purchasePrice"
+                  name="purchasePrice"
+                  value={formData.purchasePrice}
+                  onChange={handleChange}
+                  min="0"
+                  step="0.01"
+                  className={`w-full pl-10 pr-4 py-2 bg-white rounded-lg border ${
+                    errors.purchasePrice
+                      ? "border-red-500 focus:ring-red-500"
+                      : "border-gray-300 focus:ring-cyan-500"
+                  } focus:outline-none focus:ring-2 focus:border-transparent`}
+                  placeholder="0.00"
+                />
               </div>
-            )}
-          </div>
-        ) : (
-          // For racikan, show a read-only display of the shared dosage
-          <div className="relative">
-            <label className="block text-xs font-medium text-gray-700 mb-1">
-              Dosis
-            </label>
-            <div className="px-3 py-2 border border-gray-200 bg-gray-100 rounded-md text-gray-600 text-sm">
-              {sharedDosage || "Dosis racikan belum diisi"}
+              {errors.purchasePrice && (
+                <p className="mt-1 text-sm text-red-500">
+                  {errors.purchasePrice}
+                </p>
+              )}
+            </div>
+
+            {/* Harga Jual */}
+            <div>
+              <label
+                htmlFor="price"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                Harga Jual (Rp) <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
+                  Rp
+                </span>
+                <input
+                  type="number"
+                  id="price"
+                  name="price"
+                  value={formData.price}
+                  onChange={handleChange}
+                  min="0"
+                  step="0.01"
+                  className={`w-full pl-10 pr-4 py-2 bg-white rounded-lg border ${
+                    errors.price
+                      ? "border-red-500 focus:ring-red-500"
+                      : "border-gray-300 focus:ring-cyan-500"
+                  } focus:outline-none focus:ring-2 focus:border-transparent`}
+                  placeholder="0.00"
+                />
+              </div>
+              {errors.price && (
+                <p className="mt-1 text-sm text-red-500">{errors.price}</p>
+              )}
+            </div>
+
+            {/* Stok */}
+            <div>
+              <label
+                htmlFor="stock"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                Stok <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="number"
+                id="stock"
+                name="stock"
+                value={formData.stock}
+                onChange={handleChange}
+                min="0"
+                step="1"
+                className={`w-full px-4 py-2 bg-white rounded-lg border ${
+                  errors.stock
+                    ? "border-red-500 focus:ring-red-500"
+                    : "border-gray-300 focus:ring-cyan-500"
+                } focus:outline-none focus:ring-2 focus:border-transparent`}
+                placeholder="0"
+              />
+              {errors.stock && (
+                <p className="mt-1 text-sm text-red-500">{errors.stock}</p>
+              )}
+            </div>
+
+            {/* Tanggal Kadaluarsa */}
+            <div>
+              <label
+                htmlFor="expiryDate"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                Tanggal Kadaluarsa{" "}
+                <span className="text-gray-400">(opsional)</span>
+              </label>
+              <input
+                type="date"
+                id="expiryDate"
+                name="expiryDate"
+                value={formData.expiryDate}
+                onChange={handleChange}
+                className={`w-full px-4 py-2 bg-white rounded-lg border ${
+                  errors.expiryDate
+                    ? "border-red-500 focus:ring-red-500"
+                    : "border-gray-300 focus:ring-cyan-500"
+                } focus:outline-none focus:ring-2 focus:border-transparent`}
+              />
+              {errors.expiryDate && (
+                <p className="mt-1 text-sm text-red-500">{errors.expiryDate}</p>
+              )}
+            </div>
+
+            {/* Satuan */}
+            <div>
+              <label
+                htmlFor="unit"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                Satuan <span className="text-red-500">*</span>
+              </label>
+              <select
+                id="unit"
+                name="unit"
+                value={formData.unit}
+                onChange={handleChange}
+                className={`w-full px-4 py-2 bg-white rounded-lg border ${
+                  errors.unit
+                    ? "border-red-500 focus:ring-red-500"
+                    : "border-gray-300 focus:ring-cyan-500"
+                } focus:outline-none focus:ring-2 focus:border-transparent`}
+              >
+                <option value="">Pilih satuan</option>
+                <option value="Fls">Fls</option>
+                <option value="Pcs">Pcs</option>
+                <option value="Tablet">Tablet</option>
+                <option value="Kapsul">Kapsul</option>
+                <option value="Botol">Botol</option>
+                <option value="Strip">Strip</option>
+                <option value="Ampul">Ampul</option>
+                <option value="Vial">Vial</option>
+                <option value="Sachet">Sachet</option>
+                <option value="Box">Box</option>
+              </select>
+              {errors.unit && (
+                <p className="mt-1 text-sm text-red-500">{errors.unit}</p>
+              )}
             </div>
           </div>
-        )}
 
-        {/* Quantity */}
-        <div className={isRacikan ? "md:col-span-1" : "md:col-span-2"}>
-          <label className="block text-xs font-medium text-gray-700 mb-1">
-            Jumlah
-          </label>
-          <input
-            type="number"
-            min="1"
-            value={item.quantity}
-            onChange={(e) =>
-              handlePrescriptionItemChange(
-                prescIndex,
-                itemIndex,
-                "quantity",
-                e.target.value
-              )
-            }
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
+          {/* Tombol Submit */}
+          <div className="flex justify-end pt-4">
+            <button
+              type="button"
+              onClick={() => router.back()}
+              className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg mr-4 hover:bg-gray-50 transition-all"
+              disabled={isSubmitting}
+            >
+              Batal
+            </button>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="px-6 py-2 bg-gradient-to-r from-blue-600 to-cyan-500 text-white rounded-lg hover:shadow-lg transition-all flex items-center gap-2"
+            >
+              {isSubmitting ? (
+                <>
+                  <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                  <span>Menyimpan...</span>
+                </>
+              ) : (
+                <>
+                  <Save className="w-5 h-5" />
+                  <span>Simpan Obat</span>
+                </>
+              )}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );
-};
+}
 
-export default PrescriptionItem;
+
+// api/drugs/route.js
+import { NextResponse } from "next/server";
+import { db } from "@/lib/db";
+
+export async function POST(req) {
+  try {
+    const body = await req.json();
+
+    // Validasi data
+    const requiredFields = [
+      "name",
+      "category",
+      "manufacturer",
+      "purchasePrice",
+      "price",
+      "stock",
+      "unit",
+    ];
+    for (const field of requiredFields) {
+      if (!body[field] && body[field] !== 0) {
+        return NextResponse.json(
+          { error: `Field '${field}' harus diisi` },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Konversi dan validasi tipe data numerik
+    const purchasePrice = parseFloat(body.purchasePrice);
+    const price = parseFloat(body.price);
+    const stock = parseInt(body.stock);
+
+    if (isNaN(purchasePrice) || purchasePrice < 0) {
+      return NextResponse.json(
+        { error: "Harga beli harus berupa angka positif" },
+        { status: 400 }
+      );
+    }
+
+    if (isNaN(price) || price < 0) {
+      return NextResponse.json(
+        { error: "Harga jual harus berupa angka positif" },
+        { status: 400 }
+      );
+    }
+
+    if (isNaN(stock) || stock < 0 || !Number.isInteger(stock)) {
+      return NextResponse.json(
+        { error: "Stok harus berupa bilangan bulat positif" },
+        { status: 400 }
+      );
+    }
+
+    // Menyiapkan data untuk prisma dengan tipe data yang benar
+    const drugData = {
+      name: body.name,
+      category: body.category,
+      manufacturer: body.manufacturer,
+      purchasePrice: purchasePrice,
+      price: price,
+      stock: stock,
+      unit: body.unit,
+    };
+
+    // Hanya tambahkan expiryDate jika ada nilainya
+    if (body.expiryDate) {
+      drugData.expiryDate = body.expiryDate;
+    }
+
+    // Debug log
+    console.log("Attempting to create drug with data:", drugData);
+
+    // Simpan data obat
+    const newDrug = await db.drugStoreProduct.create({
+      data: drugData,
+    });
+
+    return NextResponse.json(newDrug, { status: 201 });
+  } catch (error) {
+    console.error("Error adding drug:", error);
+
+    // Memberikan error detail yang lebih spesifik
+    if (error.code) {
+      // Prisma error codes
+      if (error.code === "P2002") {
+        return NextResponse.json(
+          { error: "Data dengan nilai unik yang sama sudah ada" },
+          { status: 409 }
+        );
+      }
+
+      if (error.code === "P2003") {
+        return NextResponse.json(
+          { error: "Referensi ke data yang tidak ada" },
+          { status: 400 }
+        );
+      }
+    }
+
+    return NextResponse.json(
+      { error: `Gagal menambahkan obat: ${error.message}` },
+      { status: 500 }
+    );
+  }
+}
