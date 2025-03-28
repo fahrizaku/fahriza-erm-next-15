@@ -78,6 +78,15 @@ export async function POST(request, { params }) {
       );
     }
 
+    // Parse reportedAt date if provided
+    let reportedAt = undefined;
+    if (body.reportedAt) {
+      reportedAt = new Date(body.reportedAt);
+      if (isNaN(reportedAt.getTime())) {
+        reportedAt = new Date(); // Default to current date if invalid
+      }
+    }
+
     // Buat rekaman alergi baru
     const newAllergy = await db.patientAllergy.create({
       data: {
@@ -87,6 +96,8 @@ export async function POST(request, { params }) {
         severity: body.severity || null,
         reaction: body.reaction || null,
         notes: body.notes || null,
+        status: body.status || "aktif",
+        reportedAt: reportedAt,
       },
     });
 

@@ -79,6 +79,15 @@ export async function PUT(request, { params }) {
       );
     }
 
+    // Parse reportedAt date if provided
+    let reportedAt = undefined;
+    if (body.reportedAt) {
+      reportedAt = new Date(body.reportedAt);
+      if (isNaN(reportedAt.getTime())) {
+        reportedAt = undefined; // Keep existing date if invalid
+      }
+    }
+
     // Update rekaman alergi
     const updatedAllergy = await db.patientAllergy.update({
       where: { id: parseInt(allergyId) },
@@ -88,6 +97,8 @@ export async function PUT(request, { params }) {
         severity: body.severity || null,
         reaction: body.reaction || null,
         notes: body.notes || null,
+        status: body.status || null,
+        reportedAt: reportedAt,
       },
     });
 

@@ -39,6 +39,7 @@ model PatientAllergy {
   severity      String?   // Tingkat keparahan (ringan, sedang, parah)
   reaction      String?   // Reaksi yang terjadi (ruam, sesak napas, dll)
   notes         String?   // Catatan tambahan
+  status        String?   @default("aktif") // Status alergi: aktif, tidak_aktif, sembuh
   reportedAt    DateTime  @default(now()) // Kapan alergi dilaporkan
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -46,6 +47,7 @@ model PatientAllergy {
   @@index([patientId])
   @@index([allergyType])
 }
+
 model DrugStoreProduct {
   id            Int         @id @default(autoincrement()) 
   name          String

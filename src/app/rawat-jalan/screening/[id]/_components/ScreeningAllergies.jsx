@@ -1,11 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { toast } from "react-toastify";
-
-const severityOptions = [
-  { value: "ringan", label: "Ringan" },
-  { value: "sedang", label: "Sedang" },
-  { value: "parah", label: "Parah" },
-];
 
 const allergyTypeOptions = [
   { value: "makanan", label: "Makanan" },
@@ -14,14 +7,23 @@ const allergyTypeOptions = [
   { value: "lainnya", label: "Lainnya" },
 ];
 
+const severityOptions = [
+  { value: "ringan", label: "Ringan" },
+  { value: "sedang", label: "Sedang" },
+  { value: "parah", label: "Parah" },
+];
+
 const statusOptions = [
   { value: "aktif", label: "Aktif" },
   { value: "tidak_aktif", label: "Tidak Aktif" },
   { value: "sembuh", label: "Sembuh" },
 ];
 
-export default function PatientAllergies({ patientId }) {
-  const [allergies, setAllergies] = useState([]);
+export default function ScreeningAllergies({
+  patientId,
+  allergies,
+  setAllergies,
+}) {
   const [isLoading, setIsLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
   const [formData, setFormData] = useState({
@@ -31,19 +33,17 @@ export default function PatientAllergies({ patientId }) {
     reaction: "",
     notes: "",
     status: "aktif",
-    reportedAt: new Date().toISOString().split("T")[0], // Current date in YYYY-MM-DD format
   });
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [editingAllergyId, setEditingAllergyId] = useState(null);
+  const [editingIndex, setEditingIndex] = useState(null);
 
   // Fetch patient allergies
   useEffect(() => {
     if (patientId) {
-      fetchAllergies();
+      fetchExistingAllergies();
     }
   }, [patientId]);
 
-  const fetchAllergies = async () => {
+  const fetchExistingAllergies = async () => {
     try {
       setIsLoading(true);
       const response = await fetch(`/api/patients/${patientId}/allergies`);
@@ -55,7 +55,22 @@ export default function PatientAllergies({ patientId }) {
       const data = await response.json();
 
       if (data.success) {
-        setAllergies(data.allergies);
+        // Directly add existing allergies to the screening
+        const existingAllergiesFormatted = data.allergies.map((allergy) => ({
+          allergyName: allergy.allergyName,
+          allergyType: allergy.allergyType || "lainnya",
+          severity: allergy.severity || "sedang",
+          reaction: allergy.reaction || "",
+          notes: allergy.notes || "",
+          status: allergy.status || "aktif",
+          existingAllergyId: allergy.id, // Keep reference to original ID
+          reportedAt: allergy.reportedAt || new Date().toISOString(),
+        }));
+
+        // Only add if allergies array is empty (initial load)
+        if (allergies.length === 0) {
+          setAllergies(existingAllergiesFormatted);
+        }
       } else {
         console.error("Failed to fetch allergies:", data.message);
       }
@@ -71,77 +86,32 @@ export default function PatientAllergies({ patientId }) {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setIsSubmitting(true);
+  const handleSubmitAllergy = (e) => {
+    if (e) e.preventDefault();
 
-    try {
-      const url = editingAllergyId
-        ? `/api/patients/${patientId}/allergies/${editingAllergyId}`
-        : `/api/patients/${patientId}/allergies`;
-
-      const method = editingAllergyId ? "PUT" : "POST";
-
-      const response = await fetch(url, {
-        method,
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        toast.success(
-          editingAllergyId
-            ? "Alergi berhasil diperbarui"
-            : "Alergi berhasil ditambahkan"
-        );
-        resetForm();
-        fetchAllergies();
-      } else {
-        toast.error(data.message || "Gagal menyimpan data alergi");
-      }
-    } catch (error) {
-      console.error("Error saving allergy:", error);
-      toast.error("Terjadi kesalahan saat menyimpan data alergi");
-    } finally {
-      setIsSubmitting(false);
+    if (editingIndex !== null) {
+      // Update existing allergy
+      const updatedAllergies = [...allergies];
+      updatedAllergies[editingIndex] = {
+        ...updatedAllergies[editingIndex],
+        ...formData,
+        reportedAt: new Date().toISOString(), // Update reportedAt to current date
+      };
+      setAllergies(updatedAllergies);
+    } else {
+      // Add new allergy
+      const newAllergy = {
+        ...formData,
+        reportedAt: new Date().toISOString(), // Set reportedAt for new allergies
+      };
+      setAllergies([...allergies, newAllergy]);
     }
+
+    resetForm();
   };
 
-  const handleDelete = async (id) => {
-    if (!confirm("Yakin ingin menghapus data alergi ini?")) return;
-
-    try {
-      const response = await fetch(
-        `/api/patients/${patientId}/allergies/${id}`,
-        {
-          method: "DELETE",
-        }
-      );
-
-      const data = await response.json();
-
-      if (data.success) {
-        toast.success("Alergi berhasil dihapus");
-        fetchAllergies();
-      } else {
-        toast.error(data.message || "Gagal menghapus data alergi");
-      }
-    } catch (error) {
-      console.error("Error deleting allergy:", error);
-      toast.error("Terjadi kesalahan saat menghapus data alergi");
-    }
-  };
-
-  const handleEdit = (allergy) => {
-    // Format the date to YYYY-MM-DD for the input field
-    const formattedReportedAt = allergy.reportedAt
-      ? new Date(allergy.reportedAt).toISOString().split("T")[0]
-      : new Date().toISOString().split("T")[0];
-
+  const handleEdit = (index) => {
+    const allergy = allergies[index];
     setFormData({
       allergyName: allergy.allergyName,
       allergyType: allergy.allergyType || "obat",
@@ -149,17 +119,17 @@ export default function PatientAllergies({ patientId }) {
       reaction: allergy.reaction || "",
       notes: allergy.notes || "",
       status: allergy.status || "aktif",
-      reportedAt: formattedReportedAt,
     });
-    setEditingAllergyId(allergy.id);
+    setEditingIndex(index);
     setShowAddForm(true);
+  };
 
-    // Scroll to form
-    setTimeout(() => {
-      document
-        .getElementById("allergyForm")
-        .scrollIntoView({ behavior: "smooth" });
-    }, 100);
+  const handleDelete = (index) => {
+    if (!confirm("Yakin ingin menghapus data alergi ini?")) return;
+
+    const updatedAllergies = [...allergies];
+    updatedAllergies.splice(index, 1);
+    setAllergies(updatedAllergies);
   };
 
   const resetForm = () => {
@@ -170,9 +140,8 @@ export default function PatientAllergies({ patientId }) {
       reaction: "",
       notes: "",
       status: "aktif",
-      reportedAt: new Date().toISOString().split("T")[0],
     });
-    setEditingAllergyId(null);
+    setEditingIndex(null);
     setShowAddForm(false);
   };
 
@@ -202,6 +171,7 @@ export default function PatientAllergies({ patientId }) {
     }
   };
 
+  // Format date for display
   const formatDate = (dateString) => {
     if (!dateString) return "-";
     const date = new Date(dateString);
@@ -218,6 +188,7 @@ export default function PatientAllergies({ patientId }) {
         <h2 className="text-xl font-semibold text-gray-800">Riwayat Alergi</h2>
         {!showAddForm && (
           <button
+            type="button"
             onClick={() => setShowAddForm(true)}
             className="py-1 px-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm transition-colors"
           >
@@ -293,8 +264,8 @@ export default function PatientAllergies({ patientId }) {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {allergies.map((allergy) => (
-                    <tr key={allergy.id}>
+                  {allergies.map((allergy, index) => (
+                    <tr key={index}>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="font-medium text-gray-900">
                           {allergy.allergyName}
@@ -302,7 +273,9 @@ export default function PatientAllergies({ patientId }) {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-700">
-                          {allergy.allergyType || "-"}
+                          {allergyTypeOptions.find(
+                            (opt) => opt.value === allergy.allergyType
+                          )?.label || "-"}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -312,8 +285,9 @@ export default function PatientAllergies({ patientId }) {
                               allergy.severity
                             )}`}
                           >
-                            {allergy.severity.charAt(0).toUpperCase() +
-                              allergy.severity.slice(1)}
+                            {severityOptions.find(
+                              (opt) => opt.value === allergy.severity
+                            )?.label || "-"}
                           </span>
                         )}
                       </td>
@@ -348,13 +322,15 @@ export default function PatientAllergies({ patientId }) {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <button
-                          onClick={() => handleEdit(allergy)}
+                          type="button"
+                          onClick={() => handleEdit(index)}
                           className="text-blue-600 hover:text-blue-900 mr-4"
                         >
                           Edit
                         </button>
                         <button
-                          onClick={() => handleDelete(allergy.id)}
+                          type="button"
+                          onClick={() => handleDelete(index)}
                           className="text-red-600 hover:text-red-900"
                         >
                           Hapus
@@ -373,9 +349,9 @@ export default function PatientAllergies({ patientId }) {
               className="mt-6 p-4 border border-gray-200 rounded-lg bg-gray-50"
             >
               <h3 className="text-lg font-medium mb-4">
-                {editingAllergyId ? "Edit Alergi" : "Tambah Alergi Baru"}
+                {editingIndex !== null ? "Edit Alergi" : "Tambah Alergi Baru"}
               </h3>
-              <form onSubmit={handleSubmit}>
+              <div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                   <div>
                     <label
@@ -464,23 +440,6 @@ export default function PatientAllergies({ patientId }) {
 
                   <div>
                     <label
-                      htmlFor="reportedAt"
-                      className="block text-sm font-medium text-gray-700 mb-1"
-                    >
-                      Tanggal Dilaporkan
-                    </label>
-                    <input
-                      type="date"
-                      id="reportedAt"
-                      name="reportedAt"
-                      value={formData.reportedAt}
-                      onChange={handleInputChange}
-                      className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label
                       htmlFor="reaction"
                       className="block text-sm font-medium text-gray-700 mb-1"
                     >
@@ -525,42 +484,14 @@ export default function PatientAllergies({ patientId }) {
                     Batal
                   </button>
                   <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className={`py-2 px-4 rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
-                      isSubmitting ? "opacity-75 cursor-not-allowed" : ""
-                    }`}
+                    type="button"
+                    onClick={handleSubmitAllergy}
+                    className="py-2 px-4 rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                   >
-                    {isSubmitting ? (
-                      <span className="flex items-center">
-                        <svg
-                          className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-                          xmlns="http://www.w3.org/2000/svg"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                        >
-                          <circle
-                            className="opacity-25"
-                            cx="12"
-                            cy="12"
-                            r="10"
-                            stroke="currentColor"
-                            strokeWidth="4"
-                          ></circle>
-                          <path
-                            className="opacity-75"
-                            fill="currentColor"
-                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                          ></path>
-                        </svg>
-                        Menyimpan...
-                      </span>
-                    ) : (
-                      "Simpan"
-                    )}
+                    Simpan
                   </button>
                 </div>
-              </form>
+              </div>
             </div>
           )}
         </div>
