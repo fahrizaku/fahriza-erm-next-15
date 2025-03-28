@@ -37,6 +37,10 @@ export const useDoctorExamination = (screeningId) => {
     },
   ]);
 
+  // Add state for allergies
+  const [allergies, setAllergies] = useState([]);
+  const [loadingAllergies, setLoadingAllergies] = useState(true);
+
   // Add state for drug search
   const [drugSearchQuery, setDrugSearchQuery] = useState("");
   const [drugSearchResults, setDrugSearchResults] = useState([]);
@@ -58,17 +62,22 @@ export const useDoctorExamination = (screeningId) => {
         if (data.success) {
           setScreening(data.screening);
           setPatient(data.patient);
+
+          // After getting patient data, fetch allergies
+          if (data.patient?.id) {
+            fetchPatientAllergies(data.patient.id);
+          }
         } else {
           setError(data.message || "Failed to fetch screening data");
           toast.error(data.message || "Failed to fetch screening data", {
-            autoClose: 200,
+            autoClose: 2000,
           });
         }
       } catch (error) {
         console.error("Error fetching data:", error);
         setError("An error occurred while fetching data");
         toast.error("An error occurred while fetching data", {
-          autoClose: 200,
+          autoClose: 2000,
         });
       } finally {
         setLoading(false);
@@ -79,6 +88,43 @@ export const useDoctorExamination = (screeningId) => {
       fetchData();
     }
   }, [screeningId]);
+
+  // Function to fetch patient allergies
+  const fetchPatientAllergies = async (patientId) => {
+    try {
+      setLoadingAllergies(true);
+      const response = await fetch(`/api/patients/${patientId}/allergies`);
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Format allergies with existingAllergyId field
+        const formattedAllergies = data.allergies.map((allergy) => ({
+          allergyName: allergy.allergyName,
+          allergyType: allergy.allergyType || "lainnya",
+          severity: allergy.severity || "sedang",
+          reaction: allergy.reaction || "",
+          notes: allergy.notes || "",
+          status: allergy.status || "aktif",
+          existingAllergyId: allergy.id, // Keep reference to original ID
+          reportedAt: allergy.reportedAt || new Date().toISOString(),
+        }));
+
+        setAllergies(formattedAllergies);
+      } else {
+        console.error("Failed to fetch allergies:", data.message);
+        // Don't set error to avoid blocking the entire page for allergies
+      }
+    } catch (error) {
+      console.error("Error fetching allergies:", error);
+    } finally {
+      setLoadingAllergies(false);
+    }
+  };
 
   // Add a function to search for drugs
   const searchDrugs = async (query) => {
@@ -311,5 +357,10 @@ export const useDoctorExamination = (screeningId) => {
     isSearchingDrugs,
     searchDrugs,
     selectDrug,
+
+    // Allergies
+    allergies,
+    setAllergies,
+    loadingAllergies,
   };
 };

@@ -1,4 +1,3 @@
-// File: DoctorExaminationPage.jsx
 "use client";
 import React, { useState, use } from "react";
 import { useRouter } from "next/navigation";
@@ -12,6 +11,7 @@ import ScreeningResults from "./_components/ScreeningResults";
 import DiagnosisForm from "./_components/DiagnosisForm";
 import PrescriptionsForm from "./_components/PrescriptionsForm";
 import DoctorSignature from "./_components/DoctorSignature";
+import AllergyReporting from "./_components/AllergyReporting"; // New Allergy component
 
 // Import combined hook
 import { useDoctorExamination } from "./_hooks/useDoctorExamination";
@@ -44,6 +44,10 @@ export default function DoctorExaminationPage({ params }) {
     isSearchingDrugs,
     searchDrugs,
     selectDrug,
+    // New props for allergies
+    allergies,
+    setAllergies,
+    loadingAllergies,
   } = useDoctorExamination(id);
 
   const [submitting, setSubmitting] = useState(false);
@@ -117,6 +121,12 @@ export default function DoctorExaminationPage({ params }) {
             };
           })
           .filter((prescription) => prescription.items.length > 0),
+        // Include allergies data
+        allergies: allergies.map((allergy) => ({
+          ...allergy,
+          // Ensure existingAllergyId is preserved if it exists
+          existingAllergyId: allergy.existingAllergyId || null,
+        })),
       };
 
       // Submit the medical record
@@ -228,6 +238,14 @@ export default function DoctorExaminationPage({ params }) {
                 </div>
               </div>
             )}
+
+            {/* Allergy reporting section */}
+            <AllergyReporting
+              patientId={patient?.id}
+              allergies={allergies}
+              setAllergies={setAllergies}
+              isLoading={loadingAllergies}
+            />
 
             {/* Diagnosis section */}
             <DiagnosisForm
