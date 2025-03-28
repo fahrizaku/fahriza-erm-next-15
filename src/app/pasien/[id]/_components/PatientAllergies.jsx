@@ -1,186 +1,11 @@
-// helper-functions.js
+import React, { useState, useEffect } from "react";
 import { toast } from "react-toastify";
 
-// Fetch patient data from API
-export const fetchPatientData = async (
-  id,
-  setLoading,
-  setPatient,
-  setError,
-  setScreening
-) => {
-  try {
-    setLoading(true);
-    const urlParams = new URLSearchParams(window.location.search);
-    const isBPJS = urlParams.get("isBPJS") === "true";
-
-    const response = await fetch(`/api/patients/${id}?isBPJS=${isBPJS}`);
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const data = await response.json();
-
-    if (data.success) {
-      setPatient(data.patient);
-
-      // If patient already has BPJS, set the form default
-      if (data.patient.isBPJS) {
-        setScreening((prev) => ({
-          ...prev,
-          no_bpjs: data.patient.no_bpjs || "",
-        }));
-      }
-    } else {
-      setError(data.message || "Failed to fetch patient data");
-      toast.error(data.message || "Failed to fetch patient data", {
-        autoClose: 200,
-      });
-    }
-  } catch (error) {
-    console.error("Error fetching patient:", error);
-    setError("An error occurred while fetching patient data");
-    toast.error("An error occurred while fetching patient data", {
-      autoClose: 200,
-    });
-  } finally {
-    setLoading(false);
-  }
-};
-
-// Validate form data before submission
-export const validateFormData = (screening, patient) => {
-  if (!screening.complaints) {
-    throw new Error("Keluhan pasien harus diisi");
-  }
-
-  if (!screening.paymentMethod) {
-    throw new Error("Metode pembayaran harus dipilih");
-  }
-
-  // Validate BPJS verification if patient already has BPJS and is using BPJS payment
-  if (
-    screening.paymentMethod === "bpjs" &&
-    patient?.isBPJS &&
-    !screening.bpjsStatusVerified
-  ) {
-    throw new Error("Status BPJS harus diverifikasi terlebih dahulu");
-  }
-
-  // Validate BPJS number if using BPJS payment method with new BPJS number
-  if (
-    screening.paymentMethod === "bpjs" &&
-    !patient.isBPJS &&
-    screening.updatePatientBPJS &&
-    !screening.no_bpjs
-  ) {
-    throw new Error(
-      "Nomor BPJS harus diisi jika menggunakan metode pembayaran BPJS"
-    );
-  }
-
-  // Validasi data alergi jika ada
-  if (screening.allergies && screening.allergies.length > 0) {
-    for (const allergy of screening.allergies) {
-      if (!allergy.allergyName) {
-        throw new Error("Nama alergi harus diisi");
-      }
-    }
-  }
-};
-
-// Prepare screening data for submission
-export const prepareScreeningData = (screening, id, patient) => {
-  return {
-    patientId: parseInt(id),
-    complaints: screening.complaints,
-    temperature: screening.temperature ? screening.temperature : null,
-    systolicBP: screening.systolicBP ? parseInt(screening.systolicBP) : null,
-    diastolicBP: screening.diastolicBP ? parseInt(screening.diastolicBP) : null,
-    pulse: screening.pulse ? parseInt(screening.pulse) : null,
-    respiratoryRate: screening.respiratoryRate
-      ? parseInt(screening.respiratoryRate)
-      : null,
-    weight: screening.weight ? parseFloat(screening.weight) : null,
-    height: screening.height ? parseInt(screening.height) : null,
-    waistCircumference: screening.waistCircumference
-      ? parseFloat(screening.waistCircumference)
-      : null,
-    oxygenSaturation: screening.oxygenSaturation
-      ? parseFloat(screening.oxygenSaturation)
-      : null,
-    isBPJSActive:
-      screening.paymentMethod === "bpjs" &&
-      (screening.bpjsStatusVerified || !patient?.isBPJS),
-    // Only include BPJS number if updating patient record
-    ...(screening.paymentMethod === "bpjs" &&
-    !patient.isBPJS &&
-    screening.updatePatientBPJS
-      ? { no_bpjs: screening.no_bpjs, updatePatientBPJS: true }
-      : {}),
-    // Include allergies data if exist
-    allergies: screening.allergies || [],
-  };
-};
-
-// Submit screening data to API
-export const submitScreeningData = async (screeningData, setError, router) => {
-  try {
-    const response = await fetch("/api/screenings", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(screeningData),
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      // Extract error message from the response
-      throw new Error(data.message || `HTTP error! status: ${response.status}`);
-    }
-
-    if (data.success) {
-      // Show success message
-      toast.success("Skrining pasien berhasil disimpan", { autoClose: 2000 });
-
-      // Redirect to the queue page
-      router.push("/rawat-jalan/antrian");
-    } else {
-      setError(data.message || "Failed to save screening data");
-      throw new Error(data.message || "Failed to save screening data");
-    }
-  } catch (error) {
-    // Just set the error and re-throw it, don't show toast here
-    setError(error.message);
-    throw error;
-  }
-};
-
-// Handle submission errors
-export const handleSubmissionError = (error, setError) => {
-  console.error("Error saving screening:", error);
-  setError(error.message || "An error occurred while saving screening data");
-  toast.error(
-    error.message || "An error occurred while saving screening data",
-    { autoClose: 200 }
-  );
-};
-
-// Function to capitalize each word
-export const capitalizeEachWord = (str) => {
-  if (!str) return "";
-  return str
-    .split(" ")
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-    .join(" ");
-};
-
-
-import React, { useState, useEffect } from "react";
-import { Plus, Edit2 } from "lucide-react";
+const severityOptions = [
+  { value: "ringan", label: "Ringan" },
+  { value: "sedang", label: "Sedang" },
+  { value: "parah", label: "Parah" },
+];
 
 const allergyTypeOptions = [
   { value: "makanan", label: "Makanan" },
@@ -189,23 +14,14 @@ const allergyTypeOptions = [
   { value: "lainnya", label: "Lainnya" },
 ];
 
-const severityOptions = [
-  { value: "ringan", label: "Ringan" },
-  { value: "sedang", label: "Sedang" },
-  { value: "parah", label: "Parah" },
-];
-
 const statusOptions = [
   { value: "aktif", label: "Aktif" },
   { value: "tidak_aktif", label: "Tidak Aktif" },
   { value: "sembuh", label: "Sembuh" },
 ];
 
-export default function ScreeningAllergies({
-  patientId,
-  allergies,
-  setAllergies,
-}) {
+export default function PatientAllergies({ patientId }) {
+  const [allergies, setAllergies] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
   const [formData, setFormData] = useState({
@@ -215,17 +31,19 @@ export default function ScreeningAllergies({
     reaction: "",
     notes: "",
     status: "aktif",
+    reportedAt: new Date().toISOString().split("T")[0], // Current date in YYYY-MM-DD format
   });
-  const [editingIndex, setEditingIndex] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editingAllergyId, setEditingAllergyId] = useState(null);
 
   // Fetch patient allergies
   useEffect(() => {
     if (patientId) {
-      fetchExistingAllergies();
+      fetchAllergies();
     }
   }, [patientId]);
 
-  const fetchExistingAllergies = async () => {
+  const fetchAllergies = async () => {
     try {
       setIsLoading(true);
       const response = await fetch(`/api/patients/${patientId}/allergies`);
@@ -237,22 +55,7 @@ export default function ScreeningAllergies({
       const data = await response.json();
 
       if (data.success) {
-        // Directly add existing allergies to the screening
-        const existingAllergiesFormatted = data.allergies.map((allergy) => ({
-          allergyName: allergy.allergyName,
-          allergyType: allergy.allergyType || "lainnya",
-          severity: allergy.severity || "sedang",
-          reaction: allergy.reaction || "",
-          notes: allergy.notes || "",
-          status: allergy.status || "aktif",
-          existingAllergyId: allergy.id, // Keep reference to original ID
-          reportedAt: allergy.reportedAt || new Date().toISOString(),
-        }));
-
-        // Only add if allergies array is empty (initial load)
-        if (allergies.length === 0) {
-          setAllergies(existingAllergiesFormatted);
-        }
+        setAllergies(data.allergies);
       } else {
         console.error("Failed to fetch allergies:", data.message);
       }
@@ -268,32 +71,77 @@ export default function ScreeningAllergies({
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmitAllergy = (e) => {
-    if (e) e.preventDefault();
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
 
-    if (editingIndex !== null) {
-      // Update existing allergy
-      const updatedAllergies = [...allergies];
-      updatedAllergies[editingIndex] = {
-        ...updatedAllergies[editingIndex],
-        ...formData,
-        reportedAt: new Date().toISOString(), // Update reportedAt to current date
-      };
-      setAllergies(updatedAllergies);
-    } else {
-      // Add new allergy
-      const newAllergy = {
-        ...formData,
-        reportedAt: new Date().toISOString(), // Set reportedAt for new allergies
-      };
-      setAllergies([...allergies, newAllergy]);
+    try {
+      const url = editingAllergyId
+        ? `/api/patients/${patientId}/allergies/${editingAllergyId}`
+        : `/api/patients/${patientId}/allergies`;
+
+      const method = editingAllergyId ? "PUT" : "POST";
+
+      const response = await fetch(url, {
+        method,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        toast.success(
+          editingAllergyId
+            ? "Alergi berhasil diperbarui"
+            : "Alergi berhasil ditambahkan"
+        );
+        resetForm();
+        fetchAllergies();
+      } else {
+        toast.error(data.message || "Gagal menyimpan data alergi");
+      }
+    } catch (error) {
+      console.error("Error saving allergy:", error);
+      toast.error("Terjadi kesalahan saat menyimpan data alergi");
+    } finally {
+      setIsSubmitting(false);
     }
-
-    resetForm();
   };
 
-  const handleEdit = (index) => {
-    const allergy = allergies[index];
+  const handleDelete = async (id) => {
+    if (!confirm("Yakin ingin menghapus data alergi ini?")) return;
+
+    try {
+      const response = await fetch(
+        `/api/patients/${patientId}/allergies/${id}`,
+        {
+          method: "DELETE",
+        }
+      );
+
+      const data = await response.json();
+
+      if (data.success) {
+        toast.success("Alergi berhasil dihapus");
+        fetchAllergies();
+      } else {
+        toast.error(data.message || "Gagal menghapus data alergi");
+      }
+    } catch (error) {
+      console.error("Error deleting allergy:", error);
+      toast.error("Terjadi kesalahan saat menghapus data alergi");
+    }
+  };
+
+  const handleEdit = (allergy) => {
+    // Format the date to YYYY-MM-DD for the input field
+    const formattedReportedAt = allergy.reportedAt
+      ? new Date(allergy.reportedAt).toISOString().split("T")[0]
+      : new Date().toISOString().split("T")[0];
+
     setFormData({
       allergyName: allergy.allergyName,
       allergyType: allergy.allergyType || "obat",
@@ -301,17 +149,17 @@ export default function ScreeningAllergies({
       reaction: allergy.reaction || "",
       notes: allergy.notes || "",
       status: allergy.status || "aktif",
+      reportedAt: formattedReportedAt,
     });
-    setEditingIndex(index);
+    setEditingAllergyId(allergy.id);
     setShowAddForm(true);
-  };
 
-  const handleDelete = (index) => {
-    if (!confirm("Yakin ingin menghapus data alergi ini?")) return;
-
-    const updatedAllergies = [...allergies];
-    updatedAllergies.splice(index, 1);
-    setAllergies(updatedAllergies);
+    // Scroll to form
+    setTimeout(() => {
+      document
+        .getElementById("allergyForm")
+        .scrollIntoView({ behavior: "smooth" });
+    }, 100);
   };
 
   const resetForm = () => {
@@ -322,8 +170,9 @@ export default function ScreeningAllergies({
       reaction: "",
       notes: "",
       status: "aktif",
+      reportedAt: new Date().toISOString().split("T")[0],
     });
-    setEditingIndex(null);
+    setEditingAllergyId(null);
     setShowAddForm(false);
   };
 
@@ -353,7 +202,6 @@ export default function ScreeningAllergies({
     }
   };
 
-  // Format date for display
   const formatDate = (dateString) => {
     if (!dateString) return "-";
     const date = new Date(dateString);
@@ -370,7 +218,6 @@ export default function ScreeningAllergies({
         <h2 className="text-xl font-semibold text-gray-800">Riwayat Alergi</h2>
         {!showAddForm && (
           <button
-            type="button"
             onClick={() => setShowAddForm(true)}
             className="py-1 px-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm transition-colors"
           >
@@ -446,8 +293,8 @@ export default function ScreeningAllergies({
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {allergies.map((allergy, index) => (
-                    <tr key={index}>
+                  {allergies.map((allergy) => (
+                    <tr key={allergy.id}>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="font-medium text-gray-900">
                           {allergy.allergyName}
@@ -455,9 +302,7 @@ export default function ScreeningAllergies({
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-700">
-                          {allergyTypeOptions.find(
-                            (opt) => opt.value === allergy.allergyType
-                          )?.label || "-"}
+                          {allergy.allergyType || "-"}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -467,9 +312,8 @@ export default function ScreeningAllergies({
                               allergy.severity
                             )}`}
                           >
-                            {severityOptions.find(
-                              (opt) => opt.value === allergy.severity
-                            )?.label || "-"}
+                            {allergy.severity.charAt(0).toUpperCase() +
+                              allergy.severity.slice(1)}
                           </span>
                         )}
                       </td>
@@ -504,15 +348,13 @@ export default function ScreeningAllergies({
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <button
-                          type="button"
-                          onClick={() => handleEdit(index)}
+                          onClick={() => handleEdit(allergy)}
                           className="text-blue-600 hover:text-blue-900 mr-4"
                         >
                           Edit
                         </button>
                         <button
-                          type="button"
-                          onClick={() => handleDelete(index)}
+                          onClick={() => handleDelete(allergy.id)}
                           className="text-red-600 hover:text-red-900"
                         >
                           Hapus
@@ -531,9 +373,9 @@ export default function ScreeningAllergies({
               className="mt-6 p-4 border border-gray-200 rounded-lg bg-gray-50"
             >
               <h3 className="text-lg font-medium mb-4">
-                {editingIndex !== null ? "Edit Alergi" : "Tambah Alergi Baru"}
+                {editingAllergyId ? "Edit Alergi" : "Tambah Alergi Baru"}
               </h3>
-              <div>
+              <form onSubmit={handleSubmit}>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                   <div>
                     <label
@@ -622,6 +464,23 @@ export default function ScreeningAllergies({
 
                   <div>
                     <label
+                      htmlFor="reportedAt"
+                      className="block text-sm font-medium text-gray-700 mb-1"
+                    >
+                      Tanggal Dilaporkan
+                    </label>
+                    <input
+                      type="date"
+                      id="reportedAt"
+                      name="reportedAt"
+                      value={formData.reportedAt}
+                      onChange={handleInputChange}
+                      className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label
                       htmlFor="reaction"
                       className="block text-sm font-medium text-gray-700 mb-1"
                     >
@@ -666,162 +525,46 @@ export default function ScreeningAllergies({
                     Batal
                   </button>
                   <button
-                    type="button"
-                    onClick={handleSubmitAllergy}
-                    className="py-2 px-4 rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                    type="submit"
+                    disabled={isSubmitting}
+                    className={`py-2 px-4 rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
+                      isSubmitting ? "opacity-75 cursor-not-allowed" : ""
+                    }`}
                   >
-                    Simpan
+                    {isSubmitting ? (
+                      <span className="flex items-center">
+                        <svg
+                          className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          ></circle>
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          ></path>
+                        </svg>
+                        Menyimpan...
+                      </span>
+                    ) : (
+                      "Simpan"
+                    )}
                   </button>
                 </div>
-              </div>
+              </form>
             </div>
           )}
         </div>
       )}
     </div>
   );
-}
-
-// app/api/screenings/route.js
-import { NextResponse } from "next/server";
-import { db } from "@/lib/db";
-
-// Create a new screening entry
-export async function POST(request) {
-  try {
-    const data = await request.json();
-
-    // Validate required fields
-    if (!data.patientId || !data.complaints) {
-      return NextResponse.json(
-        { success: false, message: "Missing required fields" },
-        { status: 400 }
-      );
-    }
-
-    // If trying to update patient with BPJS, check if the BPJS number already exists
-    if (data.isBPJSActive && data.no_bpjs && data.updatePatientBPJS) {
-      // Check if BPJS number already exists for another patient
-      const existingPatient = await db.patient.findFirst({
-        where: {
-          no_bpjs: data.no_bpjs,
-          id: {
-            not: data.patientId, // Exclude current patient
-          },
-        },
-      });
-
-      if (existingPatient) {
-        return NextResponse.json(
-          {
-            success: false,
-            message: "Nomor BPJS telah terdaftar pada pasien lain",
-          },
-          { status: 400 }
-        );
-      }
-    }
-
-    // Generate a queue number (get highest queue number for today + 1)
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const latestQueue = await db.outpatientQueue.findFirst({
-      where: {
-        createdAt: {
-          gte: today,
-        },
-      },
-      orderBy: {
-        queueNumber: "desc",
-      },
-    });
-
-    const queueNumber = latestQueue ? latestQueue.queueNumber + 1 : 1;
-
-    // If isBPJSActive is true and the patient doesn't have BPJS information,
-    // update patient record with BPJS number
-    if (data.isBPJSActive && data.no_bpjs && data.updatePatientBPJS) {
-      await db.patient.update({
-        where: { id: data.patientId },
-        data: {
-          isBPJS: true,
-          no_bpjs: data.no_bpjs,
-        },
-      });
-    }
-
-    // Create the screening entry with the updated schema fields
-    const screening = await db.screening.create({
-      data: {
-        patientId: data.patientId,
-        complaints: data.complaints,
-        temperature: data.temperature ? parseFloat(data.temperature) : null,
-        systolicBP: data.systolicBP ? parseInt(data.systolicBP) : null,
-        diastolicBP: data.diastolicBP ? parseInt(data.diastolicBP) : null,
-        pulse: data.pulse ? parseInt(data.pulse) : null,
-        respiratoryRate: data.respiratoryRate
-          ? parseInt(data.respiratoryRate)
-          : null,
-        weight: data.weight ? parseFloat(data.weight) : null,
-        height: data.height ? parseInt(data.height) : null,
-        waistCircumference: data.waistCircumference
-          ? parseFloat(data.waistCircumference)
-          : null,
-        oxygenSaturation: data.oxygenSaturation
-          ? parseFloat(data.oxygenSaturation)
-          : null,
-        isBPJSActive: data.isBPJSActive || false,
-        status: "waiting",
-        queueNumber: queueNumber,
-      },
-    });
-
-    // Create a queue entry
-    await db.outpatientQueue.create({
-      data: {
-        screeningId: screening.id,
-        queueNumber: queueNumber,
-        status: "waiting",
-      },
-    });
-
-    // Process allergies data if exists
-    if (data.allergies && data.allergies.length > 0) {
-      // Filter out empty allergy records
-      const validAllergies = data.allergies.filter(
-        (allergy) => allergy.allergyName && allergy.allergyName.trim() !== ""
-      );
-
-      // Create new allergy records
-      for (const allergy of validAllergies) {
-        await db.patientAllergy.create({
-          data: {
-            patientId: data.patientId,
-            allergyName: allergy.allergyName,
-            allergyType: allergy.allergyType || null,
-            severity: allergy.severity || null,
-            reaction: allergy.reaction || null,
-            notes: allergy.notes || null,
-          },
-        });
-      }
-    }
-
-    return NextResponse.json({
-      success: true,
-      screening,
-      queueNumber,
-    });
-  } catch (error) {
-    console.error("Error creating screening:", error);
-    return NextResponse.json(
-      {
-        success: false,
-        message: "Failed to create screening",
-        error: error.message,
-      },
-      { status: 500 }
-    );
-  }
 }

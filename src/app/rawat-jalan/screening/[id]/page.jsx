@@ -13,6 +13,7 @@ import PatientInfo from "./_components/PatientInfo";
 import PaymentMethodSection from "./_components/PaymentMethodSection";
 import ComplaintsSection from "./_components/ComplaintsSection";
 import VitalSignsSection from "./_components/VitalSignsSection";
+import ScreeningAllergies from "./_components/ScreeningAllergies"; // Import komponen ScreeningAllergies
 import SubmitButton from "./_components/SubmitButton";
 import {
   fetchPatientData,
@@ -31,6 +32,7 @@ export default function ScreeningPage({ params }) {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
+  const [allergies, setAllergies] = useState([]); // State untuk data alergi
 
   // Screening form state
   const [screening, setScreening] = useState({
@@ -106,8 +108,16 @@ export default function ScreeningPage({ params }) {
     setError(null);
 
     try {
-      validateFormData(screening, patient);
+      // Validate form data including allergies if needed
+      validateFormData({ ...screening, allergies }, patient);
+
+      // Prepare screening data
       const screeningData = prepareScreeningData(screening, id, patient);
+
+      // Add allergies data to screening data
+      screeningData.allergies = allergies;
+
+      // Submit all data to API
       await submitScreeningData(screeningData, setError, router);
     } catch (error) {
       handleSubmissionError(error, setError);
@@ -125,7 +135,7 @@ export default function ScreeningPage({ params }) {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
+    <div className="max-w-6xl mx-auto pt-4 px-1 sm:p-6">
       {/* Back button */}
       <div className="mb-6">
         <Link
@@ -174,6 +184,20 @@ export default function ScreeningPage({ params }) {
               screening={screening}
               handleInputChange={handleInputChange}
             />
+
+            {/* Allergies section */}
+            <ScreeningAllergies
+              patientId={id}
+              allergies={allergies}
+              setAllergies={setAllergies}
+            />
+
+            {/* Error message */}
+            {error && (
+              <div className="mt-6 p-3 bg-red-50 border border-red-200 text-red-700 rounded-md">
+                {error}
+              </div>
+            )}
 
             {/* Submit button */}
             <SubmitButton submitting={submitting} />

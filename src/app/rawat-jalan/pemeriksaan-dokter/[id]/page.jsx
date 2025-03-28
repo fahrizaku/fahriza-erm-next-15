@@ -1,4 +1,3 @@
-// File: DoctorExaminationPage.jsx
 "use client";
 import React, { useState, use } from "react";
 import { useRouter } from "next/navigation";
@@ -12,6 +11,7 @@ import ScreeningResults from "./_components/ScreeningResults";
 import DiagnosisForm from "./_components/DiagnosisForm";
 import PrescriptionsForm from "./_components/PrescriptionsForm";
 import DoctorSignature from "./_components/DoctorSignature";
+import AllergyReporting from "./_components/AllergyReporting"; // New Allergy component
 
 // Import combined hook
 import { useDoctorExamination } from "./_hooks/useDoctorExamination";
@@ -44,6 +44,10 @@ export default function DoctorExaminationPage({ params }) {
     isSearchingDrugs,
     searchDrugs,
     selectDrug,
+    // New props for allergies
+    allergies,
+    setAllergies,
+    loadingAllergies,
   } = useDoctorExamination(id);
 
   const [submitting, setSubmitting] = useState(false);
@@ -117,6 +121,12 @@ export default function DoctorExaminationPage({ params }) {
             };
           })
           .filter((prescription) => prescription.items.length > 0),
+        // Include allergies data
+        allergies: allergies.map((allergy) => ({
+          ...allergy,
+          // Ensure existingAllergyId is preserved if it exists
+          existingAllergyId: allergy.existingAllergyId || null,
+        })),
       };
 
       // Submit the medical record
@@ -163,7 +173,7 @@ export default function DoctorExaminationPage({ params }) {
 
   if (loading) {
     return (
-      <div className="max-w-4xl mx-auto p-4 sm:p-6">
+      <div className="max-w-6xl mx-auto pt-4 px-1 sm:p-6">
         <div className="flex justify-center items-center h-64">
           <div className="text-center">
             <Loader2 className="h-10 w-10 animate-spin text-blue-500 mx-auto" />
@@ -176,7 +186,7 @@ export default function DoctorExaminationPage({ params }) {
 
   if (error && !screening) {
     return (
-      <div className="max-w-4xl mx-auto p-4 sm:p-6">
+      <div className="max-w-6xl mx-auto pt-4 px-1 sm:p-6">
         <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-md">
           <div className="flex items-start">
             <AlertTriangle className="h-6 w-6 text-red-500 mr-3 flex-shrink-0" />
@@ -197,7 +207,7 @@ export default function DoctorExaminationPage({ params }) {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
+    <div className="max-w-5xl mx-auto pt-4 px-1 sm:p-6">
       {/* Back button */}
       <BackNavigation />
 
@@ -228,6 +238,14 @@ export default function DoctorExaminationPage({ params }) {
                 </div>
               </div>
             )}
+
+            {/* Allergy reporting section */}
+            <AllergyReporting
+              patientId={patient?.id}
+              allergies={allergies}
+              setAllergies={setAllergies}
+              isLoading={loadingAllergies}
+            />
 
             {/* Diagnosis section */}
             <DiagnosisForm

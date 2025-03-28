@@ -27,6 +27,25 @@ model Patient {
     // Relations
   screenings      Screening[]
   medicalRecords  MedicalRecord[]
+  allergies       PatientAllergy[]
+}
+
+model PatientAllergy {
+  id            Int       @id @default(autoincrement())
+  patientId     Int
+  patient       Patient   @relation(fields: [patientId], references: [id])
+  allergyName   String    // Nama alergi (contoh: penisilin, kacang, dll)
+  allergyType   String?   // Jenis alergi (makanan, obat, lingkungan, dll)
+  severity      String?   // Tingkat keparahan (ringan, sedang, parah)
+  reaction      String?   // Reaksi yang terjadi (ruam, sesak napas, dll)
+  notes         String?   // Catatan tambahan
+  status        String?   @default("aktif") // Status alergi: aktif, tidak_aktif, sembuh
+  reportedAt    DateTime  @default(now()) // Kapan alergi dilaporkan
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  @@index([patientId])
+  @@index([allergyType])
 }
 
 model DrugStoreProduct {

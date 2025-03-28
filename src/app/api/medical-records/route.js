@@ -89,6 +89,66 @@ export async function POST(request) {
       hasPrescriptions = true;
     }
 
+    // Process allergies data if exists
+    if (data.allergies && data.allergies.length > 0) {
+      // Filter out empty allergy records
+      const validAllergies = data.allergies.filter(
+        (allergy) => allergy.allergyName && allergy.allergyName.trim() !== ""
+      );
+
+      for (const allergy of validAllergies) {
+        if (allergy.existingAllergyId) {
+          // For existing allergies, check if they were modified
+          const existingAllergy = await db.patientAllergy.findUnique({
+            where: { id: allergy.existingAllergyId },
+          });
+
+          if (existingAllergy) {
+            // Compare if any fields were changed
+            const isModified =
+              existingAllergy.allergyName !== allergy.allergyName ||
+              existingAllergy.allergyType !== allergy.allergyType ||
+              existingAllergy.severity !== allergy.severity ||
+              existingAllergy.reaction !== allergy.reaction ||
+              existingAllergy.notes !== allergy.notes ||
+              existingAllergy.status !== allergy.status;
+
+            // Update only if modified or just update reportedAt if not modified
+            await db.patientAllergy.update({
+              where: { id: allergy.existingAllergyId },
+              data: isModified
+                ? {
+                    allergyName: allergy.allergyName,
+                    allergyType: allergy.allergyType || null,
+                    severity: allergy.severity || null,
+                    reaction: allergy.reaction || null,
+                    notes: allergy.notes || null,
+                    status: allergy.status || "aktif",
+                    reportedAt: new Date(), // Update reportedAt on modification
+                  }
+                : {
+                    reportedAt: new Date(), // Only update reportedAt if not modified
+                  },
+            });
+          }
+        } else {
+          // For new allergies, create new records
+          await db.patientAllergy.create({
+            data: {
+              patientId: data.patientId,
+              allergyName: allergy.allergyName,
+              allergyType: allergy.allergyType || null,
+              severity: allergy.severity || null,
+              reaction: allergy.reaction || null,
+              notes: allergy.notes || null,
+              status: allergy.status || "aktif",
+              reportedAt: new Date(),
+            },
+          });
+        }
+      }
+    }
+
     // Create pharmacy queue entry if there are prescriptions
     let pharmacyQueueNumber = null;
     if (hasPrescriptions) {
@@ -107,7 +167,9 @@ export async function POST(request) {
         },
       });
 
-      pharmacyQueueNumber = latestPharmacyQueue ? latestPharmacyQueue.queueNumber + 1 : 1;
+      pharmacyQueueNumber = latestPharmacyQueue
+        ? latestPharmacyQueue.queueNumber + 1
+        : 1;
 
       // Create pharmacy queue entry
       await db.pharmacyQueue.create({
@@ -149,7 +211,11 @@ export async function POST(request) {
   } catch (error) {
     console.error("Error creating medical record:", error);
     return NextResponse.json(
-      { success: false, message: "Failed to create medical record" },
+      {
+        success: false,
+        message: "Failed to create medical record",
+        error: error.message,
+      },
       { status: 500 }
     );
   }
@@ -222,7 +288,11 @@ export async function GET(request) {
     const medicalRecords = await db.medicalRecord.findMany({
       where,
       include: {
-        patient: true,
+        patient: {
+          include: {
+            allergies: true, // Include patient allergies in the response
+          },
+        },
         screening: true,
         prescriptions: {
           include: {

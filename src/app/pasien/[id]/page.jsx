@@ -1,4 +1,4 @@
-// patient detail page
+// patient detail page - Updated with allergies section
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -10,6 +10,7 @@ import { toast } from "react-toastify";
 import PatientHeader from "./_components/PatientHeader";
 import PatientInfoSection from "./_components/PatientInfoSection";
 import PatientActions from "./_components/PatientActions";
+import PatientAllergies from "./_components/PatientAllergies"; // Import the new component
 import DeleteConfirmationModal from "./_components/DeleteConfirmationModal";
 import {
   ErrorState,
@@ -176,6 +177,9 @@ export default function PatientDetailPage({ params }) {
             onInpatientClick={handleInpatientClick}
             onMedicalRecordClick={handleMedicalRecordClick}
           />
+
+          {/* Patient Allergies Section */}
+          <PatientAllergies patientId={id} />
         </div>
       </div>
 

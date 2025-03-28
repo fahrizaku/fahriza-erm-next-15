@@ -1,4 +1,4 @@
-// /app/api/screenings/route.js
+// app/api/screenings/route.js
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 
@@ -101,6 +101,64 @@ export async function POST(request) {
         status: "waiting",
       },
     });
+
+    // Process allergies data if exists
+    if (data.allergies && data.allergies.length > 0) {
+      // Filter out empty allergy records
+      const validAllergies = data.allergies.filter(
+        (allergy) => allergy.allergyName && allergy.allergyName.trim() !== ""
+      );
+
+      for (const allergy of validAllergies) {
+        if (allergy.existingAllergyId) {
+          // For existing allergies, check if they were modified
+          const existingAllergy = await db.patientAllergy.findUnique({
+            where: { id: allergy.existingAllergyId },
+          });
+
+          // Compare if any fields were changed
+          const isModified =
+            existingAllergy.allergyName !== allergy.allergyName ||
+            existingAllergy.allergyType !== allergy.allergyType ||
+            existingAllergy.severity !== allergy.severity ||
+            existingAllergy.reaction !== allergy.reaction ||
+            existingAllergy.notes !== allergy.notes ||
+            existingAllergy.status !== allergy.status;
+
+          // Update only if modified or just update reportedAt if not modified
+          await db.patientAllergy.update({
+            where: { id: allergy.existingAllergyId },
+            data: isModified
+              ? {
+                  allergyName: allergy.allergyName,
+                  allergyType: allergy.allergyType || null,
+                  severity: allergy.severity || null,
+                  reaction: allergy.reaction || null,
+                  notes: allergy.notes || null,
+                  status: allergy.status || "aktif",
+                  reportedAt: new Date(), // Update reportedAt on modification
+                }
+              : {
+                  reportedAt: new Date(), // Only update reportedAt if not modified
+                },
+          });
+        } else {
+          // For new allergies, create new records
+          await db.patientAllergy.create({
+            data: {
+              patientId: data.patientId,
+              allergyName: allergy.allergyName,
+              allergyType: allergy.allergyType || null,
+              severity: allergy.severity || null,
+              reaction: allergy.reaction || null,
+              notes: allergy.notes || null,
+              status: allergy.status || "aktif",
+              reportedAt: new Date(),
+            },
+          });
+        }
+      }
+    }
 
     return NextResponse.json({
       success: true,

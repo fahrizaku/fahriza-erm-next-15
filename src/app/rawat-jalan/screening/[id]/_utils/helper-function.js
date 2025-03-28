@@ -79,6 +79,15 @@ export const validateFormData = (screening, patient) => {
       "Nomor BPJS harus diisi jika menggunakan metode pembayaran BPJS"
     );
   }
+
+  // Validasi data alergi jika ada
+  if (screening.allergies && screening.allergies.length > 0) {
+    for (const allergy of screening.allergies) {
+      if (!allergy.allergyName) {
+        throw new Error("Nama alergi harus diisi");
+      }
+    }
+  }
 };
 
 // Prepare screening data for submission
@@ -110,6 +119,14 @@ export const prepareScreeningData = (screening, id, patient) => {
     screening.updatePatientBPJS
       ? { no_bpjs: screening.no_bpjs, updatePatientBPJS: true }
       : {}),
+    // Include allergies data with their existing IDs if present
+    allergies: screening.allergies
+      ? screening.allergies.map((allergy) => ({
+          ...allergy,
+          // Ensure existingAllergyId is preserved if it exists
+          existingAllergyId: allergy.existingAllergyId || null,
+        }))
+      : [],
   };
 };
 
@@ -133,7 +150,7 @@ export const submitScreeningData = async (screeningData, setError, router) => {
 
     if (data.success) {
       // Show success message
-      toast.success("Skrining pasien berhasil disimpan", { autoClose: 200 });
+      toast.success("Skrining pasien berhasil disimpan", { autoClose: 2000 });
 
       // Redirect to the queue page
       router.push("/rawat-jalan/antrian");
