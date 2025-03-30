@@ -190,7 +190,7 @@ export default function Navigation() {
           lg:translate-x-0
           ${isOpen ? "translate-x-0" : "-translate-x-full"}`}
       >
-        <nav className="mt-8">
+        <nav className="mt-8 pb-10">
           {menuCategories.map((category, index) => (
             <div
               key={category.category}

@@ -14,16 +14,18 @@ import {
   Folder,
   History,
   Microscope,
+  Flask,
+  FileSpreadsheet,
 } from "lucide-react";
 
 const menuCategories = [
   {
-    category: "Dashboard", // Kategori baru untuk Dashboard
+    category: "Dashboard",
     items: [
       {
         title: "Dashboard",
-        icon: <LayoutDashboard size={20} />, // Menggunakan ikon LayoutDashboard
-        href: "/", // Tautan ke halaman dashboard
+        icon: <LayoutDashboard size={20} />,
+        href: "/",
       },
     ],
   },
@@ -32,12 +34,12 @@ const menuCategories = [
     items: [
       {
         title: "Data Pasien",
-        icon: <User size={20} />, // Mengubah ke icon Users untuk representasi semua pasien
+        icon: <User size={20} />,
         href: "/pasien",
       },
       {
         title: "Riwayat Kunjungan",
-        icon: <History size={20} />, // Menggunakan ikon History untuk riwayat kunjungan
+        icon: <History size={20} />,
         href: "/pasien/riwayat-kunjungan",
       },
     ],
@@ -51,15 +53,25 @@ const menuCategories = [
         href: "/rawat-jalan/antrian",
       },
       {
-        title: "Laboratorium",
-        icon: <Microscope size={20} />,
-        href: "/laboratorium",
-      },
-      {
-        title: "Doctor's Examination",
+        title: "Pemeriksaan Dokter",
         icon: <Stethoscope size={20} />,
         href: "/rawat-jalan/pemeriksaan-dokter",
       },
+    ],
+  },
+  {
+    category: "Laboratorium", // Kategori baru untuk Laboratorium
+    items: [
+      {
+        title: "Pemeriksaan Lab",
+        icon: <Microscope size={20} />,
+        href: "/laboratorium",
+      },
+      // {
+      //   title: "Hasil Lab",
+      //   icon: <FileSpreadsheet size={20} />,
+      //   href: "/laboratorium/",
+      // },
     ],
   },
   {

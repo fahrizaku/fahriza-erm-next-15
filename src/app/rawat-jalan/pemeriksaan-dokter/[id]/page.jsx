@@ -249,10 +249,10 @@ export default function DoctorExaminationPage({ params }) {
         <form onSubmit={handleSubmit}>
           <div className="p-5 md:p-6">
             {/* Laboratory Tests Order Form - Right after screening results */}
-            <LaboratoryOrderForm
+            {/* <LaboratoryOrderForm
               patientId={patient?.id}
               onChange={handleLabTestsChange}
-            />
+            /> */}
 
             {formError && (
               <div className="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-md">
