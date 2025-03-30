@@ -11,7 +11,8 @@ import ScreeningResults from "./_components/ScreeningResults";
 import DiagnosisForm from "./_components/DiagnosisForm";
 import PrescriptionsForm from "./_components/PrescriptionsForm";
 import DoctorSignature from "./_components/DoctorSignature";
-import AllergyReporting from "./_components/AllergyReporting"; // New Allergy component
+import AllergyReporting from "./_components/AllergyReporting";
+import LaboratoryOrderForm from "./_components/LaboratoryOrderForm"; // New Laboratory component
 
 // Import combined hook
 import { useDoctorExamination } from "./_hooks/useDoctorExamination";
@@ -38,13 +39,11 @@ export default function DoctorExaminationPage({ params }) {
     removePrescriptionItem,
     addPrescription,
     removePrescription,
-    // New props for drug search
     drugSearchQuery,
     drugSearchResults,
     isSearchingDrugs,
     searchDrugs,
     selectDrug,
-    // New props for allergies
     allergies,
     setAllergies,
     loadingAllergies,
@@ -52,6 +51,13 @@ export default function DoctorExaminationPage({ params }) {
 
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState(null);
+
+  // New state for laboratory tests
+  const [labTests, setLabTests] = useState({
+    selectedTests: [],
+    otherTests: [],
+    notes: "",
+  });
 
   // Handle form submission
   const handleSubmit = async (e) => {
@@ -127,6 +133,12 @@ export default function DoctorExaminationPage({ params }) {
           // Ensure existingAllergyId is preserved if it exists
           existingAllergyId: allergy.existingAllergyId || null,
         })),
+        // Include laboratory tests data
+        laboratoryTests: {
+          selectedTests: labTests.selectedTests,
+          otherTests: labTests.otherTests,
+          notes: labTests.notes,
+        },
       };
 
       // Submit the medical record
@@ -146,15 +158,14 @@ export default function DoctorExaminationPage({ params }) {
 
       if (data.success) {
         // Show success message
-        toast.success("Rekam medis berhasil disimpan", { autoClose: 200 });
+        toast.success("Rekam medis berhasil disimpan", { autoClose: 2000 });
 
         // Redirect to medical record view
-        // router.push(`/rekam-medis/${data.medicalRecordId}`);
         router.push(`/rawat-jalan/pemeriksaan-dokter`);
       } else {
         setFormError(data.message || "Failed to save medical record");
         toast.error(data.message || "Failed to save medical record", {
-          autoClose: 200,
+          autoClose: 2000,
         });
       }
     } catch (error) {
@@ -164,11 +175,16 @@ export default function DoctorExaminationPage({ params }) {
       );
       toast.error(
         error.message || "An error occurred while saving medical record",
-        { autoClose: 200 }
+        { autoClose: 2000 }
       );
     } finally {
       setSubmitting(false);
     }
+  };
+
+  // Handle lab tests changes
+  const handleLabTestsChange = (newLabTests) => {
+    setLabTests(newLabTests);
   };
 
   if (loading) {
@@ -225,11 +241,19 @@ export default function DoctorExaminationPage({ params }) {
         <PatientInfo patient={patient} screening={screening} />
 
         {/* Screening summary */}
-        <ScreeningResults screening={screening} />
+        <div className="border-b border-gray-200">
+          <ScreeningResults screening={screening} />
+        </div>
 
         {/* Form */}
         <form onSubmit={handleSubmit}>
           <div className="p-5 md:p-6">
+            {/* Laboratory Tests Order Form - Right after screening results */}
+            {/* <LaboratoryOrderForm
+              patientId={patient?.id}
+              onChange={handleLabTestsChange}
+            /> */}
+
             {formError && (
               <div className="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-md">
                 <div className="flex items-start">
@@ -265,7 +289,6 @@ export default function DoctorExaminationPage({ params }) {
               removePrescriptionItem={removePrescriptionItem}
               addPrescription={addPrescription}
               removePrescription={removePrescription}
-              // Pass the new drug search props
               searchDrugs={searchDrugs}
               drugSearchResults={drugSearchResults}
               isSearchingDrugs={isSearchingDrugs}

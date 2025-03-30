@@ -14,6 +14,12 @@ import {
 export default function VitalSignsSection({ screening, handleInputChange }) {
   const [showMore, setShowMore] = useState(false);
 
+  // Prevent scroll wheel from changing input values
+  const preventWheelChange = (e) => {
+    // Prevent the default scroll behavior on number inputs
+    e.target.blur();
+  };
+
   return (
     <div className="bg-gray-50 p-4 rounded-lg border border-gray-100 mb-6">
       <h3 className="text-md font-semibold text-gray-800 mb-4">Tanda Vital</h3>
@@ -35,6 +41,7 @@ export default function VitalSignsSection({ screening, handleInputChange }) {
               name="systolicBP"
               value={screening.systolicBP}
               onChange={handleInputChange}
+              onWheel={preventWheelChange}
               min="70"
               max="250"
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -46,6 +53,7 @@ export default function VitalSignsSection({ screening, handleInputChange }) {
               name="diastolicBP"
               value={screening.diastolicBP}
               onChange={handleInputChange}
+              onWheel={preventWheelChange}
               min="40"
               max="150"
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -67,6 +75,7 @@ export default function VitalSignsSection({ screening, handleInputChange }) {
             name="temperature"
             value={screening.temperature}
             onChange={handleInputChange}
+            onWheel={preventWheelChange}
             step="0.1"
             min="35"
             max="42"
@@ -88,6 +97,7 @@ export default function VitalSignsSection({ screening, handleInputChange }) {
             name="weight"
             value={screening.weight}
             onChange={handleInputChange}
+            onWheel={preventWheelChange}
             step="0.1"
             min="0"
             max="300"
@@ -109,6 +119,7 @@ export default function VitalSignsSection({ screening, handleInputChange }) {
             name="height"
             value={screening.height}
             onChange={handleInputChange}
+            onWheel={preventWheelChange}
             min="0"
             max="300"
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -147,6 +158,7 @@ export default function VitalSignsSection({ screening, handleInputChange }) {
               name="pulse"
               value={screening.pulse}
               onChange={handleInputChange}
+              onWheel={preventWheelChange}
               min="40"
               max="200"
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -167,6 +179,7 @@ export default function VitalSignsSection({ screening, handleInputChange }) {
               name="respiratoryRate"
               value={screening.respiratoryRate}
               onChange={handleInputChange}
+              onWheel={preventWheelChange}
               min="8"
               max="40"
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -187,6 +200,7 @@ export default function VitalSignsSection({ screening, handleInputChange }) {
               name="waistCircumference"
               value={screening.waistCircumference}
               onChange={handleInputChange}
+              onWheel={preventWheelChange}
               step="0.1"
               min="0"
               max="200"
@@ -208,6 +222,7 @@ export default function VitalSignsSection({ screening, handleInputChange }) {
               name="oxygenSaturation"
               value={screening.oxygenSaturation}
               onChange={handleInputChange}
+              onWheel={preventWheelChange}
               step="0.1"
               min="0"
               max="100"

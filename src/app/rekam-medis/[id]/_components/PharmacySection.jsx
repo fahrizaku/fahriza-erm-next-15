@@ -93,7 +93,7 @@ export default function PharmacySection({ pharmacyQueue, screening }) {
           {pharmacyQueue.pharmacistName && (
             <div>
               <h4 className="text-sm font-medium text-gray-600 mb-1">
-                Apoteker:
+                Petugas Farmasi:
               </h4>
               <p className="text-gray-800">{pharmacyQueue.pharmacistName}</p>
             </div>
