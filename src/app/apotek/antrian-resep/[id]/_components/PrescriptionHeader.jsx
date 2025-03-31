@@ -34,20 +34,6 @@ export default function PrescriptionHeader({ prescription }) {
     }
   };
 
-  const getPaymentTypeBadge = (isBPJSActive) => {
-    return isBPJSActive ? (
-      <div className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
-        <CreditCard className="w-4 h-4 mr-1" />
-        BPJS
-      </div>
-    ) : (
-      <div className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-orange-100 text-orange-800">
-        <CreditCard className="w-4 h-4 mr-1" />
-        Umum
-      </div>
-    );
-  };
-
   return (
     <div className="px-4 sm:px-6 py-5 border-b border-gray-200 bg-gray-50">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between">
@@ -61,7 +47,6 @@ export default function PrescriptionHeader({ prescription }) {
         {/* Status badges - Stacked on mobile */}
         <div className="mt-3 md:mt-0 flex flex-wrap gap-2">
           {getStatusBadge(prescription.status)}
-          {getPaymentTypeBadge(prescription.isBPJSActive)}
           <div className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800">
             Nomor Antrian: {prescription.queueNumber}
           </div>
