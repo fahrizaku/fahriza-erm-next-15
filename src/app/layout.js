@@ -29,10 +29,10 @@ export default function RootLayout({ children }) {
         <Navigation />
         <MainContent>{children}</MainContent>
         <ToastContainer
-          position="top-center"
-          autoClose={300}
+          position="bottom-right"
+          autoClose={1000}
           hideProgressBar={true}
-          theme="dark"
+          theme="colored"
           toastClassName="font-geist-sans"
         />
       </body>

@@ -56,16 +56,14 @@ export default function RuangPemeriksaanPage() {
       } else {
         setError("Failed to fetch patient data");
         if (!isIntervalRefresh) {
-          toast.error("Failed to fetch patient data", { autoClose: 200 });
+          toast.error("Failed to fetch patient data");
         }
       }
     } catch (error) {
       console.error("Error fetching patients:", error);
       setError("An error occurred while fetching patient data");
       if (!isIntervalRefresh) {
-        toast.error("An error occurred while fetching patient data", {
-          autoClose: 200,
-        });
+        toast.error("An error occurred while fetching patient data");
       }
     } finally {
       setLoading(false);
@@ -116,22 +114,16 @@ export default function RuangPemeriksaanPage() {
       const data = await response.json();
 
       if (data.success) {
-        toast.success(`Pasien ${data.patientName} sedang diperiksa`, {
-          autoClose: 200,
-        });
+        toast.success(`Pasien ${data.patientName} sedang diperiksa`, {});
 
         // Redirect to doctor's examination page
         router.push(`/rawat-jalan/pemeriksaan-dokter/${screeningId}`);
       } else {
-        toast.error(data.message || "Failed to examine patient", {
-          autoClose: 200,
-        });
+        toast.error(data.message || "Failed to examine patient", {});
       }
     } catch (error) {
       console.error("Error examining patient:", error);
-      toast.error("An error occurred while examining patient", {
-        autoClose: 200,
-      });
+      toast.error("An error occurred while examining patient", {});
     } finally {
       // Clear loading state when operation completes (successful or not)
       setButtonLoadingStates((prev) => ({ ...prev, [screeningId]: false }));
