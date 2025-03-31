@@ -69,16 +69,12 @@ export const useDoctorExamination = (screeningId) => {
           }
         } else {
           setError(data.message || "Failed to fetch screening data");
-          toast.error(data.message || "Failed to fetch screening data", {
-            autoClose: 2000,
-          });
+          toast.error(data.message || "Failed to fetch screening data");
         }
       } catch (error) {
         console.error("Error fetching data:", error);
         setError("An error occurred while fetching data");
-        toast.error("An error occurred while fetching data", {
-          autoClose: 2000,
-        });
+        toast.error("An error occurred while fetching data");
       } finally {
         setLoading(false);
       }

@@ -83,13 +83,7 @@ export default function AllergyReporting({
     setShowAddForm(true);
   };
 
-  const handleDelete = (index) => {
-    if (!confirm("Yakin ingin menghapus data alergi ini?")) return;
-
-    const updatedAllergies = [...allergies];
-    updatedAllergies.splice(index, 1);
-    setAllergies(updatedAllergies);
-  };
+  // Removed handleDelete function
 
   const resetForm = () => {
     setFormData({
@@ -281,20 +275,14 @@ export default function AllergyReporting({
                         <button
                           type="button"
                           onClick={() => handleEdit(index)}
-                          className="text-blue-600 hover:text-blue-900 mr-4"
+                          className="text-blue-600 hover:text-blue-900"
                         >
                           <span className="flex items-center">
                             <Edit2 className="h-4 w-4 mr-1" />
                             Edit
                           </span>
                         </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDelete(index)}
-                          className="text-red-600 hover:text-red-900"
-                        >
-                          Hapus
-                        </button>
+                        {/* Removed the delete button */}
                       </td>
                     </tr>
                   ))}

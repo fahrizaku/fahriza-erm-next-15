@@ -41,18 +41,14 @@ export default function OutpatientQueuePage() {
       } else {
         setError(data.message || "Failed to fetch queue data");
         if (!isIntervalRefresh) {
-          toast.error(data.message || "Failed to fetch queue data", {
-            autoClose: 200,
-          });
+          toast.error(data.message || "Failed to fetch queue data");
         }
       }
     } catch (error) {
       console.error("Error fetching queue:", error);
       setError("An error occurred while fetching queue data");
       if (!isIntervalRefresh) {
-        toast.error("An error occurred while fetching queue data", {
-          autoClose: 200,
-        });
+        toast.error("An error occurred while fetching queue data");
       }
     } finally {
       setLoading(false);
@@ -107,19 +103,13 @@ export default function OutpatientQueuePage() {
           )
         );
 
-        toast.success(`Pasien ${data.patientName} berhasil dipanggil`, {
-          autoClose: 200,
-        });
+        toast.success(`Pasien ${data.patientName} berhasil dipanggil`);
       } else {
-        toast.error(data.message || "Failed to call patient", {
-          autoClose: 200,
-        });
+        toast.error(data.message || "Failed to call patient");
       }
     } catch (error) {
       console.error("Error calling patient:", error);
-      toast.error("An error occurred while calling patient", {
-        autoClose: 200,
-      });
+      toast.error("An error occurred while calling patient");
     }
   };
 
@@ -152,22 +142,16 @@ export default function OutpatientQueuePage() {
           )
         );
 
-        toast.success(`Pasien ${data.patientName} sedang diperiksa`, {
-          autoClose: 200,
-        });
+        toast.success(`Pasien ${data.patientName} sedang diperiksa`);
 
         // Redirect to doctor's examination page
         router.push(`/rawat-jalan/pemeriksaan-dokter/${screeningId}`);
       } else {
-        toast.error(data.message || "Failed to examine patient", {
-          autoClose: 200,
-        });
+        toast.error(data.message || "Failed to examine patient");
       }
     } catch (error) {
       console.error("Error examining patient:", error);
-      toast.error("An error occurred while examining patient", {
-        autoClose: 200,
-      });
+      toast.error("An error occurred while examining patient");
     }
   };
 
