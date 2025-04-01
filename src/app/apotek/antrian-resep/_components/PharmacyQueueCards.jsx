@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   Clock,
   User,
@@ -12,8 +12,11 @@ import {
   ArrowRight,
   Eye,
   Building,
+  Search,
+  InfoIcon,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { PHARMACIST_SUGGESTIONS } from "@/data/petugas-farmasi";
 
 export default function PharmacyQueueCards({
   queueData,
@@ -27,6 +30,82 @@ export default function PharmacyQueueCards({
   const [selectedItem, setSelectedItem] = useState(null);
   const [pharmacistName, setPharmacistName] = useState("");
   const [showContinueDialog, setShowContinueDialog] = useState(false);
+
+  // New state for pharmacist search functionality
+  const [filteredPharmacists, setFilteredPharmacists] = useState(
+    PHARMACIST_SUGGESTIONS
+  );
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
+
+  // Refs for handling dropdown
+  const inputRef = useRef(null);
+  const inputContainerRef = useRef(null);
+  const dropdownRef = useRef(null);
+
+  // Close suggestion dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target) &&
+        inputRef.current &&
+        !inputRef.current.contains(event.target)
+      ) {
+        setShowSuggestions(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  // Handle pharmacist search
+  const handlePharmacistSearch = (value) => {
+    setPharmacistName(value);
+
+    // Start search indicator
+    setIsSearching(true);
+
+    // Filter pharmacists based on input
+    const filtered = PHARMACIST_SUGGESTIONS.filter((pharmacist) =>
+      pharmacist.toLowerCase().includes(value.toLowerCase())
+    );
+
+    // Update filtered list and show suggestions
+    setFilteredPharmacists(filtered);
+    setShowSuggestions(true);
+
+    // End search indicator after a brief delay to simulate search
+    setTimeout(() => {
+      setIsSearching(false);
+    }, 300);
+  };
+
+  // Handle pharmacist selection from dropdown
+  const handlePharmacistSelection = (pharmacist) => {
+    setPharmacistName(pharmacist);
+    setShowSuggestions(false);
+  };
+
+  // Show all suggestions when input is focused
+  const handleInputFocus = () => {
+    // If there's already text in the input, filter the suggestions
+    if (pharmacistName) {
+      const filtered = PHARMACIST_SUGGESTIONS.filter((pharmacist) =>
+        pharmacist.toLowerCase().includes(pharmacistName.toLowerCase())
+      );
+      setFilteredPharmacists(filtered);
+    } else {
+      // Otherwise show all suggestions
+      setFilteredPharmacists(PHARMACIST_SUGGESTIONS);
+    }
+
+    // Show the suggestions dropdown
+    setShowSuggestions(true);
+  };
 
   const getStatusBadge = (status) => {
     switch (status) {
@@ -339,7 +418,7 @@ export default function PharmacyQueueCards({
         ))}
       </div>
 
-      {/* Pharmacist Name Input Dialog */}
+      {/* Updated Pharmacist Name Input Dialog with Suggestions */}
       {showDialog && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 max-w-md w-full">
@@ -350,18 +429,74 @@ export default function PharmacyQueueCards({
               <div className="mb-4">
                 <label
                   htmlFor="pharmacistName"
-                  className="block text-sm font-medium text-gray-700 mb-1"
+                  className="block text-sm font-medium text-gray-700 mb-2"
                 >
-                  Nama Petugas Farmasi
+                  Nama Petugas Farmasi <span className="text-red-500">*</span>
                 </label>
-                <input
-                  type="text"
-                  id="pharmacistName"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  value={pharmacistName}
-                  onChange={(e) => setPharmacistName(e.target.value)}
-                  required
-                />
+
+                <div className="relative" ref={inputContainerRef}>
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Search className="h-4 w-4 text-gray-400" />
+                  </div>
+                  <input
+                    ref={inputRef}
+                    type="text"
+                    id="pharmacistName"
+                    name="pharmacistName"
+                    value={pharmacistName}
+                    onChange={(e) => handlePharmacistSearch(e.target.value)}
+                    onFocus={handleInputFocus}
+                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Cari atau masukkan nama petugas farmasi..."
+                    required
+                    autoComplete="off"
+                    spellCheck="false"
+                  />
+                  {isSearching && (
+                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                      <Loader2 className="h-4 w-4 text-blue-500 animate-spin" />
+                    </div>
+                  )}
+
+                  {/* Dropdown for pharmacist suggestions */}
+                  {showSuggestions && (
+                    <div
+                      ref={dropdownRef}
+                      className="absolute z-10 mt-1 bg-white shadow-lg rounded-md border border-gray-200 max-h-48 overflow-y-auto left-0 right-0"
+                      style={{
+                        width: inputRef.current
+                          ? inputRef.current.offsetWidth
+                          : "100%",
+                      }}
+                    >
+                      {filteredPharmacists.length > 0 ? (
+                        filteredPharmacists.map((pharmacist, index) => (
+                          <div
+                            key={index}
+                            onClick={() =>
+                              handlePharmacistSelection(pharmacist)
+                            }
+                            className="px-4 py-2 hover:bg-blue-50 cursor-pointer text-sm"
+                          >
+                            {pharmacist}
+                          </div>
+                        ))
+                      ) : (
+                        <div className="px-4 py-2 text-sm text-gray-500 italic">
+                          Tidak ada petugas farmasi yang sesuai
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                <div className="mt-3 flex items-start">
+                  <InfoIcon className="h-4 w-4 text-blue-500 mt-0.5 mr-2 flex-shrink-0" />
+                  <p className="text-xs text-gray-600">
+                    Nama petugas farmasi yang menyiapkan resep akan dicatat
+                    dalam rekam medis pasien
+                  </p>
+                </div>
               </div>
               <div className="flex justify-end space-x-3">
                 <button

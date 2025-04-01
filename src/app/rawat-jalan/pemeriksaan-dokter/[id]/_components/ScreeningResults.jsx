@@ -60,6 +60,18 @@ const ScreeningResults = ({ screening }) => {
         </div>
       </div>
 
+      {/* Nurse name who performed the screening */}
+      {screening.nurseName && (
+        <div className="mt-3">
+          <h4 className="text-xs font-medium text-gray-500">
+            Petugas Skrining
+          </h4>
+          <p className="text-sm font-medium text-gray-800">
+            {screening.nurseName}
+          </p>
+        </div>
+      )}
+
       {/* Show More/Less button */}
       {(screening.pulse ||
         screening.respiratoryRate ||

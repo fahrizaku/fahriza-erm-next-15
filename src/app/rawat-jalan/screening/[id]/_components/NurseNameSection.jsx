@@ -1,20 +1,7 @@
 // app/rawat-jalan/screening/[id]/_components/NurseNameSection.jsx
 import React, { useState, useRef, useEffect } from "react";
 import { User, Search, Loader2, InfoIcon } from "lucide-react";
-
-// Sample data for nurse suggestions - you should replace this with your actual data
-const NURSE_SUGGESTIONS = [
-  "Budi Santoso",
-  "Siti Rahma",
-  "Ahmad Wijaya",
-  "Dewi Kusuma",
-  "Rina Maulana",
-  "Indra Pratama",
-  "Anisa Fitriani",
-  "Maya Permata",
-  "Dian Purnama",
-  "Putri Anggraini",
-];
+import { NURSE_SUGGESTIONS } from "@/data/perawat";
 
 const NurseNameSection = ({ screening, handleInputChange }) => {
   // State for search functionality
