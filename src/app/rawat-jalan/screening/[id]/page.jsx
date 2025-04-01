@@ -22,6 +22,7 @@ import {
   submitScreeningData,
   validateFormData,
 } from "./_utils/helper-function";
+import NurseNameSection from "./_components/NurseNameSection";
 
 export default function ScreeningPage({ params }) {
   const router = useRouter();
@@ -51,6 +52,7 @@ export default function ScreeningPage({ params }) {
     no_bpjs: "",
     updatePatientBPJS: false,
     bpjsStatusVerified: false, // New field for BPJS status verification
+    nurseName: "",
   });
 
   // Fetch patient data
@@ -148,7 +150,7 @@ export default function ScreeningPage({ params }) {
       </div>
 
       {/* Main content */}
-      <div className="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
+      <div className="bg-white rounded-xl shadow-md border border-gray-200 overflow-visible">
         {/* Header */}
         <div className="p-5 md:p-6 border-b border-gray-200 bg-gray-50">
           <h1 className="text-xl font-bold text-gray-800 mb-1">
@@ -190,6 +192,12 @@ export default function ScreeningPage({ params }) {
               patientId={id}
               allergies={allergies}
               setAllergies={setAllergies}
+            />
+
+            {/* Nurse name section */}
+            <NurseNameSection
+              screening={screening}
+              handleInputChange={handleInputChange}
             />
 
             {/* Error message */}

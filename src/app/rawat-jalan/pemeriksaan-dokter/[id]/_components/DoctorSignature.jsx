@@ -11,6 +11,7 @@ const DoctorSignature = ({ doctorName, onChange }) => {
   // Refs for handling dropdown
   const inputRef = useRef(null);
   const dropdownRef = useRef(null);
+  const inputContainerRef = useRef(null);
 
   // Close suggestion dropdown when clicking outside
   useEffect(() => {
@@ -100,7 +101,7 @@ const DoctorSignature = ({ doctorName, onChange }) => {
         </div>
       </label>
 
-      <div className="relative">
+      <div className="relative" ref={inputContainerRef}>
         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
           <Search className="h-4 w-4 text-gray-400" />
         </div>
@@ -122,31 +123,35 @@ const DoctorSignature = ({ doctorName, onChange }) => {
             <Loader2 className="h-4 w-4 text-blue-500 animate-spin" />
           </div>
         )}
-      </div>
 
-      {/* Dropdown for doctor suggestions */}
-      {showSuggestions && (
-        <div
-          ref={dropdownRef}
-          className="absolute z-10 mt-1 w-full bg-white shadow-lg rounded-md border border-gray-200 max-h-48 overflow-y-auto"
-        >
-          {filteredDoctors.length > 0 ? (
-            filteredDoctors.map((doctor, index) => (
-              <div
-                key={index}
-                onClick={() => handleDoctorSelection(doctor)}
-                className="px-4 py-2 hover:bg-blue-50 cursor-pointer text-sm"
-              >
-                {doctor}
+        {/* Dropdown for doctor suggestions - fixed width */}
+        {showSuggestions && (
+          <div
+            ref={dropdownRef}
+            className="absolute z-50 mt-1 bg-white shadow-lg rounded-md border border-gray-200 max-h-48 overflow-y-auto left-0 right-0"
+            style={{
+              width: inputRef.current ? inputRef.current.offsetWidth : "100%",
+              position: "absolute",
+            }}
+          >
+            {filteredDoctors.length > 0 ? (
+              filteredDoctors.map((doctor, index) => (
+                <div
+                  key={index}
+                  onClick={() => handleDoctorSelection(doctor)}
+                  className="px-4 py-2 hover:bg-blue-50 cursor-pointer text-sm"
+                >
+                  {doctor}
+                </div>
+              ))
+            ) : (
+              <div className="px-4 py-2 text-sm text-gray-500 italic">
+                Tidak ada dokter yang sesuai
               </div>
-            ))
-          ) : (
-            <div className="px-4 py-2 text-sm text-gray-500 italic">
-              Tidak ada dokter yang sesuai
-            </div>
-          )}
-        </div>
-      )}
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 };

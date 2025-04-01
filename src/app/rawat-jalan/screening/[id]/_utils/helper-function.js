@@ -55,6 +55,10 @@ export const validateFormData = (screening, patient) => {
     throw new Error("Keluhan pasien harus diisi");
   }
 
+  if (!screening.nurseName) {
+    throw new Error("Nama perawat/petugas harus diisi");
+  }
+
   if (!screening.paymentMethod) {
     throw new Error("Metode pembayaran harus dipilih");
   }
@@ -110,6 +114,7 @@ export const prepareScreeningData = (screening, id, patient) => {
     oxygenSaturation: screening.oxygenSaturation
       ? parseFloat(screening.oxygenSaturation)
       : null,
+    nurseName: screening.nurseName,
     isBPJSActive:
       screening.paymentMethod === "bpjs" &&
       (screening.bpjsStatusVerified || !patient?.isBPJS),

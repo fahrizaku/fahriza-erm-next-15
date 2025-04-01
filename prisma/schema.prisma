@@ -104,6 +104,8 @@ model Screening {
   isBPJSActive      Boolean?      // Status BPJS aktif atau tidak
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
+
+  nurseName         String?      // Name of the nurse who conducted the screening
   
   // Screening status
   status            String        @default("waiting") // waiting, in-progress, completed
