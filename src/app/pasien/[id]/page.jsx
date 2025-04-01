@@ -137,27 +137,6 @@ export default function PatientDetailPage({ params }) {
 
   return (
     <div className="max-w-6xl mx-auto pt-4 px-1 sm:p-6">
-      {/* Back button */}
-      <div className="mb-8">
-        <Link
-          href="/pasien"
-          className="inline-flex items-center text-blue-600 hover:text-blue-800 transition-colors font-medium"
-        >
-          <span className="flex items-center">
-            <svg
-              className="h-5 w-5 mr-1"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <polyline points="15 18 9 12 15 6" />
-            </svg>
-            Kembali ke Daftar Pasien
-          </span>
-        </Link>
-      </div>
-
       {/* Main card */}
       <div className="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
         <PatientHeader
