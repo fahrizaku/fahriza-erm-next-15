@@ -88,6 +88,7 @@ export async function POST(request) {
           ? parseFloat(data.oxygenSaturation)
           : null,
         isBPJSActive: data.isBPJSActive || false,
+        nurseName: data.nurseName,
         status: "waiting",
         queueNumber: queueNumber,
       },

@@ -1,4 +1,3 @@
-// app/rekam-medis/[id]/components/VitalsSection.jsx
 import React from "react";
 import { formatBloodPressure } from "../utils/formatters";
 
@@ -96,6 +95,15 @@ export default function VitalsSection({ screening }) {
             </div>
           )}
         </div>
+
+        {screening.nurseName && (
+          <div className="mt-4 pt-3 border-t border-gray-200">
+            <p className="text-xs text-gray-500">
+              Screening dilakukan oleh:{" "}
+              <span className="font-medium">{screening.nurseName}</span>
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );
