@@ -35,7 +35,7 @@ export default function PatientInfo({ patient }) {
             {capitalizeEachWord(patient?.name)}
           </h2>
           <div className="text-sm text-gray-600 ml-1">
-            {patient?.gender || "N/A"} - {age} tahun
+            {patient?.gender || "N/A"} · {age} tahun
           </div>
         </div>
         <div className="flex items-center text-sm text-gray-600">

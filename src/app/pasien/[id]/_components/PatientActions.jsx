@@ -1,11 +1,11 @@
 import React from "react";
 import { Stethoscope, Bed, ClipboardList, Loader2 } from "lucide-react";
 
-const PatientActions = ({ 
-  loadingStates, 
-  onOutpatientClick, 
-  onInpatientClick, 
-  onMedicalRecordClick 
+const PatientActions = ({
+  loadingStates,
+  onOutpatientClick,
+  onInpatientClick,
+  onMedicalRecordClick,
 }) => {
   return (
     <div className="mt-8 border-t pt-6">
@@ -26,7 +26,7 @@ const PatientActions = ({
         />
 
         {/* Rawat Inap button */}
-        <ActionButton
+        {/* <ActionButton
           icon={<Bed className="h-5 w-5" />}
           loadingIcon={<Loader2 className="h-5 w-5 animate-spin" />}
           isLoading={loadingStates.inpatient}
@@ -35,7 +35,7 @@ const PatientActions = ({
           loadingDescription="Memuat..."
           onClick={onInpatientClick}
           iconBgColor="bg-purple-100 text-purple-600"
-        />
+        /> */}
 
         {/* Rekam Medis button */}
         <ActionButton
@@ -54,15 +54,15 @@ const PatientActions = ({
 };
 
 // Reusable action button component
-const ActionButton = ({ 
-  icon, 
-  loadingIcon, 
-  isLoading, 
-  title, 
-  description, 
+const ActionButton = ({
+  icon,
+  loadingIcon,
+  isLoading,
+  title,
+  description,
   loadingDescription,
-  onClick, 
-  iconBgColor 
+  onClick,
+  iconBgColor,
 }) => {
   return (
     <button
