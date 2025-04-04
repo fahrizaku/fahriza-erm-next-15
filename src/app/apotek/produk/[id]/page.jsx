@@ -25,6 +25,7 @@ const ProductDetail = ({ params }) => {
   const [drug, setDrug] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [categories, setCategories] = useState([]);
 
   useEffect(() => {
     const fetchProductDetail = async () => {
@@ -32,6 +33,17 @@ const ProductDetail = ({ params }) => {
         const response = await fetch(`/api/drugs/${resolvedParams.id}`);
         if (!response.ok) throw new Error("Failed to fetch drug details");
         const data = await response.json();
+
+        // Parse categories if they exist
+        if (data.category) {
+          setCategories(
+            data.category
+              .split(",")
+              .map((cat) => cat.trim())
+              .filter((cat) => cat)
+          );
+        }
+
         setDrug(data);
       } catch (error) {
         console.error("Error fetching drug details:", error);
@@ -64,6 +76,21 @@ const ProductDetail = ({ params }) => {
       toast.error(error.message || "Terjadi kesalahan saat menghapus produk");
       setConfirmDelete(false);
     }
+  };
+
+  // Function to get a different color for each category
+  const getCategoryColor = (index) => {
+    const colors = [
+      "bg-purple-100 text-purple-800",
+      "bg-blue-100 text-blue-800",
+      "bg-green-100 text-green-800",
+      "bg-red-100 text-red-800",
+      "bg-yellow-100 text-yellow-800",
+      "bg-indigo-100 text-indigo-800",
+      "bg-pink-100 text-pink-800",
+      "bg-cyan-100 text-cyan-800",
+    ];
+    return colors[index % colors.length];
   };
 
   if (isLoading) {
@@ -161,11 +188,24 @@ const ProductDetail = ({ params }) => {
               </div>
               <div>
                 <p className="text-sm text-gray-500">Kategori</p>
-                <p className="font-medium text-gray-800">
-                  <span className="inline-block px-2 py-1 bg-purple-100 text-purple-800 rounded-full text-sm">
-                    {drug.category || "Tidak ada kategori"}
-                  </span>
-                </p>
+                {categories.length > 0 ? (
+                  <div className="flex flex-wrap gap-2 mt-1">
+                    {categories.map((category, index) => (
+                      <span
+                        key={index}
+                        className={`inline-block px-2 py-1 rounded-full text-sm ${getCategoryColor(
+                          index
+                        )}`}
+                      >
+                        {category}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="font-medium text-gray-500 italic">
+                    Tidak ada kategori
+                  </p>
+                )}
               </div>
               <div>
                 <p className="text-sm text-gray-500">Pabrik</p>

@@ -12,6 +12,7 @@ import {
   Factory,
   Truck,
   FileText,
+  Plus,
 } from "lucide-react";
 import { toast } from "react-toastify";
 
@@ -35,15 +36,30 @@ export default function TambahProduk() {
     ingredients: "",
   });
 
+  // For multiple categories
+  const [selectedCategories, setSelectedCategories] = useState([]);
+  const [categoryInput, setCategoryInput] = useState("");
+
   // Autocomplete suggestions
   const categoryOptions = [
-    "Antibiotik",
-    "Analgesik",
-    "Antipiretik",
-    "Antihipertensi",
-    "Vitamin",
-    "Suplemen",
+    "Obat Bebas",
+    "Obat Bebas Terbatas",
+    "Obat Keras",
+    "Jamu",
+    "Obat Herbal Terstandar",
+    "Fitofarmaka",
+    "Kosmetika",
     "Lainnya",
+    "OTC",
+    "Narkotika",
+    "Psikotropika",
+    "OOT",
+    "Paten Keras",
+    "Paten Antibiotik",
+    "Generik",
+    "Prekursor",
+    "Prekursor Kombinasi",
+    "Labor",
   ];
 
   const unitOptions = [
@@ -60,7 +76,6 @@ export default function TambahProduk() {
   ];
 
   // Autocomplete state
-  const [categoryInput, setCategoryInput] = useState("");
   const [unitInput, setUnitInput] = useState("");
   const [filteredCategories, setFilteredCategories] = useState([]);
   const [filteredUnits, setFilteredUnits] = useState([]);
@@ -122,18 +137,28 @@ export default function TambahProduk() {
     };
   }, []);
 
+  // Update formData.category whenever selectedCategories changes
+  useEffect(() => {
+    setFormData((prev) => ({
+      ...prev,
+      category: selectedCategories.join(", "),
+    }));
+  }, [selectedCategories]);
+
   // Filter categories based on input
   useEffect(() => {
     if (categoryInput === "") {
       setFilteredCategories(categoryOptions);
     } else {
       setFilteredCategories(
-        categoryOptions.filter((option) =>
-          option.toLowerCase().includes(categoryInput.toLowerCase())
+        categoryOptions.filter(
+          (option) =>
+            option.toLowerCase().includes(categoryInput.toLowerCase()) &&
+            !selectedCategories.includes(option)
         )
       );
     }
-  }, [categoryInput]);
+  }, [categoryInput, selectedCategories]);
 
   // Filter units based on input
   useEffect(() => {
@@ -220,10 +245,6 @@ export default function TambahProduk() {
   // Handle category input change
   const handleCategoryInputChange = (e) => {
     setCategoryInput(e.target.value);
-    setFormData((prev) => ({
-      ...prev,
-      category: e.target.value,
-    }));
     setIsCategoryDropdownOpen(true);
 
     // Clear error when field is edited
@@ -232,6 +253,14 @@ export default function TambahProduk() {
         ...errors,
         category: undefined,
       });
+    }
+  };
+
+  // Add a category
+  const addCategory = () => {
+    if (categoryInput && !selectedCategories.includes(categoryInput)) {
+      setSelectedCategories([...selectedCategories, categoryInput]);
+      setCategoryInput("");
     }
   };
 
@@ -265,12 +294,18 @@ export default function TambahProduk() {
 
   // Handle selection from category dropdown
   const handleSelectCategory = (category) => {
-    setFormData((prev) => ({
-      ...prev,
-      category,
-    }));
-    setCategoryInput(category);
-    setIsCategoryDropdownOpen(false);
+    if (!selectedCategories.includes(category)) {
+      setSelectedCategories([...selectedCategories, category]);
+      setCategoryInput("");
+      setIsCategoryDropdownOpen(false);
+    }
+  };
+
+  // Remove a category
+  const removeCategory = (categoryToRemove) => {
+    setSelectedCategories(
+      selectedCategories.filter((cat) => cat !== categoryToRemove)
+    );
   };
 
   // Handle selection from unit dropdown
@@ -294,12 +329,8 @@ export default function TambahProduk() {
   };
 
   // Clear input fields
-  const handleClearCategory = () => {
+  const handleClearCategoryInput = () => {
     setCategoryInput("");
-    setFormData((prev) => ({
-      ...prev,
-      category: "",
-    }));
   };
 
   const handleClearUnit = () => {
@@ -318,6 +349,14 @@ export default function TambahProduk() {
     }));
   };
 
+  // Handle keypress for category input
+  const handleCategoryKeyPress = (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      addCategory();
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -333,8 +372,7 @@ export default function TambahProduk() {
       // Ensure all fields have at least some value to pass backend validation
       const dataToSubmit = {
         ...formData,
-        // Set default values for non-required fields if they're empty
-        category: formData.category || "Lainnya",
+        // Category is already set from the useEffect that watches selectedCategories
         manufacturer: formData.manufacturer || "-",
         purchasePrice: formData.purchasePrice
           ? parseFloat(formData.purchasePrice)
@@ -452,23 +490,46 @@ export default function TambahProduk() {
                   )}
                 </div>
 
-                {/* Kategori and Unit in one row */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Kategori with Autocomplete */}
-                  <div ref={categoryRef} className="relative">
-                    <label
-                      htmlFor="category"
-                      className="block text-sm font-medium text-gray-700 mb-1"
-                    >
-                      Kategori <span className="text-gray-400">(opsional)</span>
-                    </label>
-                    <div className="relative">
+                {/* Kategori with multi-select */}
+                <div ref={categoryRef} className="relative">
+                  <label
+                    htmlFor="category"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
+                    Kategori <span className="text-gray-400">(opsional)</span>
+                  </label>
+
+                  {/* Selected Categories */}
+                  {selectedCategories.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      {selectedCategories.map((cat, index) => (
+                        <div
+                          key={index}
+                          className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center"
+                        >
+                          {cat}
+                          <button
+                            type="button"
+                            onClick={() => removeCategory(cat)}
+                            className="ml-2 text-blue-600 hover:text-blue-800"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Input and dropdown for adding categories */}
+                  <div className="flex space-x-2">
+                    <div className="relative flex-1">
                       <input
                         type="text"
                         id="category"
                         value={categoryInput}
                         onChange={handleCategoryInputChange}
                         onFocus={() => setIsCategoryDropdownOpen(true)}
+                        onKeyPress={handleCategoryKeyPress}
                         className={`w-full px-4 py-2 bg-white rounded-lg border ${
                           errors.category
                             ? "border-red-500 focus:ring-red-500"
@@ -479,83 +540,90 @@ export default function TambahProduk() {
                       {categoryInput && (
                         <button
                           type="button"
-                          onClick={handleClearCategory}
+                          onClick={handleClearCategoryInput}
                           className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
                         >
                           <X className="w-4 h-4" />
                         </button>
                       )}
                     </div>
-                    {isCategoryDropdownOpen &&
-                      filteredCategories.length > 0 && (
-                        <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
-                          {filteredCategories.map((option, index) => (
-                            <div
-                              key={index}
-                              className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                              onClick={() => handleSelectCategory(option)}
-                            >
-                              {option}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    {errors.category && (
-                      <p className="mt-1 text-sm text-red-500">
-                        {errors.category}
-                      </p>
-                    )}
+                    <button
+                      type="button"
+                      onClick={addCategory}
+                      className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                    >
+                      <Plus className="w-5 h-5" />
+                    </button>
                   </div>
 
-                  {/* Satuan with Autocomplete */}
-                  <div ref={unitRef} className="relative">
-                    <label
-                      htmlFor="unit"
-                      className="block text-sm font-medium text-gray-700 mb-1"
-                    >
-                      Satuan <span className="text-red-500">*</span>
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="text"
-                        id="unit"
-                        value={unitInput}
-                        onChange={handleUnitInputChange}
-                        onFocus={() => setIsUnitDropdownOpen(true)}
-                        className={`w-full px-4 py-2 bg-white rounded-lg border ${
-                          errors.unit
-                            ? "border-red-500 focus:ring-red-500"
-                            : "border-gray-300 focus:ring-cyan-500"
-                        } focus:outline-none focus:ring-2 focus:border-transparent pr-10`}
-                        placeholder="Ketik atau pilih satuan"
-                      />
-                      {unitInput && (
-                        <button
-                          type="button"
-                          onClick={handleClearUnit}
-                          className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  {isCategoryDropdownOpen && filteredCategories.length > 0 && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
+                      {filteredCategories.map((option, index) => (
+                        <div
+                          key={index}
+                          className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                          onClick={() => handleSelectCategory(option)}
                         >
-                          <X className="w-4 h-4" />
-                        </button>
-                      )}
+                          {option}
+                        </div>
+                      ))}
                     </div>
-                    {isUnitDropdownOpen && filteredUnits.length > 0 && (
-                      <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
-                        {filteredUnits.map((option, index) => (
-                          <div
-                            key={index}
-                            className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                            onClick={() => handleSelectUnit(option)}
-                          >
-                            {option}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    {errors.unit && (
-                      <p className="mt-1 text-sm text-red-500">{errors.unit}</p>
+                  )}
+                  {errors.category && (
+                    <p className="mt-1 text-sm text-red-500">
+                      {errors.category}
+                    </p>
+                  )}
+                </div>
+
+                {/* Satuan with Autocomplete */}
+                <div ref={unitRef} className="relative">
+                  <label
+                    htmlFor="unit"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
+                    Satuan <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      id="unit"
+                      value={unitInput}
+                      onChange={handleUnitInputChange}
+                      onFocus={() => setIsUnitDropdownOpen(true)}
+                      className={`w-full px-4 py-2 bg-white rounded-lg border ${
+                        errors.unit
+                          ? "border-red-500 focus:ring-red-500"
+                          : "border-gray-300 focus:ring-cyan-500"
+                      } focus:outline-none focus:ring-2 focus:border-transparent pr-10`}
+                      placeholder="Ketik atau pilih satuan"
+                    />
+                    {unitInput && (
+                      <button
+                        type="button"
+                        onClick={handleClearUnit}
+                        className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
                     )}
                   </div>
+                  {isUnitDropdownOpen && filteredUnits.length > 0 && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
+                      {filteredUnits.map((option, index) => (
+                        <div
+                          key={index}
+                          className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                          onClick={() => handleSelectUnit(option)}
+                        >
+                          {option}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {errors.unit && (
+                    <p className="mt-1 text-sm text-red-500">{errors.unit}</p>
+                  )}
                 </div>
 
                 {/* Supplier */}
