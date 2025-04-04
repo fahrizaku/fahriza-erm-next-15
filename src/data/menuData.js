@@ -16,6 +16,7 @@ import {
   Microscope,
   Flask,
   FileSpreadsheet,
+  Car,
 } from "lucide-react";
 
 const menuCategories = [
@@ -92,10 +93,15 @@ const menuCategories = [
         icon: <Package size={20} />,
         href: "/apotek/produk",
       },
+      // {
+      //   title: "Data Obat Asist",
+      //   icon: <Pill size={20} />,
+      //   href: "/apotek/obat-resep",
+      // },
       {
-        title: "Data Obat Asist",
-        icon: <Pill size={20} />,
-        href: "/apotek/obat-resep",
+        title: "Supplier",
+        icon: <Car size={20} />,
+        href: "/apotek/supplier",
       },
     ],
   },

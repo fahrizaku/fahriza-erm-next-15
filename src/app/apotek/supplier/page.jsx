@@ -14,6 +14,7 @@ import {
   Trash2,
   Edit,
   ChevronRight,
+  Eye,
 } from "lucide-react";
 import { toast } from "react-toastify";
 
@@ -330,6 +331,16 @@ export default function ListSuppliers() {
                       <div className="flex items-center justify-end space-x-2">
                         <button
                           onClick={() =>
+                            router.push(`/apotek/supplier/${supplier.id}`)
+                          }
+                          className="text-gray-600 hover:text-gray-900 p-1"
+                          title="Detail"
+                        >
+                          <Eye className="h-5 w-5" />
+                        </button>
+
+                        <button
+                          onClick={() =>
                             router.push(`/apotek/supplier/edit/${supplier.id}`)
                           }
                           className="text-indigo-600 hover:text-indigo-900 p-1"
@@ -345,16 +356,6 @@ export default function ListSuppliers() {
                         >
                           <Trash2 className="h-5 w-5" />
                         </button>
-
-                        <button
-                          onClick={() =>
-                            router.push(`/apotek/supplier/${supplier.id}`)
-                          }
-                          className="text-gray-600 hover:text-gray-900 p-1"
-                          title="Detail"
-                        >
-                          <ChevronRight className="h-5 w-5" />
-                        </button>
                       </div>
                     </td>
                   </tr>
@@ -367,7 +368,7 @@ export default function ListSuppliers() {
 
       {/* Confirmation Modal */}
       {confirmDelete && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-4">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
           <div className="bg-white rounded-lg p-6 max-w-md w-full">
             <h3 className="text-lg font-semibold text-gray-900 mb-2">
               Konfirmasi Hapus
