@@ -1,5 +1,3 @@
-// File: app/api/drugs/[id]/route.js
-
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 
@@ -64,6 +62,8 @@ export async function PUT(request, { params }) {
         price: data.price,
         stock: data.stock,
         expiryDate: data.expiryDate || null,
+        batchNumber: data.batchNumber || null,
+        ingredients: data.ingredients || null,
         unit: data.unit,
       },
     });

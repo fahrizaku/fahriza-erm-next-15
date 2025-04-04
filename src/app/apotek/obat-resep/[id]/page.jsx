@@ -8,6 +8,8 @@ import {
   Boxes,
   FileText,
   Factory,
+  FlaskRound,
+  Hash,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -128,6 +130,17 @@ const ProductDetail = ({ params }) => {
                   </span>
                 </p>
               </div>
+              {drug.batchNumber && (
+                <div>
+                  <p className="text-sm text-gray-500">Nomor Batch</p>
+                  <p className="font-medium text-gray-800">
+                    <span className="inline-flex items-center gap-1 px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm">
+                      <Hash className="w-4 h-4" />
+                      {drug.batchNumber}
+                    </span>
+                  </p>
+                </div>
+              )}
               <div>
                 <p className="text-sm text-gray-500">Tanggal Kadaluarsa</p>
                 <p className="font-medium text-gray-800">
@@ -244,6 +257,23 @@ const ProductDetail = ({ params }) => {
               <div className="p-4">
                 <p className="text-gray-700 whitespace-pre-line">
                   {drug.description}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Ingredients */}
+          {drug.ingredients && (
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+              <div className="border-b border-gray-200 p-4">
+                <div className="flex items-center gap-2 text-lg font-semibold text-gray-800">
+                  <FlaskRound className="w-5 h-5 text-teal-600" />
+                  Kandungan / Komposisi
+                </div>
+              </div>
+              <div className="p-4">
+                <p className="text-gray-700 whitespace-pre-line">
+                  {drug.ingredients}
                 </p>
               </div>
             </div>

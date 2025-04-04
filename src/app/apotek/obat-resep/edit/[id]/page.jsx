@@ -10,6 +10,8 @@ import {
   Boxes,
   Calendar,
   Factory,
+  FileText,
+  Hash,
 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "react-toastify";
@@ -29,6 +31,8 @@ export default function EditProductPage({ params }) {
     stock: "",
     expiryDate: "",
     unit: "",
+    ingredients: "",
+    batchNumber: "",
   });
 
   useEffect(() => {
@@ -50,6 +54,8 @@ export default function EditProductPage({ params }) {
           stock: drugData.stock != null ? drugData.stock.toString() : "",
           expiryDate: drugData.expiryDate || "",
           unit: drugData.unit || "",
+          ingredients: drugData.ingredients || "",
+          batchNumber: drugData.batchNumber || "",
         });
       } catch (error) {
         console.error("Error fetching drug data:", error);
@@ -203,6 +209,26 @@ export default function EditProductPage({ params }) {
                   </select>
                 </div>
 
+                {/* Nomor Batch */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Nomor Batch
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Hash className="h-4 w-4 text-gray-400" />
+                    </div>
+                    <input
+                      type="text"
+                      name="batchNumber"
+                      value={formData.batchNumber}
+                      onChange={handleInputChange}
+                      className="w-full pl-10 pr-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="A12B345C"
+                    />
+                  </div>
+                </div>
+
                 {/* Produsen */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -341,6 +367,34 @@ export default function EditProductPage({ params }) {
                       className="w-full pl-10 pr-3 sm:pr-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder="0"
                     />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Ingredients Information */}
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+              <div className="border-b border-gray-200 p-4">
+                <div className="flex items-center gap-2 text-lg font-semibold text-gray-800">
+                  <FileText className="w-5 h-5 text-green-600" />
+                  Kandungan/Komposisi
+                </div>
+              </div>
+              <div className="p-4 space-y-4">
+                {/* Kandungan */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Kandungan/Komposisi Obat
+                  </label>
+                  <div className="relative">
+                    <textarea
+                      name="ingredients"
+                      value={formData.ingredients}
+                      onChange={handleInputChange}
+                      rows="4"
+                      className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="Masukkan kandungan atau komposisi obat"
+                    ></textarea>
                   </div>
                 </div>
               </div>

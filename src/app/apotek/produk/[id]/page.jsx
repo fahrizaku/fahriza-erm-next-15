@@ -8,14 +8,23 @@ import {
   Boxes,
   FileText,
   Factory,
+  Truck,
+  Calendar,
+  Tag,
+  Edit,
+  Trash2,
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { toast } from "react-toastify";
 
 const ProductDetail = ({ params }) => {
+  const router = useRouter();
   // Menggunakan React.use() untuk membuka Promise params
   const resolvedParams = use(params);
   const [drug, setDrug] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   useEffect(() => {
     const fetchProductDetail = async () => {
@@ -26,6 +35,7 @@ const ProductDetail = ({ params }) => {
         setDrug(data);
       } catch (error) {
         console.error("Error fetching drug details:", error);
+        toast.error("Gagal memuat data produk");
       } finally {
         setIsLoading(false);
       }
@@ -35,6 +45,26 @@ const ProductDetail = ({ params }) => {
       fetchProductDetail();
     }
   }, [resolvedParams?.id]);
+
+  const handleDelete = async () => {
+    try {
+      const response = await fetch(`/api/drugs/${resolvedParams.id}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Gagal menghapus produk");
+      }
+
+      toast.success("Produk berhasil dihapus");
+      router.push("/apotek/produk");
+    } catch (error) {
+      console.error("Error deleting product:", error);
+      toast.error(error.message || "Terjadi kesalahan saat menghapus produk");
+      setConfirmDelete(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -88,9 +118,27 @@ const ProductDetail = ({ params }) => {
       </div>
 
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-800">{drug.name}</h1>
-          <p className="text-gray-600 mt-1">Detail informasi obat</p>
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-800">{drug.name}</h1>
+            <p className="text-gray-600 mt-1">Detail informasi obat</p>
+          </div>
+          <div className="mt-4 md:mt-0 flex space-x-2">
+            <Link
+              href={`/apotek/produk/edit/${drug.id}`}
+              className="px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-colors flex items-center gap-2"
+            >
+              <Edit className="w-4 h-4" />
+              <span>Edit</span>
+            </Link>
+            <button
+              onClick={() => setConfirmDelete(true)}
+              className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors flex items-center gap-2"
+            >
+              <Trash2 className="w-4 h-4" />
+              <span>Hapus</span>
+            </button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -128,10 +176,39 @@ const ProductDetail = ({ params }) => {
                   </span>
                 </p>
               </div>
+
+              {drug.supplier && (
+                <div>
+                  <p className="text-sm text-gray-500">Supplier</p>
+                  <p className="font-medium text-gray-800">
+                    <Link
+                      href={`/apotek/supplier/${drug.supplierId}`}
+                      className="inline-flex items-center gap-1 px-2 py-1 bg-teal-100 text-teal-800 rounded-full text-sm hover:bg-teal-200 transition-colors"
+                    >
+                      <Truck className="w-4 h-4" />
+                      {drug.supplier.name}
+                    </Link>
+                  </p>
+                </div>
+              )}
+
+              {drug.batchNumber && (
+                <div>
+                  <p className="text-sm text-gray-500">Nomor Batch</p>
+                  <p className="font-medium text-gray-800">
+                    <span className="inline-flex items-center gap-1 px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm">
+                      <Tag className="w-4 h-4" />
+                      {drug.batchNumber}
+                    </span>
+                  </p>
+                </div>
+              )}
+
               <div>
                 <p className="text-sm text-gray-500">Tanggal Kadaluarsa</p>
                 <p className="font-medium text-gray-800">
-                  <span className="inline-block px-2 py-1 bg-gray-100 text-gray-800 rounded-full text-sm">
+                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-800 rounded-full text-sm">
+                    <Calendar className="w-4 h-4" />
                     {drug.expiryDate
                       ? new Date(drug.expiryDate).toLocaleDateString("id-ID", {
                           day: "2-digit",
@@ -217,7 +294,7 @@ const ProductDetail = ({ params }) => {
                         : "bg-amber-100 text-amber-800"
                     }`}
                   >
-                    {drug.stock} pcs
+                    {drug.stock} {drug.unit}
                   </span>
                 </p>
               </div>
@@ -225,31 +302,65 @@ const ProductDetail = ({ params }) => {
                 <div>
                   <p className="text-sm text-gray-500">Stok Minimum</p>
                   <p className="font-medium text-gray-800">
-                    {drug.minimumStock} pcs
+                    {drug.minimumStock} {drug.unit}
                   </p>
                 </div>
               )}
             </div>
           </div>
 
-          {/* Description */}
-          {drug.description && (
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-              <div className="border-b border-gray-200 p-4">
-                <div className="flex items-center gap-2 text-lg font-semibold text-gray-800">
-                  <FileText className="w-5 h-5 text-gray-600" />
-                  Deskripsi
-                </div>
-              </div>
-              <div className="p-4">
-                <p className="text-gray-700 whitespace-pre-line">
-                  {drug.description}
-                </p>
+          {/* Ingredients Information */}
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            <div className="border-b border-gray-200 p-4">
+              <div className="flex items-center gap-2 text-lg font-semibold text-gray-800">
+                <FileText className="w-5 h-5 text-gray-600" />
+                Kandungan/Komposisi
               </div>
             </div>
-          )}
+            <div className="p-4">
+              {drug.ingredients ? (
+                <p className="text-gray-700 whitespace-pre-line">
+                  {drug.ingredients}
+                </p>
+              ) : (
+                <p className="text-gray-500 italic">
+                  Tidak ada informasi kandungan
+                </p>
+              )}
+            </div>
+          </div>
         </div>
       </div>
+
+      {/* Confirmation Modal */}
+      {confirmDelete && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-4">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              Konfirmasi Hapus
+            </h3>
+            <p className="text-gray-600 mb-6">
+              Apakah Anda yakin ingin menghapus produk{" "}
+              <span className="font-medium">{drug.name}</span>? Tindakan ini
+              tidak dapat dibatalkan.
+            </p>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => setConfirmDelete(false)}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+              >
+                Batal
+              </button>
+              <button
+                onClick={handleDelete}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+              >
+                Hapus
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

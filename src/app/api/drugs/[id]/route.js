@@ -1,5 +1,3 @@
-// File: app/api/drugs/[id]/route.js
-
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 
@@ -11,6 +9,16 @@ export async function GET(request, { params }) {
 
     const drug = await db.drugStoreProduct.findUnique({
       where: { id },
+      include: {
+        supplier: {
+          select: {
+            id: true,
+            name: true,
+            contactName: true,
+            phone: true,
+          },
+        },
+      },
     });
 
     if (!drug) {
@@ -54,17 +62,41 @@ export async function PUT(request, { params }) {
       );
     }
 
+    // Prepare supplier relation
+    const updateData = {
+      name: data.name,
+      category: data.category,
+      manufacturer: data.manufacturer,
+      purchasePrice: data.purchasePrice ? parseFloat(data.purchasePrice) : null,
+      price: parseFloat(data.price),
+      stock: parseInt(data.stock),
+      expiryDate: data.expiryDate || null,
+      unit: data.unit,
+      batchNumber: data.batchNumber || null,
+      ingredients: data.ingredients || null,
+    };
+
+    // Only add supplierId if it's provided and valid
+    if (data.supplierId) {
+      const supplierId = parseInt(data.supplierId);
+      if (!isNaN(supplierId)) {
+        updateData.supplierId = supplierId;
+      }
+    } else if (data.supplierId === null) {
+      // Explicitly disconnect supplier if null is provided
+      updateData.supplierId = null;
+    }
+
     const updatedDrug = await db.drugStoreProduct.update({
       where: { id },
-      data: {
-        name: data.name,
-        category: data.category,
-        manufacturer: data.manufacturer,
-        purchasePrice: data.purchasePrice ? data.purchasePrice : null,
-        price: data.price,
-        stock: data.stock,
-        expiryDate: data.expiryDate || null,
-        unit: data.unit,
+      data: updateData,
+      include: {
+        supplier: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
       },
     });
 

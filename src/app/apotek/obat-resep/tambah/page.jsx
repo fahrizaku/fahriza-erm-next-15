@@ -10,6 +10,8 @@ import {
   Boxes,
   Calendar,
   Factory,
+  FileText,
+  Hash,
 } from "lucide-react";
 import { toast } from "react-toastify";
 
@@ -27,6 +29,8 @@ export default function TambahProduk() {
     stock: "",
     expiryDate: "",
     unit: "",
+    ingredients: "",
+    batchNumber: "",
   });
 
   // Autocomplete suggestions
@@ -282,6 +286,8 @@ export default function TambahProduk() {
         // Auto-fill stock with 100 if not provided
         stock: formData.stock ? parseInt(formData.stock) : 100,
         expiryDate: formData.expiryDate || null,
+        ingredients: formData.ingredients || "-",
+        batchNumber: formData.batchNumber || "-",
       };
 
       const response = await fetch("/api/drugs-resep/add", {
@@ -496,33 +502,100 @@ export default function TambahProduk() {
                   </div>
                 </div>
 
-                {/* Produsen */}
+                {/* Batch Number and Manufacturer in one row */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Nomor Batch */}
+                  <div>
+                    <label
+                      htmlFor="batchNumber"
+                      className="block text-sm font-medium text-gray-700 mb-1"
+                    >
+                      Nomor Batch{" "}
+                      <span className="text-gray-400">(opsional)</span>
+                    </label>
+                    <div className="relative">
+                      <Hash className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                      <input
+                        type="text"
+                        id="batchNumber"
+                        name="batchNumber"
+                        value={formData.batchNumber}
+                        onChange={handleChange}
+                        className={`w-full pl-10 pr-4 py-2 bg-white rounded-lg border ${
+                          errors.batchNumber
+                            ? "border-red-500 focus:ring-red-500"
+                            : "border-gray-300 focus:ring-cyan-500"
+                        } focus:outline-none focus:ring-2 focus:border-transparent`}
+                        placeholder="A12B345C"
+                      />
+                    </div>
+                    {errors.batchNumber && (
+                      <p className="mt-1 text-sm text-red-500">
+                        {errors.batchNumber}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Produsen */}
+                  <div>
+                    <label
+                      htmlFor="manufacturer"
+                      className="block text-sm font-medium text-gray-700 mb-1"
+                    >
+                      Produsen <span className="text-gray-400">(opsional)</span>
+                    </label>
+                    <div className="relative">
+                      <Factory className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                      <input
+                        type="text"
+                        id="manufacturer"
+                        name="manufacturer"
+                        value={formData.manufacturer}
+                        onChange={handleChange}
+                        className={`w-full pl-10 pr-4 py-2 bg-white rounded-lg border ${
+                          errors.manufacturer
+                            ? "border-red-500 focus:ring-red-500"
+                            : "border-gray-300 focus:ring-cyan-500"
+                        } focus:outline-none focus:ring-2 focus:border-transparent`}
+                        placeholder="Masukkan nama produsen"
+                      />
+                    </div>
+                    {errors.manufacturer && (
+                      <p className="mt-1 text-sm text-red-500">
+                        {errors.manufacturer}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Kandungan/Komposisi */}
                 <div>
                   <label
-                    htmlFor="manufacturer"
+                    htmlFor="ingredients"
                     className="block text-sm font-medium text-gray-700 mb-1"
                   >
-                    Produsen <span className="text-gray-400">(opsional)</span>
+                    Kandungan/Komposisi{" "}
+                    <span className="text-gray-400">(opsional)</span>
                   </label>
                   <div className="relative">
-                    <Factory className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                    <input
-                      type="text"
-                      id="manufacturer"
-                      name="manufacturer"
-                      value={formData.manufacturer}
+                    <FileText className="absolute left-3 top-3 text-gray-400 w-5 h-5" />
+                    <textarea
+                      id="ingredients"
+                      name="ingredients"
+                      value={formData.ingredients}
                       onChange={handleChange}
+                      rows="3"
                       className={`w-full pl-10 pr-4 py-2 bg-white rounded-lg border ${
-                        errors.manufacturer
+                        errors.ingredients
                           ? "border-red-500 focus:ring-red-500"
                           : "border-gray-300 focus:ring-cyan-500"
                       } focus:outline-none focus:ring-2 focus:border-transparent`}
-                      placeholder="Masukkan nama produsen"
-                    />
+                      placeholder="Masukkan kandungan atau komposisi obat"
+                    ></textarea>
                   </div>
-                  {errors.manufacturer && (
+                  {errors.ingredients && (
                     <p className="mt-1 text-sm text-red-500">
-                      {errors.manufacturer}
+                      {errors.ingredients}
                     </p>
                   )}
                 </div>

@@ -1,4 +1,3 @@
-// api/drugs/route.js
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 
@@ -7,15 +6,7 @@ export async function POST(req) {
     const body = await req.json();
 
     // Validasi data
-    const requiredFields = [
-      "name",
-      "category",
-      "manufacturer",
-      "purchasePrice",
-      "price",
-      "stock",
-      "unit",
-    ];
+    const requiredFields = ["name", "price", "unit"];
     for (const field of requiredFields) {
       if (!body[field] && body[field] !== 0) {
         return NextResponse.json(
@@ -26,9 +17,10 @@ export async function POST(req) {
     }
 
     // Konversi dan validasi tipe data numerik
-    const purchasePrice = parseFloat(body.purchasePrice);
+    const purchasePrice = parseFloat(body.purchasePrice || 0);
     const price = parseFloat(body.price);
-    const stock = parseInt(body.stock);
+    const stock = parseInt(body.stock || 100);
+    const supplierId = body.supplierId ? parseInt(body.supplierId) : null;
 
     if (isNaN(purchasePrice) || purchasePrice < 0) {
       return NextResponse.json(
@@ -54,13 +46,20 @@ export async function POST(req) {
     // Menyiapkan data untuk prisma dengan tipe data yang benar
     const drugData = {
       name: body.name,
-      category: body.category,
-      manufacturer: body.manufacturer,
+      category: body.category || null,
+      manufacturer: body.manufacturer || null,
       purchasePrice: purchasePrice,
       price: price,
       stock: stock,
       unit: body.unit,
+      ingredients: body.ingredients || null,
+      batchNumber: body.batchNumber || null,
     };
+
+    // Tambahkan supplierId jika ada
+    if (supplierId) {
+      drugData.supplierId = supplierId;
+    }
 
     // Hanya tambahkan expiryDate jika ada nilainya
     if (body.expiryDate) {
@@ -91,7 +90,7 @@ export async function POST(req) {
 
       if (error.code === "P2003") {
         return NextResponse.json(
-          { error: "Referensi ke data yang tidak ada" },
+          { error: "Referensi ke supplier yang tidak ada" },
           { status: 400 }
         );
       }

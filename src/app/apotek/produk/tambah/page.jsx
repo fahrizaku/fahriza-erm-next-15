@@ -10,6 +10,8 @@ import {
   Boxes,
   Calendar,
   Factory,
+  Truck,
+  FileText,
 } from "lucide-react";
 import { toast } from "react-toastify";
 
@@ -18,6 +20,7 @@ export default function TambahProduk() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [errors, setErrors] = useState({});
+  const [suppliers, setSuppliers] = useState([]);
   const [formData, setFormData] = useState({
     name: "",
     category: "",
@@ -27,6 +30,9 @@ export default function TambahProduk() {
     stock: "",
     expiryDate: "",
     unit: "",
+    supplierId: "",
+    batchNumber: "",
+    ingredients: "",
   });
 
   // Autocomplete suggestions
@@ -60,17 +66,28 @@ export default function TambahProduk() {
   const [filteredUnits, setFilteredUnits] = useState([]);
   const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
   const [isUnitDropdownOpen, setIsUnitDropdownOpen] = useState(false);
+  const [isSupplierDropdownOpen, setIsSupplierDropdownOpen] = useState(false);
+  const [filteredSuppliers, setFilteredSuppliers] = useState([]);
+  const [supplierInput, setSupplierInput] = useState("");
 
   // Refs for handling clicks outside dropdown
   const categoryRef = useRef(null);
   const unitRef = useRef(null);
+  const supplierRef = useRef(null);
 
-  // Add useEffect to simulate data loading
+  // Fetch suppliers and initialize form
   useEffect(() => {
     const initializeForm = async () => {
       try {
-        // Add any initial data fetching here if needed
-        // For example, fetching categories, units, etc.
+        // Fetch suppliers
+        const suppliersResponse = await fetch("/api/suppliers");
+        if (suppliersResponse.ok) {
+          const suppliersData = await suppliersResponse.json();
+          setSuppliers(suppliersData);
+          setFilteredSuppliers(suppliersData);
+        } else {
+          console.error("Failed to fetch suppliers");
+        }
 
         // Simulate loading delay
         await new Promise((resolve) => setTimeout(resolve, 200));
@@ -93,6 +110,9 @@ export default function TambahProduk() {
       }
       if (unitRef.current && !unitRef.current.contains(event.target)) {
         setIsUnitDropdownOpen(false);
+      }
+      if (supplierRef.current && !supplierRef.current.contains(event.target)) {
+        setIsSupplierDropdownOpen(false);
       }
     }
 
@@ -127,6 +147,19 @@ export default function TambahProduk() {
       );
     }
   }, [unitInput]);
+
+  // Filter suppliers based on input
+  useEffect(() => {
+    if (supplierInput === "") {
+      setFilteredSuppliers(suppliers);
+    } else {
+      setFilteredSuppliers(
+        suppliers.filter((supplier) =>
+          supplier.name.toLowerCase().includes(supplierInput.toLowerCase())
+        )
+      );
+    }
+  }, [supplierInput, suppliers]);
 
   const validateForm = () => {
     const newErrors = {};
@@ -220,6 +253,16 @@ export default function TambahProduk() {
     }
   };
 
+  // Handle supplier input change
+  const handleSupplierInputChange = (e) => {
+    setSupplierInput(e.target.value);
+    setFormData((prev) => ({
+      ...prev,
+      supplierId: "",
+    }));
+    setIsSupplierDropdownOpen(true);
+  };
+
   // Handle selection from category dropdown
   const handleSelectCategory = (category) => {
     setFormData((prev) => ({
@@ -240,6 +283,16 @@ export default function TambahProduk() {
     setIsUnitDropdownOpen(false);
   };
 
+  // Handle selection from supplier dropdown
+  const handleSelectSupplier = (supplier) => {
+    setFormData((prev) => ({
+      ...prev,
+      supplierId: supplier.id,
+    }));
+    setSupplierInput(supplier.name);
+    setIsSupplierDropdownOpen(false);
+  };
+
   // Clear input fields
   const handleClearCategory = () => {
     setCategoryInput("");
@@ -254,6 +307,14 @@ export default function TambahProduk() {
     setFormData((prev) => ({
       ...prev,
       unit: "",
+    }));
+  };
+
+  const handleClearSupplier = () => {
+    setSupplierInput("");
+    setFormData((prev) => ({
+      ...prev,
+      supplierId: "",
     }));
   };
 
@@ -282,6 +343,7 @@ export default function TambahProduk() {
         // Auto-fill stock with 100 if not provided
         stock: formData.stock ? parseInt(formData.stock) : 100,
         expiryDate: formData.expiryDate || null,
+        supplierId: formData.supplierId ? parseInt(formData.supplierId) : null,
       };
 
       const response = await fetch("/api/drugs/add", {
@@ -496,6 +558,50 @@ export default function TambahProduk() {
                   </div>
                 </div>
 
+                {/* Supplier */}
+                <div ref={supplierRef} className="relative">
+                  <label
+                    htmlFor="supplier"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
+                    Supplier <span className="text-gray-400">(opsional)</span>
+                  </label>
+                  <div className="relative">
+                    <Truck className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                    <input
+                      type="text"
+                      id="supplier"
+                      value={supplierInput}
+                      onChange={handleSupplierInputChange}
+                      onFocus={() => setIsSupplierDropdownOpen(true)}
+                      className="w-full pl-10 pr-10 py-2 bg-white rounded-lg border border-gray-300 focus:ring-cyan-500 focus:outline-none focus:ring-2 focus:border-transparent"
+                      placeholder="Pilih supplier"
+                    />
+                    {supplierInput && (
+                      <button
+                        type="button"
+                        onClick={handleClearSupplier}
+                        className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                  {isSupplierDropdownOpen && filteredSuppliers.length > 0 && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
+                      {filteredSuppliers.map((supplier) => (
+                        <div
+                          key={supplier.id}
+                          className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                          onClick={() => handleSelectSupplier(supplier)}
+                        >
+                          {supplier.name}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
                 {/* Produsen */}
                 <div>
                   <label
@@ -527,35 +633,81 @@ export default function TambahProduk() {
                   )}
                 </div>
 
-                {/* Tanggal Kadaluarsa */}
+                {/* Ingredients */}
                 <div>
                   <label
-                    htmlFor="expiryDate"
+                    htmlFor="ingredients"
                     className="block text-sm font-medium text-gray-700 mb-1"
                   >
-                    Tanggal Kadaluarsa{" "}
+                    Kandungan/Komposisi{" "}
                     <span className="text-gray-400">(opsional)</span>
                   </label>
                   <div className="relative">
-                    <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                    <input
-                      type="date"
-                      id="expiryDate"
-                      name="expiryDate"
-                      value={formData.expiryDate}
+                    <FileText className="absolute left-3 top-3 text-gray-400 w-5 h-5" />
+                    <textarea
+                      id="ingredients"
+                      name="ingredients"
+                      value={formData.ingredients}
                       onChange={handleChange}
-                      className={`w-full pl-10 pr-4 py-2 bg-white rounded-lg border ${
-                        errors.expiryDate
-                          ? "border-red-500 focus:ring-red-500"
-                          : "border-gray-300 focus:ring-cyan-500"
-                      } focus:outline-none focus:ring-2 focus:border-transparent`}
+                      rows="3"
+                      className="w-full pl-10 pr-4 py-2 bg-white rounded-lg border border-gray-300 focus:ring-cyan-500 focus:outline-none focus:ring-2 focus:border-transparent"
+                      placeholder="Masukkan kandungan/komposisi obat"
+                    ></textarea>
+                  </div>
+                </div>
+
+                {/* Batch Number and Expiry Date in one row */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Batch Number */}
+                  <div>
+                    <label
+                      htmlFor="batchNumber"
+                      className="block text-sm font-medium text-gray-700 mb-1"
+                    >
+                      Nomor Batch{" "}
+                      <span className="text-gray-400">(opsional)</span>
+                    </label>
+                    <input
+                      type="text"
+                      id="batchNumber"
+                      name="batchNumber"
+                      value={formData.batchNumber}
+                      onChange={handleChange}
+                      className="w-full px-4 py-2 bg-white rounded-lg border border-gray-300 focus:ring-cyan-500 focus:outline-none focus:ring-2 focus:border-transparent"
+                      placeholder="Masukkan nomor batch"
                     />
                   </div>
-                  {errors.expiryDate && (
-                    <p className="mt-1 text-sm text-red-500">
-                      {errors.expiryDate}
-                    </p>
-                  )}
+
+                  {/* Tanggal Kadaluarsa */}
+                  <div>
+                    <label
+                      htmlFor="expiryDate"
+                      className="block text-sm font-medium text-gray-700 mb-1"
+                    >
+                      Tanggal Kadaluarsa{" "}
+                      <span className="text-gray-400">(opsional)</span>
+                    </label>
+                    <div className="relative">
+                      <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                      <input
+                        type="date"
+                        id="expiryDate"
+                        name="expiryDate"
+                        value={formData.expiryDate}
+                        onChange={handleChange}
+                        className={`w-full pl-10 pr-4 py-2 bg-white rounded-lg border ${
+                          errors.expiryDate
+                            ? "border-red-500 focus:ring-red-500"
+                            : "border-gray-300 focus:ring-cyan-500"
+                        } focus:outline-none focus:ring-2 focus:border-transparent`}
+                      />
+                    </div>
+                    {errors.expiryDate && (
+                      <p className="mt-1 text-sm text-red-500">
+                        {errors.expiryDate}
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -652,7 +804,7 @@ export default function TambahProduk() {
                 </div>
               </div>
               <div className="p-5">
-                {/* Stok */}
+                {/* Stock */}
                 <div>
                   <label
                     htmlFor="stock"

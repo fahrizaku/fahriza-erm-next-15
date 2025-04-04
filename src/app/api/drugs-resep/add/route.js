@@ -1,4 +1,4 @@
-// api/drugs/route.js
+// api/drugs-resep/add/route.js
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 
@@ -61,6 +61,15 @@ export async function POST(req) {
       stock: stock,
       unit: body.unit,
     };
+
+    // Menambahkan field baru ke drugData jika ada nilainya
+    if (body.ingredients) {
+      drugData.ingredients = body.ingredients;
+    }
+
+    if (body.batchNumber) {
+      drugData.batchNumber = body.batchNumber;
+    }
 
     // Hanya tambahkan expiryDate jika ada nilainya
     if (body.expiryDate) {
