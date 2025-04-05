@@ -92,13 +92,14 @@ model DrugPrescription {
   name          String
   category      String?
   manufacturer  String?
+  supplierId    Int?        
   purchasePrice Decimal?
   price         Decimal
   stock         Int
   expiryDate    String?
   batchNumber   String?
   unit          String
-  ingredients   String?     // Kandungan/komposisi obat
+  ingredients   String?
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
 
@@ -106,6 +107,7 @@ model DrugPrescription {
   @@index([category])
   @@index([manufacturer])
   @@index([expiryDate])
+  @@index([supplierId])
 }
 
 // Screening model for initial patient assessment
