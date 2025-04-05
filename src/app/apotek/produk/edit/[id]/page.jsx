@@ -40,6 +40,7 @@ export default function EditProductPage({ params }) {
     "Obat Bebas",
     "Obat Bebas Terbatas",
     "Obat Keras",
+    "High Alert",
     "Jamu",
     "Obat Herbal Terstandar",
     "Fitofarmaka",

@@ -45,6 +45,7 @@ export default function TambahProduk() {
     "Obat Bebas",
     "Obat Bebas Terbatas",
     "Obat Keras",
+    "High Alert",
     "Jamu",
     "Obat Herbal Terstandar",
     "Fitofarmaka",
