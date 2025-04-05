@@ -15,6 +15,7 @@ import {
   Plus,
 } from "lucide-react";
 import { toast } from "react-toastify";
+import { categoryOptions } from "@/data/kategori-obat";
 
 export default function TambahProduk() {
   const router = useRouter();
@@ -39,29 +40,6 @@ export default function TambahProduk() {
   // For multiple categories
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [categoryInput, setCategoryInput] = useState("");
-
-  // Autocomplete suggestions
-  const categoryOptions = [
-    "Obat Bebas",
-    "Obat Bebas Terbatas",
-    "Obat Keras",
-    "High Alert",
-    "Jamu",
-    "Obat Herbal Terstandar",
-    "Fitofarmaka",
-    "Kosmetika",
-    "Lainnya",
-    "OTC",
-    "Narkotika",
-    "Psikotropika",
-    "OOT",
-    "Paten Keras",
-    "Paten Antibiotik",
-    "Generik",
-    "Prekursor",
-    "Prekursor Kombinasi",
-    "Labor",
-  ];
 
   const unitOptions = [
     "Fls",

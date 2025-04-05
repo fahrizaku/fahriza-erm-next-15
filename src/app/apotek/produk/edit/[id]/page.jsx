@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "react-toastify";
+import { categoryOptions } from "@/data/kategori-obat";
 
 export default function EditProductPage({ params }) {
   const router = useRouter();
@@ -34,30 +35,6 @@ export default function EditProductPage({ params }) {
   const [categoryInput, setCategoryInput] = useState("");
   const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
   const [filteredCategories, setFilteredCategories] = useState([]);
-
-  // Category options
-  const categoryOptions = [
-    "Obat Bebas",
-    "Obat Bebas Terbatas",
-    "Obat Keras",
-    "High Alert",
-    "Jamu",
-    "Obat Herbal Terstandar",
-    "Fitofarmaka",
-    "Kosmetika",
-    "Lainnya",
-    "OTC",
-    "Narkotika",
-    "Psikotropika",
-    "OOT",
-    "Paten Keras",
-    "Paten Antibiotik",
-    "Generik",
-    "Prekursor",
-    "Prekursor Kombinasi",
-    "Labor",
-    "Injeksi",
-  ];
 
   // Refs for handling clicks outside dropdown
   const supplierRef = useRef(null);
