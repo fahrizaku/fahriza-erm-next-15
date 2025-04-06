@@ -1,5 +1,9 @@
-// Prisma schema
-// Generator dan Datasource
+// ==========================================================================
+// CLINICAL MANAGEMENT SYSTEM PRISMA SCHEMA
+// ==========================================================================
+
+// Generator and Datasource Configuration
+// ------------------------------------------
 generator client {
   provider = "prisma-client-js"
 }
@@ -9,38 +13,43 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Model Patient
+// ==========================================================================
+// PATIENT MANAGEMENT MODELS
+// ==========================================================================
+
+// Patient demographics and basic information
 model Patient {
   id              Int       @id @default(autoincrement())
-  no_rm           Int       @unique
+  no_rm           Int       @unique                     // Medical record number
   name            String
   gender          String?
   birthDate       DateTime?
   address         String?
-  isBPJS          Boolean
-  no_bpjs         String?   @unique
-  nik             String?   @unique
+  isBPJS          Boolean                               // Health insurance status
+  no_bpjs         String?   @unique                     // Insurance number
+  nik             String?   @unique                     // National ID
   phoneNumber     String?   
   createdAt       DateTime? @default(now())
   updatedAt       DateTime? @updatedAt
 
-    // Relations
+  // Relations
   screenings      Screening[]
   medicalRecords  MedicalRecord[]
   allergies       PatientAllergy[]
 }
 
+// Patient allergy tracking
 model PatientAllergy {
   id            Int       @id @default(autoincrement())
   patientId     Int
   patient       Patient   @relation(fields: [patientId], references: [id])
-  allergyName   String    // Nama alergi (contoh: penisilin, kacang, dll)
-  allergyType   String?   // Jenis alergi (makanan, obat, lingkungan, dll)
-  severity      String?   // Tingkat keparahan (ringan, sedang, parah)
-  reaction      String?   // Reaksi yang terjadi (ruam, sesak napas, dll)
-  notes         String?   // Catatan tambahan
-  status        String?   @default("aktif") // Status alergi: aktif, tidak_aktif, sembuh
-  reportedAt    DateTime  @default(now()) // Kapan alergi dilaporkan
+  allergyName   String    // Allergy name (e.g., penicillin, peanuts)
+  allergyType   String?   // Allergy type (food, drug, environmental)
+  severity      String?   // Severity level (mild, moderate, severe)
+  reaction      String?   // Reaction description (rash, breathing difficulty)
+  notes         String?   // Additional notes
+  status        String?   @default("aktif") // Status: active, inactive, resolved
+  reportedAt    DateTime  @default(now())   // When allergy was reported
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   
@@ -48,6 +57,153 @@ model PatientAllergy {
   @@index([allergyType])
 }
 
+// ==========================================================================
+// CLINICAL WORKFLOW MODELS
+// ==========================================================================
+
+// Initial patient assessment
+model Screening {
+  id                Int           @id @default(autoincrement())
+  patientId         Int
+  patient           Patient       @relation(fields: [patientId], references: [id])
+  complaints        String        // Patient's complaints
+  temperature       Decimal?      // Body temperature
+  systolicBP        Int?          // Systolic blood pressure 
+  diastolicBP       Int?          // Diastolic blood pressure
+  pulse             Int?          // Heart rate
+  respiratoryRate   Int?          // Breathing rate
+  weight            Decimal?      // Weight in kg
+  height            Int?          // Height in cm
+  waistCircumference Decimal?     // Waist circumference in cm
+  oxygenSaturation  Decimal?      // Oxygen saturation percentage
+  isBPJSActive      Boolean?      // BPJS insurance active status
+  nurseName         String?       // Name of the nurse who conducted the screening
+  
+  // Screening status
+  status            String        @default("waiting") // waiting, in-progress, completed
+  queueNumber       Int?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  
+  // Relations
+  medicalRecord     MedicalRecord?
+  
+  @@index([patientId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// Patient queue management
+model OutpatientQueue {
+  id                Int           @id @default(autoincrement())
+  screeningId       Int           @unique
+  queueNumber       Int
+  status            String        @default("waiting") // waiting, called, in-progress, completed
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  
+  @@index([status])
+  @@index([createdAt])
+}
+
+// Complete patient visit data
+model MedicalRecord {
+  id                Int           @id @default(autoincrement())
+  patientId         Int
+  patient           Patient       @relation(fields: [patientId], references: [id])
+  screeningId       Int           @unique
+  screening         Screening     @relation(fields: [screeningId], references: [id])
+  
+  // Doctor's examination
+  diagnosis         String?       // Diagnosis description
+  icdCode           String?       // ICD-10 code
+  clinicalNotes     String?       // Additional clinical notes
+  
+  // Visit metadata
+  visitType         String        @default("outpatient") // outpatient, inpatient
+  visitDate         DateTime      @default(now())
+  doctorName        String?
+  
+  // Relations
+  prescriptions     Prescription[]
+  pharmacyQueue     PharmacyQueue?
+  
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  
+  @@index([patientId])
+  @@index([visitDate])
+  @@index([icdCode])
+}
+
+// ICD-10 diagnosis codes reference
+model IcdCode {
+  id                Int           @id @default(autoincrement())
+  code              String        @unique
+  description       String
+  version           String?
+  
+  @@index([code])
+}
+
+// ==========================================================================
+// PHARMACY MODELS
+// ==========================================================================
+
+// Prescription management
+model Prescription {
+  id                Int               @id @default(autoincrement())
+  medicalRecordId   Int               
+  medicalRecord     MedicalRecord     @relation(fields: [medicalRecordId], references: [id])
+  items             PrescriptionItem[]
+  notes             String?           // Additional notes
+  prescriptionType  String?           // Type (e.g., "Main", "Follow-up", "Alternative", "Compound")
+  dosage            String?           // Shared dosage for compound prescriptions
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  
+  @@index([medicalRecordId])
+}
+
+// Individual prescription items
+model PrescriptionItem {
+  id                Int               @id @default(autoincrement())
+  prescriptionId    Int
+  prescription      Prescription      @relation(fields: [prescriptionId], references: [id])
+  manualDrugName    String?           // For manual entry when drug not in system
+  dosage            String?           // Individual dosage (for non-compound prescriptions)
+  quantity          Int
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  
+  @@index([prescriptionId])
+}
+
+// Pharmacy workflow management
+model PharmacyQueue {
+  id                Int               @id @default(autoincrement())
+  medicalRecordId   Int               @unique
+  medicalRecord     MedicalRecord     @relation(fields: [medicalRecordId], references: [id])
+  queueNumber       Int
+  status            String            @default("waiting") // waiting, preparing, ready, dispensed
+  pharmacistName    String?           // Pharmacist name
+  notes             String?           // Special notes
+  startedAt         DateTime?         // When preparation began
+  completedAt       DateTime?         // When preparation was completed
+  dispensedAt       DateTime?         // When medication was given to patient
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  
+  @@index([status])
+  @@index([createdAt])
+  @@index([queueNumber])
+}
+
+// ==========================================================================
+// INVENTORY MANAGEMENT MODELS
+// ==========================================================================
+
+// Suppliers for pharmacy products
 model Supplier {
   id          Int               @id @default(autoincrement())
   name        String
@@ -63,6 +219,7 @@ model Supplier {
   @@index([name])
 }
 
+// Pharmacy product inventory
 model DrugStoreProduct {
   id            Int         @id @default(autoincrement()) 
   name          String
@@ -76,9 +233,12 @@ model DrugStoreProduct {
   expiryDate    String?
   batchNumber   String?
   unit          String
-  ingredients   String?     // Kandungan/komposisi obat
+  ingredients   String?
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
+  
+  // Relations
+  inventoryMovements InventoryMovement[]
 
   @@index([name])
   @@index([category])
@@ -110,135 +270,84 @@ model DrugPrescription {
   @@index([supplierId])
 }
 
-// Screening model for initial patient assessment
-model Screening {
-  id                Int           @id @default(autoincrement())
-  patientId         Int
-  patient           Patient       @relation(fields: [patientId], references: [id])
-  complaints        String        // Patient's complaints
-  temperature       Decimal?      // Body temperature
-  systolicBP        Int?          // Systolic blood pressure (e.g., 120 in "120/80")
-  diastolicBP       Int?          // Diastolic blood pressure (e.g., 80 in "120/80")
-  pulse             Int?          // Heart rate
-  respiratoryRate   Int?          // Breathing rate
-  weight            Decimal?      // Weight in kg
-  height            Int?          // Height in cm
-  waistCircumference Decimal?     // Lingkar pinggang in cm
-  oxygenSaturation  Decimal?      // Saturasi oksigen in percentage
-  isBPJSActive      Boolean?      // Status BPJS aktif atau tidak
-  createdAt         DateTime      @default(now())
-  updatedAt         DateTime      @updatedAt
-
-  nurseName         String?      // Name of the nurse who conducted the screening
+// Inventory movement tracking
+model InventoryMovement {
+  id                Int               @id @default(autoincrement())
+  productId         Int
+  product           DrugStoreProduct  @relation(fields: [productId], references: [id])
+  quantity          Int               // Positive for stock in, negative for stock out
+  movementType      MovementType      // Type of inventory movement
+  notes             String?
+  unitPrice         Decimal?          // Price per unit for this movement
+  totalAmount       Decimal?          // Total monetary value of this movement
+  movementDate      DateTime          @default(now())
+  batchNumber       String?
+  expiryDate        String?
   
-  // Screening status
-  status            String        @default("waiting") // waiting, in-progress, completed
-  queueNumber       Int?
+  // Link to financial transaction
+  transactionId     Int?
+  transaction       Transaction?      @relation(fields: [transactionId], references: [id])
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  @@index([productId])
+  @@index([movementType])
+  @@index([movementDate])
+  @@index([transactionId])
+}
+
+// Inventory movement types
+enum MovementType {
+  PURCHASE
+  SALE
+  ADJUSTMENT
+  EXPIRED
+  DAMAGED
+  RETURN_FROM_CUSTOMER
+  RETURN_TO_SUPPLIER
+}
+
+// ==========================================================================
+// FINANCIAL MANAGEMENT MODELS
+// ==========================================================================
+
+// Financial transactions
+model Transaction {
+  id                Int                    @id @default(autoincrement())
+  type              TransactionType        // INCOME or EXPENSE
+  amount            Decimal
+  description       String?
+  reference         String?                // Invoice or receipt number
+  transactionDate   DateTime               @default(now())
+  categoryId        Int
+  category          TransactionCategory    @relation(fields: [categoryId], references: [id])
+  paymentMethod     String?                // Cash, Transfer, etc.
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
   
   // Relations
-  medicalRecord     MedicalRecord?
-  
-  @@index([patientId])
-  @@index([status])
-  @@index([createdAt])
+  inventoryMovements InventoryMovement[]
+
+  @@index([type])
+  @@index([transactionDate])
+  @@index([categoryId])
 }
 
-// Queue model for managing patient queue
-model OutpatientQueue {
-  id                Int           @id @default(autoincrement())
-  screeningId       Int           @unique
-  queueNumber       Int
-  status            String        @default("waiting") // waiting, called, in-progress, completed
-  createdAt         DateTime      @default(now())
-  updatedAt         DateTime      @updatedAt
-  
-  @@index([status])
-  @@index([createdAt])
+// Transaction categories
+model TransactionCategory {
+  id           Int           @id @default(autoincrement())
+  name         String
+  type         TransactionType
+  description  String?
+  transactions Transaction[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([type])
 }
 
-// Medical Record model for storing complete patient visit data
-model MedicalRecord {
-  id                Int           @id @default(autoincrement())
-  patientId         Int
-  patient           Patient       @relation(fields: [patientId], references: [id])
-  screeningId       Int           @unique
-  screening         Screening     @relation(fields: [screeningId], references: [id])
-  
-  // Doctor's examination
-  diagnosis         String?       // Diagnosis description
-  icdCode           String?       // ICD-10 code
-  clinicalNotes     String?       // Additional clinical notes
-  
-  // Visit metadata
-  visitType         String        @default("outpatient") // outpatient, inpatient
-  visitDate         DateTime      @default(now())
-  doctorName        String?
-  
-  // Relations
-  prescriptions     Prescription[]  // Changed from Prescription? to Prescription[]
-  pharmacyQueue     PharmacyQueue?
-  
-  createdAt         DateTime      @default(now())
-  updatedAt         DateTime      @updatedAt
-  
-  @@index([patientId])
-  @@index([visitDate])
-  @@index([icdCode])
-}
-
-// Prescription models
-model Prescription {
-  id                Int               @id @default(autoincrement())
-  medicalRecordId   Int               
-  medicalRecord     MedicalRecord     @relation(fields: [medicalRecordId], references: [id])
-  items             PrescriptionItem[]
-  notes             String?           // Additional notes about the prescription
-  prescriptionType  String?           // Type of prescription (e.g., "Main", "Follow-up", "Alternative", "Racikan")
-  dosage            String?           // Shared dosage instruction for racikan prescriptions
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
-  
-  @@index([medicalRecordId])
-}
-
-model PrescriptionItem {
-  id                Int               @id @default(autoincrement())
-  prescriptionId    Int
-  prescription      Prescription      @relation(fields: [prescriptionId], references: [id])
-  manualDrugName    String?           // For manual entry when drug not in system
-  dosage            String?           // Individual dosage (only used for non-racikan prescriptions)
-  quantity          Int
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
-  
-  @@index([prescriptionId])
-}
-
-model PharmacyQueue {
-  id                Int               @id @default(autoincrement())
-  medicalRecordId   Int               @unique
-  medicalRecord     MedicalRecord     @relation(fields: [medicalRecordId], references: [id])
-  queueNumber       Int
-  status            String            @default("waiting") // waiting, preparing, ready, dispensed
-  pharmacistName    String?           // Name of the pharmacist handling the prescription
-  notes             String?           // Any special notes for the pharmacist
-  startedAt         DateTime?         // When preparation began
-  completedAt       DateTime?         // When preparation was completed
-  dispensedAt       DateTime?         // When medication was given to patient
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
-  
-  @@index([status])
-  @@index([createdAt])
-  @@index([queueNumber])
-}
-
-// ICD-10 lookup table for diagnosis codes
-model IcdCode {
-  id                Int           @id @default(autoincrement())
-  code              String        @unique
-  description       String
-  version           String?
-  
-  @@index([code])
+// Transaction types
+enum TransactionType {
+  INCOME
+  EXPENSE
 }
