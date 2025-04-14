@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from "react";
-import { Minus, Search, Loader2 } from "lucide-react";
+import { Minus, Search, Loader2, Package } from "lucide-react";
 import { DOSAGE_SUGGESTIONS } from "@/data/dosis";
 
 const PrescriptionItem = ({
@@ -109,6 +109,29 @@ const PrescriptionItem = ({
     setShowDrugSearchResults(false);
   };
 
+  // Helper function to format stock display
+  const formatStockDisplay = (stock) => {
+    if (stock === undefined || stock === null) return "Stok tidak tersedia";
+    if (stock <= 0) return "Stok habis";
+    if (stock < 10) return `Stok: ${stock} (Rendah)`;
+    return `Stok: ${stock}`;
+  };
+
+  // Helper function to highlight search term in text
+  const highlightMatch = (text, searchTerm) => {
+    if (!text || !searchTerm || searchTerm.length < 2) return text;
+
+    try {
+      const regex = new RegExp(`(${searchTerm})`, "gi");
+      return text.replace(
+        regex,
+        '<mark class="bg-yellow-200 px-1 rounded">$1</mark>'
+      );
+    } catch (e) {
+      return text;
+    }
+  };
+
   return (
     <div className="p-4 border border-gray-200 rounded-md bg-gray-50">
       <div className="flex justify-between items-start mb-3">
@@ -151,7 +174,7 @@ const PrescriptionItem = ({
                 }
               }}
               className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Cari obat..."
+              placeholder="Cari obat atau kandungan..."
             />
             {isSearchingDrugs && (
               <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
@@ -164,15 +187,38 @@ const PrescriptionItem = ({
           {showDrugSearchResults && drugSearchResults.length > 0 && (
             <div
               ref={dropdownRef}
-              className="absolute z-10 mt-1 w-full bg-white shadow-lg rounded-md border border-gray-200 max-h-48 overflow-y-auto"
+              className="absolute z-10 mt-1 w-full bg-white shadow-lg rounded-md border border-gray-200 max-h-60 overflow-y-auto"
             >
               {drugSearchResults.map((drug) => (
                 <div
                   key={drug.id}
                   onClick={() => handleDrugSelection(drug)}
-                  className="px-4 py-2 hover:bg-blue-50 cursor-pointer text-sm"
+                  className="px-4 py-2 hover:bg-blue-50 cursor-pointer"
                 >
-                  <div className="font-medium">{drug.displayName}</div>
+                  <div className="font-medium text-sm">{drug.displayName}</div>
+                  {drug.ingredient && (
+                    <div
+                      className="text-xs text-gray-600 mt-1"
+                      dangerouslySetInnerHTML={{
+                        __html: `Kandungan: ${highlightMatch(
+                          drug.ingredient,
+                          drugSearchQuery
+                        )}`,
+                      }}
+                    />
+                  )}
+                  <div
+                    className={`text-xs mt-1 flex items-center ${
+                      drug.stock <= 0
+                        ? "text-red-500"
+                        : drug.stock < 10
+                        ? "text-amber-500"
+                        : "text-green-600"
+                    }`}
+                  >
+                    <Package className="h-3 w-3 mr-1" />
+                    {formatStockDisplay(drug.stock)}
+                  </div>
                 </div>
               ))}
             </div>

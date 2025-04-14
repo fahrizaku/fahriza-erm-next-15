@@ -1,4 +1,4 @@
-// File: /app/api/drug-store-products/route.js
+// File: /app/api/drug-prescriptions/route.js
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 
@@ -8,12 +8,23 @@ export async function GET(request) {
     const search = searchParams.get("search") || "";
     const limit = parseInt(searchParams.get("limit") || "10");
 
-    const products = await db.drugPrescription.findMany({
+    // Search by name OR ingredient
+    const products = await db.drugStoreProduct.findMany({
       where: {
-        name: {
-          contains: search,
-          mode: "insensitive",
-        },
+        OR: [
+          {
+            name: {
+              contains: search,
+              mode: "insensitive",
+            },
+          },
+          {
+            ingredients: {
+              contains: search,
+              mode: "insensitive",
+            },
+          },
+        ],
       },
       orderBy: {
         name: "asc",
@@ -30,6 +41,7 @@ export async function GET(request) {
         unit: product.unit,
         price: product.price,
         stock: product.stock,
+        ingredient: product.ingredients || null,
       })),
     });
   } catch (error) {
