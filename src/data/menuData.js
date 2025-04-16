@@ -13,16 +13,6 @@ import {
 
 const menuCategories = [
   {
-    category: "Dashboard",
-    items: [
-      {
-        title: "Dashboard",
-        icon: <LayoutDashboard size={20} />,
-        href: "/",
-      },
-    ],
-  },
-  {
     category: "Pasien",
     items: [
       {
