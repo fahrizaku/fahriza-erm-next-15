@@ -8,7 +8,7 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
-    email: "",
+    username: "",
     password: "",
   });
   const [errors, setErrors] = useState({});
@@ -33,18 +33,14 @@ export default function LoginPage() {
   const validateForm = () => {
     const newErrors = {};
 
-    // Email validation
-    if (!formData.email) {
-      newErrors.email = "Email diperlukan";
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = "Format email tidak valid";
+    // Username validation
+    if (!formData.username) {
+      newErrors.username = "Username diperlukan";
     }
 
     // Password validation
     if (!formData.password) {
       newErrors.password = "Password diperlukan";
-    } else if (formData.password.length < 6) {
-      newErrors.password = "Password minimal 6 karakter";
     }
 
     setErrors(newErrors);
@@ -59,23 +55,26 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      // Simulate API call with timeout
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      // Call the actual login API
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
 
-      // Here you would actually authenticate with your backend
-      // const response = await fetch('/api/login', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(formData)
-      // });
+      const data = await response.json();
 
-      // if (!response.ok) throw new Error('Login failed');
+      if (!response.ok) {
+        throw new Error(data.error || "Login failed");
+      }
 
-      // For demo purposes, we're just redirecting
-      router.push("/dashboard");
+      // Successful login - redirect to dashboard
+      router.push("/pasien");
     } catch (error) {
       setErrors({
-        form: "Login gagal. Periksa kembali email dan password Anda.",
+        form:
+          error.message ||
+          "Login gagal. Periksa kembali username dan password Anda.",
       });
     } finally {
       setIsLoading(false);
@@ -129,28 +128,30 @@ export default function LoginPage() {
 
             <form onSubmit={handleSubmit}>
               <div className="space-y-6">
-                {/* Email Field */}
+                {/* Username Field */}
                 <div>
                   <label
-                    htmlFor="email"
+                    htmlFor="username"
                     className="block text-sm font-medium text-gray-700 mb-1"
                   >
-                    Email
+                    Username
                   </label>
                   <input
-                    id="email"
-                    name="email"
-                    type="email"
-                    autoComplete="email"
-                    value={formData.email}
+                    id="username"
+                    name="username"
+                    type="text"
+                    autoComplete="username"
+                    value={formData.username}
                     onChange={handleChange}
                     className={`w-full px-4 py-3 rounded-lg border ${
-                      errors.email ? "border-red-300" : "border-gray-300"
+                      errors.username ? "border-red-300" : "border-gray-300"
                     } focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
-                    placeholder="nama@example.com"
+                    placeholder="Masukkan username anda"
                   />
-                  {errors.email && (
-                    <p className="mt-1 text-sm text-red-600">{errors.email}</p>
+                  {errors.username && (
+                    <p className="mt-1 text-sm text-red-600">
+                      {errors.username}
+                    </p>
                   )}
                 </div>
 

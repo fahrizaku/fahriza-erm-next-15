@@ -9,6 +9,18 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model User{
+  id          Int       @id @default(autoincrement())
+  username    String    @unique
+  password    String
+  name        String
+  role        String    // Role: admin, doctor, nurse, pharmacist
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([username])
+}
+
 // Model Patient
 model Patient {
   id              Int       @id @default(autoincrement())
