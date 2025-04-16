@@ -28,7 +28,8 @@ export async function POST(request) {
     }
 
     // Set session cookie
-    cookies().set("user_session", user.id.toString(), {
+    const cookieStore = await cookies();
+    cookieStore.set("user_session", user.id.toString(), {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",

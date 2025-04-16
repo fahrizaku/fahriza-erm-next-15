@@ -157,20 +157,12 @@ export default function LoginPage() {
 
                 {/* Password Field */}
                 <div>
-                  <div className="flex justify-between items-center mb-1">
-                    <label
-                      htmlFor="password"
-                      className="block text-sm font-medium text-gray-700"
-                    >
-                      Password
-                    </label>
-                    <Link
-                      href="/forgot-password"
-                      className="text-sm text-blue-600 hover:text-blue-800"
-                    >
-                      Lupa password?
-                    </Link>
-                  </div>
+                  <label
+                    htmlFor="password"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
+                    Password
+                  </label>
                   <div className="relative">
                     <input
                       id="password"
@@ -204,22 +196,6 @@ export default function LoginPage() {
                   )}
                 </div>
 
-                {/* Remember Me */}
-                <div className="flex items-center">
-                  <input
-                    id="remember-me"
-                    name="remember-me"
-                    type="checkbox"
-                    className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                  />
-                  <label
-                    htmlFor="remember-me"
-                    className="ml-2 block text-sm text-gray-700"
-                  >
-                    Ingat saya
-                  </label>
-                </div>
-
                 {/* Submit Button */}
                 <button
                   type="submit"
@@ -237,18 +213,6 @@ export default function LoginPage() {
                 </button>
               </div>
             </form>
-
-            <div className="mt-8 text-center">
-              <p className="text-sm text-gray-600">
-                Belum punya akun?{" "}
-                <Link
-                  href="/register"
-                  className="text-blue-600 hover:text-blue-800 font-medium"
-                >
-                  Daftar sekarang
-                </Link>
-              </p>
-            </div>
           </div>
         </div>
       </main>

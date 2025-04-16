@@ -1,21 +1,13 @@
 import {
   Package,
   Users,
-  ClipboardCheck,
-  Search,
   Stethoscope,
   FileText,
-  UserPlus,
-  ListOrdered,
-  ShoppingCart,
   User,
-  Pill,
   LayoutDashboard,
   Folder,
   History,
   Microscope,
-  Flask,
-  FileSpreadsheet,
   Car,
 } from "lucide-react";
 

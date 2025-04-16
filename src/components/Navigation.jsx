@@ -2,7 +2,15 @@
 import { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
-import { Menu, X, Stethoscope, Loader2, RefreshCw } from "lucide-react";
+import {
+  Menu,
+  X,
+  Stethoscope,
+  Loader2,
+  RefreshCw,
+  User,
+  LogOut,
+} from "lucide-react";
 import menuCategories from "@/data/menuData";
 
 export default function Navigation() {
@@ -10,8 +18,42 @@ export default function Navigation() {
   const [mounted, setMounted] = useState(false);
   const [mountTimeout, setMountTimeout] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
+  const [userData, setUserData] = useState(null);
+  const [isLoadingUser, setIsLoadingUser] = useState(true);
   const pathname = usePathname();
   const router = useRouter();
+
+  // Fetch user data from API endpoint
+  useEffect(() => {
+    const fetchUserData = async () => {
+      if (!mounted) return;
+
+      setIsLoadingUser(true);
+      try {
+        const response = await fetch("/api/user", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include", // Important for sending cookies
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setUserData(data.user);
+        } else if (response.status !== 401) {
+          // Don't log errors for unauthorized requests - that's expected when not logged in
+          console.error("Failed to fetch user data");
+        }
+      } catch (error) {
+        console.error("Error fetching user data:", error);
+      } finally {
+        setIsLoadingUser(false);
+      }
+    };
+
+    fetchUserData();
+  }, [mounted]);
 
   // Tunggu sampai component di-mount sepenuhnya
   useEffect(() => {
@@ -113,6 +155,34 @@ export default function Navigation() {
     setIsNavigating(false);
   }, [pathname, mounted]);
 
+  // Handle logout functionality
+  const handleLogout = async () => {
+    try {
+      setIsNavigating(true);
+      const response = await fetch("/api/auth/logout", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include", // Important for sending cookies
+      });
+
+      if (response.ok) {
+        // Clear user data state
+        setUserData(null);
+
+        // Redirect to login page
+        router.push("/auth/login");
+      } else {
+        console.error("Logout failed");
+      }
+    } catch (error) {
+      console.error("Error during logout:", error);
+    } finally {
+      setIsNavigating(false);
+    }
+  };
+
   return (
     <>
       {/* Header */}
@@ -159,6 +229,32 @@ export default function Navigation() {
               {isOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
           )}
+
+          {/* User Info - Desktop */}
+          {userData && (
+            <div className="hidden lg:flex items-center gap-4">
+              <div className="flex items-center space-x-3">
+                <div className="text-right">
+                  <p className="text-sm font-medium text-gray-900">
+                    {userData.name}
+                  </p>
+                  <p className="text-xs text-gray-500 capitalize">
+                    {userData.role}
+                  </p>
+                </div>
+                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                  <User className="w-4 h-4 text-blue-600" />
+                </div>
+              </div>
+              <button
+                onClick={handleLogout}
+                className="p-1.5 rounded-md text-gray-500 hover:text-red-500 hover:bg-gray-100 transition-colors"
+                title="Logout"
+              >
+                <LogOut className="w-5 h-5" />
+              </button>
+            </div>
+          )}
         </div>
       </header>
 
@@ -190,7 +286,43 @@ export default function Navigation() {
           lg:translate-x-0
           ${isOpen ? "translate-x-0" : "-translate-x-full"}`}
       >
-        <nav className="mt-8 pb-10">
+        {/* User Info Section - Mobile */}
+        <div className="px-4 py-4 border-b border-gray-100 lg:hidden">
+          {isLoadingUser ? (
+            <div className="flex justify-center">
+              <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />
+            </div>
+          ) : userData ? (
+            <div className="flex items-center space-x-3">
+              <div className="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                <User className="w-5 h-5 text-blue-600" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-gray-900 truncate">
+                  {userData.name}
+                </p>
+                <p className="text-xs text-gray-500 capitalize">
+                  {userData.role}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center justify-center">
+              <Link
+                href="/login"
+                className="text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors"
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleNavigation("/login");
+                }}
+              >
+                Login untuk melanjutkan
+              </Link>
+            </div>
+          )}
+        </div>
+
+        <nav className="mt-4">
           {menuCategories.map((category, index) => (
             <div
               key={category.category}
@@ -234,6 +366,24 @@ export default function Navigation() {
               </div>
             </div>
           ))}
+
+          {/* Logout Button - only show if user is logged in (Mobile only) */}
+          {userData && (
+            <div className="px-4 mt-6 border-t border-gray-100 pt-4 lg:hidden">
+              <button
+                onClick={handleLogout}
+                className="flex items-center w-full px-4 py-2 text-sm rounded-lg transition-all duration-200 text-red-600 hover:bg-red-50"
+              >
+                <LogOut className="w-5 h-5 mr-3 text-red-500" />
+                Logout
+              </button>
+            </div>
+          )}
+
+          {/* Ruang kosong di bagian bawah */}
+          <div className="px-4 mt-6 pb-16">
+            <div className="h-16"></div>
+          </div>
         </nav>
       </aside>
     </>
