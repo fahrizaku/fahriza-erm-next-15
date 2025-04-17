@@ -9,6 +9,7 @@ import {
   History,
   Microscope,
   Car,
+  Database,
 } from "lucide-react";
 
 const menuCategories = [
@@ -90,6 +91,11 @@ const menuCategories = [
   {
     category: "Lain-lain",
     items: [
+      {
+        title: "ICD-10 Search",
+        icon: <Database size={20} />,
+        href: "/icd-search",
+      },
       {
         title: "Form Meningitis",
         icon: <FileText size={20} />,
