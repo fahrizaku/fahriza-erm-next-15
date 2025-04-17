@@ -18,13 +18,10 @@ export default function LoginPage() {
   // Effect to handle redirection after successful login
   useEffect(() => {
     if (loginSuccess) {
-      const redirectTimer = setTimeout(() => {
-        router.push("/pasien");
-      }, 100);
-
-      return () => clearTimeout(redirectTimer);
+      // Use hard redirect to ensure cookies are properly set
+      window.location.href = "/pasien";
     }
-  }, [loginSuccess, router]);
+  }, [loginSuccess]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
