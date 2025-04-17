@@ -164,15 +164,15 @@ export default function Navigation() {
         headers: {
           "Content-Type": "application/json",
         },
-        credentials: "include", // Important for sending cookies
+        credentials: "include",
       });
 
       if (response.ok) {
         // Clear user data state
         setUserData(null);
 
-        // Redirect to login page
-        router.push("/auth/login");
+        // Use window.location for a full page reload and redirect
+        window.location.href = "/auth/login";
       } else {
         console.error("Logout failed");
       }

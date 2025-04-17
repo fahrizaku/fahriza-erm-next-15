@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Stethoscope, Eye, EyeOff, Loader2 } from "lucide-react";
@@ -12,7 +12,19 @@ export default function LoginPage() {
     password: "",
   });
   const [errors, setErrors] = useState({});
+  const [loginSuccess, setLoginSuccess] = useState(false);
   const router = useRouter();
+
+  // Effect to handle redirection after successful login
+  useEffect(() => {
+    if (loginSuccess) {
+      const redirectTimer = setTimeout(() => {
+        router.push("/pasien");
+      }, 100);
+
+      return () => clearTimeout(redirectTimer);
+    }
+  }, [loginSuccess, router]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -68,14 +80,15 @@ export default function LoginPage() {
         throw new Error(data.error || "Login failed");
       }
 
-      // Successful login - redirect to dashboard
-      router.push("/pasien");
+      // Mark login as successful, which will trigger the redirection effect
+      setLoginSuccess(true);
     } catch (error) {
       setErrors({
         form:
           error.message ||
           "Login gagal. Periksa kembali username dan password Anda.",
       });
+      setLoginSuccess(false);
     } finally {
       setIsLoading(false);
     }
@@ -123,6 +136,12 @@ export default function LoginPage() {
             {errors.form && (
               <div className="mb-6 p-3 bg-red-50 border border-red-200 text-red-600 rounded-lg text-sm">
                 {errors.form}
+              </div>
+            )}
+
+            {loginSuccess && (
+              <div className="mb-6 p-3 bg-green-50 border border-green-200 text-green-600 rounded-lg text-sm">
+                Login berhasil! Mengalihkan ke halaman pasien...
               </div>
             )}
 
@@ -199,13 +218,18 @@ export default function LoginPage() {
                 {/* Submit Button */}
                 <button
                   type="submit"
-                  disabled={isLoading}
+                  disabled={isLoading || loginSuccess}
                   className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-70 flex items-center justify-center"
                 >
                   {isLoading ? (
                     <>
                       <Loader2 className="w-5 h-5 mr-2 animate-spin" />
                       Memproses...
+                    </>
+                  ) : loginSuccess ? (
+                    <>
+                      <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                      Mengalihkan...
                     </>
                   ) : (
                     "Masuk"
