@@ -1,3 +1,4 @@
+//file middleware.js
 import { NextResponse } from "next/server";
 
 export function middleware(request) {
@@ -25,7 +26,8 @@ export function middleware(request) {
       request.nextUrl.pathname.startsWith("/vaksin") ||
       request.nextUrl.pathname.startsWith("/file-sharing") ||
       request.nextUrl.pathname.startsWith("/laboratorium") ||
-      request.nextUrl.pathname.startsWith("/pemeriksaan-dokter")
+      request.nextUrl.pathname.startsWith("/pemeriksaan-dokter") ||
+      request.nextUrl.pathname.startsWith("/icd-search")
     ) {
       return NextResponse.redirect(new URL("/auth/login", request.url));
     }
@@ -48,6 +50,6 @@ export const config = {
     "/vaksin/:path*",
     "/file-sharing/:path*",
     "/laboratorium/:path*",
-    "/pemeriksaan-dokter/:path*",
+    "/icd-search/:path*",
   ],
 };

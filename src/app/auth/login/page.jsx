@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Stethoscope, Eye, EyeOff, Loader2 } from "lucide-react";
@@ -12,7 +12,16 @@ export default function LoginPage() {
     password: "",
   });
   const [errors, setErrors] = useState({});
+  const [loginSuccess, setLoginSuccess] = useState(false);
   const router = useRouter();
+
+  // Effect to handle redirection after successful login
+  useEffect(() => {
+    if (loginSuccess) {
+      // Use hard redirect to ensure cookies are properly set
+      window.location.href = "/pasien";
+    }
+  }, [loginSuccess]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -68,14 +77,15 @@ export default function LoginPage() {
         throw new Error(data.error || "Login failed");
       }
 
-      // Successful login - redirect to dashboard
-      router.push("/pasien");
+      // Mark login as successful, which will trigger the redirection effect
+      setLoginSuccess(true);
     } catch (error) {
       setErrors({
         form:
           error.message ||
           "Login gagal. Periksa kembali username dan password Anda.",
       });
+      setLoginSuccess(false);
     } finally {
       setIsLoading(false);
     }
@@ -126,6 +136,12 @@ export default function LoginPage() {
               </div>
             )}
 
+            {loginSuccess && (
+              <div className="mb-6 p-3 bg-green-50 border border-green-200 text-green-600 rounded-lg text-sm">
+                Login berhasil! Mengalihkan ke halaman pasien...
+              </div>
+            )}
+
             <form onSubmit={handleSubmit}>
               <div className="space-y-6">
                 {/* Username Field */}
@@ -157,20 +173,12 @@ export default function LoginPage() {
 
                 {/* Password Field */}
                 <div>
-                  <div className="flex justify-between items-center mb-1">
-                    <label
-                      htmlFor="password"
-                      className="block text-sm font-medium text-gray-700"
-                    >
-                      Password
-                    </label>
-                    <Link
-                      href="/forgot-password"
-                      className="text-sm text-blue-600 hover:text-blue-800"
-                    >
-                      Lupa password?
-                    </Link>
-                  </div>
+                  <label
+                    htmlFor="password"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
+                    Password
+                  </label>
                   <div className="relative">
                     <input
                       id="password"
@@ -204,26 +212,10 @@ export default function LoginPage() {
                   )}
                 </div>
 
-                {/* Remember Me */}
-                <div className="flex items-center">
-                  <input
-                    id="remember-me"
-                    name="remember-me"
-                    type="checkbox"
-                    className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                  />
-                  <label
-                    htmlFor="remember-me"
-                    className="ml-2 block text-sm text-gray-700"
-                  >
-                    Ingat saya
-                  </label>
-                </div>
-
                 {/* Submit Button */}
                 <button
                   type="submit"
-                  disabled={isLoading}
+                  disabled={isLoading || loginSuccess}
                   className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-70 flex items-center justify-center"
                 >
                   {isLoading ? (
@@ -231,24 +223,17 @@ export default function LoginPage() {
                       <Loader2 className="w-5 h-5 mr-2 animate-spin" />
                       Memproses...
                     </>
+                  ) : loginSuccess ? (
+                    <>
+                      <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                      Mengalihkan...
+                    </>
                   ) : (
                     "Masuk"
                   )}
                 </button>
               </div>
             </form>
-
-            <div className="mt-8 text-center">
-              <p className="text-sm text-gray-600">
-                Belum punya akun?{" "}
-                <Link
-                  href="/register"
-                  className="text-blue-600 hover:text-blue-800 font-medium"
-                >
-                  Daftar sekarang
-                </Link>
-              </p>
-            </div>
           </div>
         </div>
       </main>

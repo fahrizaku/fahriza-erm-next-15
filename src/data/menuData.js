@@ -1,35 +1,18 @@
 import {
   Package,
   Users,
-  ClipboardCheck,
-  Search,
   Stethoscope,
   FileText,
-  UserPlus,
-  ListOrdered,
-  ShoppingCart,
   User,
-  Pill,
   LayoutDashboard,
   Folder,
   History,
   Microscope,
-  Flask,
-  FileSpreadsheet,
   Car,
+  Database,
 } from "lucide-react";
 
 const menuCategories = [
-  {
-    category: "Dashboard",
-    items: [
-      {
-        title: "Dashboard",
-        icon: <LayoutDashboard size={20} />,
-        href: "/",
-      },
-    ],
-  },
   {
     category: "Pasien",
     items: [
@@ -108,6 +91,11 @@ const menuCategories = [
   {
     category: "Lain-lain",
     items: [
+      {
+        title: "ICD-10 Search",
+        icon: <Database size={20} />,
+        href: "/icd-search",
+      },
       {
         title: "Form Meningitis",
         icon: <FileText size={20} />,

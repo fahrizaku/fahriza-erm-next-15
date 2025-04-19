@@ -1,4 +1,3 @@
-// File: /app/api/drug-prescriptions/route.js
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 
@@ -6,31 +5,49 @@ export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
     const search = searchParams.get("search") || "";
-    const limit = parseInt(searchParams.get("limit") || "10");
+    const limit = parseInt(searchParams.get("limit") || "20");
 
-    // Search by name OR ingredient
-    const products = await db.drugStoreProduct.findMany({
+    // First, find products where the name matches
+    const nameMatches = await db.drugStoreProduct.findMany({
       where: {
-        OR: [
-          {
-            name: {
-              contains: search,
-              mode: "insensitive",
-            },
-          },
-          {
-            ingredients: {
-              contains: search,
-              mode: "insensitive",
-            },
-          },
-        ],
+        name: {
+          contains: search,
+          mode: "insensitive",
+        },
       },
       orderBy: {
         name: "asc",
       },
-      take: limit,
     });
+
+    // If we haven't reached the limit, find additional products that match by ingredient
+    let ingredientMatches = [];
+    if (nameMatches.length < limit) {
+      ingredientMatches = await db.drugStoreProduct.findMany({
+        where: {
+          AND: [
+            {
+              id: {
+                notIn: nameMatches.map((product) => product.id),
+              },
+            },
+            {
+              ingredients: {
+                contains: search,
+                mode: "insensitive",
+              },
+            },
+          ],
+        },
+        orderBy: {
+          name: "asc",
+        },
+        take: limit - nameMatches.length,
+      });
+    }
+
+    // Combine the results, with name matches first
+    const products = [...nameMatches, ...ingredientMatches];
 
     return NextResponse.json({
       success: true,
