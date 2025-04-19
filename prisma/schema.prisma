@@ -75,22 +75,112 @@ model Supplier {
   @@index([name])
 }
 
+// Transaction Models
+model Transaction {
+  id              Int              @id @default(autoincrement())
+  transactionCode String           @unique
+  date            DateTime         @default(now())
+  totalAmount     Decimal
+  paid            Decimal
+  change          Decimal
+  status          TransactionStatus @default(COMPLETED)
+  notes           String?
+  items           TransactionItem[]
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  @@index([transactionCode])
+  @@index([date])
+  @@index([status])
+}
+
+model TransactionItem {
+  id              Int              @id @default(autoincrement())
+  transactionId   Int
+  transaction     Transaction      @relation(fields: [transactionId], references: [id])
+  productId       Int
+  product         DrugStoreProduct @relation(fields: [productId], references: [id])
+  quantity        Int
+  price           Decimal
+  subtotal        Decimal
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  @@index([transactionId])
+  @@index([productId])
+}
+
+enum TransactionStatus {
+  PENDING
+  COMPLETED
+  CANCELLED
+}
+
+// Financial Records Models
+model FinancialRecord {
+  id              Int              @id @default(autoincrement())
+  date            DateTime         @default(now())
+  type            RecordType       // INCOME or EXPENSE
+  category        String
+  amount          Decimal
+  description     String?
+  referenceId     String?          // ID of related transaction/purchase if any
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  @@index([date])
+  @@index([type])
+  @@index([category])
+}
+
+enum RecordType {
+  INCOME
+  EXPENSE
+}
+
+// Inventory Movement Model
+model InventoryMovement {
+  id              Int              @id @default(autoincrement())
+  date            DateTime         @default(now())
+  productId       Int
+  product         DrugStoreProduct @relation(fields: [productId], references: [id])
+  type            MovementType     // IN or OUT
+  quantity        Int
+  reason          String           // e.g. "PURCHASE", "SALE", "EXPIRED", "ADJUSTMENT"
+  referenceId     String?          // ID of related transaction/purchase if any
+  notes           String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  @@index([date])
+  @@index([productId])
+  @@index([type])
+}
+
+enum MovementType {
+  IN
+  OUT
+}
+
+// Update DrugStoreProduct model to include relation to TransactionItem
 model DrugStoreProduct {
-  id            Int         @id @default(autoincrement()) 
-  name          String
-  category      String?
-  manufacturer  String?
-  supplierId    Int?
-  supplier      Supplier?   @relation(fields: [supplierId], references: [id])
-  purchasePrice Decimal?
-  price         Decimal
-  stock         Int
-  expiryDate    String?
-  batchNumber   String?
-  unit          String
-  ingredients   String?     // Kandungan/komposisi obat
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  id                Int                 @id @default(autoincrement()) 
+  name              String
+  category          String?
+  manufacturer      String?
+  supplierId        Int?
+  supplier          Supplier?           @relation(fields: [supplierId], references: [id])
+  purchasePrice     Decimal?
+  price             Decimal
+  stock             Int
+  expiryDate        String?
+  batchNumber       String?
+  unit              String
+  ingredients       String?             // Kandungan/komposisi obat
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  transactionItems  TransactionItem[]
+  inventoryMovements InventoryMovement[]
 
   @@index([name])
   @@index([category])
@@ -254,3 +344,4 @@ model IcdCode {
   
   @@index([code])
 }
+
