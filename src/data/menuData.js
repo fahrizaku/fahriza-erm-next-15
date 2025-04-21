@@ -4,12 +4,12 @@ import {
   Stethoscope,
   FileText,
   User,
-  LayoutDashboard,
   Folder,
   History,
   Microscope,
   Car,
   Database,
+  Receipt,
 } from "lucide-react";
 
 const menuCategories = [
@@ -43,21 +43,21 @@ const menuCategories = [
       },
     ],
   },
-  {
-    category: "Laboratorium", // Kategori baru untuk Laboratorium
-    items: [
-      {
-        title: "Pemeriksaan Lab",
-        icon: <Microscope size={20} />,
-        href: "/laboratorium",
-      },
-      // {
-      //   title: "Hasil Lab",
-      //   icon: <FileSpreadsheet size={20} />,
-      //   href: "/laboratorium/",
-      // },
-    ],
-  },
+  // {
+  //   category: "Laboratorium", // Kategori baru untuk Laboratorium
+  //   items: [
+  //     {
+  //       title: "Pemeriksaan Lab",
+  //       icon: <Microscope size={20} />,
+  //       href: "/laboratorium",
+  //     },
+  //     // {
+  //     //   title: "Hasil Lab",
+  //     //   icon: <FileSpreadsheet size={20} />,
+  //     //   href: "/laboratorium/",
+  //     // },
+  //   ],
+  // },
   {
     category: "Apotek",
     items: [
@@ -66,23 +66,18 @@ const menuCategories = [
         icon: <FileText size={20} />,
         href: "/apotek/antrian-resep",
       },
-      // {
-      //   title: "Transaksi",
-      //   icon: <ShoppingCart size={20} />,
-      //   href: "/apotek/transaksi",
-      // },
       {
-        title: "Obat dan Produk",
+        title: "Transaksi",
+        icon: <Receipt size={20} />, // cocok untuk transaksi atau pembayaran
+        href: "/apotek/dashboard",
+      },
+      {
+        title: "Data Obat & Produk",
         icon: <Package size={20} />,
         href: "/apotek/produk",
       },
-      // {
-      //   title: "Data Obat Asist",
-      //   icon: <Pill size={20} />,
-      //   href: "/apotek/obat-resep",
-      // },
       {
-        title: "Supplier",
+        title: "Data Supplier",
         icon: <Car size={20} />,
         href: "/apotek/supplier",
       },
