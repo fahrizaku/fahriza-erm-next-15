@@ -1,15 +1,107 @@
-// Prisma schema
-// Generator dan Datasource
-generator client {
-  provider = "prisma-client-js"
+// app/rekam-medis/[id]/page.jsx
+"use client";
+
+import { useState, useEffect, use } from "react";
+import { useRouter } from "next/navigation";
+import { toast } from "react-toastify";
+import PatientInfoCard from "./_components/PatientInfoCard";
+import { LoadingState, ErrorState } from "./_components/UIState";
+import DiagnosisSection from "./_components/DiagnosisSection";
+import VitalsSection from "./_components/VitalsSection";
+import PrescriptionsSection from "./_components/PrescriptionsSection";
+import PharmacySection from "./_components/PharmacySection";
+import DoctorSignature from "./_components/DoctorSignature";
+import PageHeader from "./_components/PageHeader";
+
+export default function MedicalRecordDetailPage({ params }) {
+  const router = useRouter();
+  const { id } = use(params);
+
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [medicalRecord, setMedicalRecord] = useState(null);
+  const [patient, setPatient] = useState(null);
+  const [screening, setScreening] = useState(null);
+  const [prescriptions, setPrescriptions] = useState([]);
+  const [pharmacyQueue, setPharmacyQueue] = useState(null);
+
+  // Fetch medical record data
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch(`/api/medical-records/${id}`);
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        if (data.success) {
+          setMedicalRecord(data.medicalRecord);
+          setPatient(data.patient);
+          setScreening(data.screening);
+          setPrescriptions(data.prescriptions);
+          setPharmacyQueue(data.pharmacyQueue);
+        } else {
+          setError(data.message || "Failed to fetch medical record data");
+          toast.error(data.message || "Failed to fetch medical record data");
+        }
+      } catch (error) {
+        console.error("Error fetching data:", error);
+        setError("An error occurred while fetching data");
+        toast.error("An error occurred while fetching data");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (id) {
+      fetchData();
+    }
+  }, [id]);
+
+  if (loading) {
+    return <LoadingState />;
+  }
+
+  if (error && !medicalRecord) {
+    return <ErrorState error={error} router={router} />;
+  }
+
+  return (
+    <div className="max-w-4xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
+      {/* Main content */}
+      <div className="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden print:shadow-none print:border-none">
+        <PageHeader visitDate={medicalRecord?.visitDate} />
+
+        <PatientInfoCard patient={patient} />
+
+        {/* Medical record content */}
+        <div className="p-5 md:p-6 space-y-6">
+          <DiagnosisSection medicalRecord={medicalRecord} />
+
+          {screening && <VitalsSection screening={screening} />}
+
+          {prescriptions && prescriptions.length > 0 && (
+            <PrescriptionsSection prescriptions={prescriptions} />
+          )}
+
+          {pharmacyQueue && (
+            <PharmacySection
+              pharmacyQueue={pharmacyQueue}
+              screening={screening}
+            />
+          )}
+
+          <DoctorSignature doctorName={medicalRecord?.doctorName} />
+        </div>
+      </div>
+    </div>
+  );
 }
 
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-}
-
-// Model Patient
 model Patient {
   id              Int       @id @default(autoincrement())
   no_rm           Int       @unique
@@ -27,18 +119,24 @@ model Patient {
     // Relations
   screenings      Screening[]
   medicalRecords  MedicalRecord[]
+  allergies       PatientAllergy[]
 }
+
 
 model DrugStoreProduct {
   id            Int         @id @default(autoincrement()) 
   name          String
   category      String?
   manufacturer  String?
+  supplierId    Int?
+  supplier      Supplier?   @relation(fields: [supplierId], references: [id])
   purchasePrice Decimal?
   price         Decimal
   stock         Int
   expiryDate    String?
+  batchNumber   String?
   unit          String
+  ingredients   String?     // Kandungan/komposisi obat
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
 
@@ -46,25 +144,7 @@ model DrugStoreProduct {
   @@index([category])
   @@index([manufacturer])
   @@index([expiryDate])
-}
-
-model DrugPrescription {
-  id            Int         @id @default(autoincrement()) 
-  name          String
-  category      String?
-  manufacturer  String?
-  purchasePrice Decimal?
-  price         Decimal
-  stock         Int
-  expiryDate    String?
-  unit          String
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
-
-  @@index([name])
-  @@index([category])
-  @@index([manufacturer])
-  @@index([expiryDate])
+  @@index([supplierId])
 }
 
 // Screening model for initial patient assessment
@@ -85,6 +165,8 @@ model Screening {
   isBPJSActive      Boolean?      // Status BPJS aktif atau tidak
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
+
+  nurseName         String?      // Name of the nurse who conducted the screening
   
   // Screening status
   status            String        @default("waiting") // waiting, in-progress, completed
@@ -198,172 +280,88 @@ model IcdCode {
   @@index([code])
 }
 
-"use client";
+// /app/api/medical-records/[id]/route.js
+import { NextResponse } from "next/server";
+import { db } from "@/lib/db";
 
-import React, { use, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { ChevronLeft } from "lucide-react";
-import { toast } from "react-toastify";
-import { LoadingState, ErrorState, NotFoundState } from "./_components/UIState";
-import PrescriptionHeader from "./_components/PrescriptionHeader";
-import PatientInfo from "./_components/PatientInfo";
-import PrescriptionList from "./_components/PrescriptionList";
-import ActionButtons from "./_components/ActionButtons";
+// Get medical record by ID
+export async function GET(request, { params }) {
+  try {
+    const resolvedParams = await params;
+    const id = parseInt(resolvedParams.id);
 
-export default function PrescriptionDetailsPage({ params }) {
-  const router = useRouter();
-  const { id } = use(params); // This is the medicalRecordId
+    // Check if the ID is for a medical record or a screening
+    let medicalRecord;
 
-  const [loading, setLoading] = useState(true);
-  const [prescription, setPrescription] = useState(null);
-  const [error, setError] = useState(null);
-  const [isProcessing, setIsProcessing] = useState(false);
+    // Try to find as medical record ID first
+    medicalRecord = await db.medicalRecord.findUnique({
+      where: {
+        id: parseInt(id),
+      },
+    });
 
-  useEffect(() => {
-    async function fetchPrescriptionDetails() {
-      try {
-        setLoading(true);
-        const response = await fetch(`/api/pharmacy/prescriptions/${id}`);
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const data = await response.json();
-
-        if (data.success) {
-          setPrescription(data.prescription);
-        } else {
-          setError(data.message || "Failed to fetch prescription details");
-          toast.error(data.message || "Failed to fetch prescription details");
-        }
-      } catch (error) {
-        console.error("Error fetching prescription details:", error);
-        setError("An error occurred while fetching prescription details");
-        toast.error("An error occurred while fetching prescription details");
-      } finally {
-        setLoading(false);
-      }
+    // If not found, try to find by screening ID
+    if (!medicalRecord) {
+      medicalRecord = await db.medicalRecord.findUnique({
+        where: {
+          screeningId: parseInt(id),
+        },
+      });
     }
 
-    fetchPrescriptionDetails();
-  }, [id]);
-
-  const handleMarkAsReady = async () => {
-    try {
-      setIsProcessing(true);
-      const response = await fetch(
-        `/api/pharmacy/queue/${prescription.medicalRecordId}/ready`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
+    if (!medicalRecord) {
+      return NextResponse.json(
+        { success: false, message: "Medical record not found" },
+        { status: 404 }
       );
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-
-      if (data.success) {
-        // Update the prescription state locally instead of redirecting
-        setPrescription({
-          ...prescription,
-          status: "ready",
-        });
-        toast.success(`Resep siap diambil`);
-      } else {
-        toast.error(data.message || "Failed to mark prescription as ready");
-      }
-    } catch (error) {
-      console.error("Error marking prescription as ready:", error);
-      toast.error("An error occurred while marking prescription as ready");
-    } finally {
-      setIsProcessing(false);
     }
-  };
 
-  const handleDispense = async () => {
-    try {
-      setIsProcessing(true);
-      const response = await fetch(
-        `/api/pharmacy/queue/${prescription.medicalRecordId}/dispense`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
+    // Get related data
+    const patient = await db.patient.findUnique({
+      where: {
+        id: medicalRecord.patientId,
+      },
+    });
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+    const screening = await db.screening.findUnique({
+      where: {
+        id: medicalRecord.screeningId,
+      },
+    });
 
-      const data = await response.json();
+    // Get all prescriptions for this medical record
+    const prescriptions = await db.prescription.findMany({
+      where: {
+        medicalRecordId: medicalRecord.id,
+      },
+      include: {
+        items: true,
+      },
+      orderBy: {
+        createdAt: "asc",
+      },
+    });
 
-      if (data.success) {
-        // Update the prescription state locally
-        setPrescription({
-          ...prescription,
-          status: "dispensed",
-        });
-        toast.success(`Resep telah diserahkan`);
-      } else {
-        toast.error(data.message || "Failed to dispense prescription");
-      }
-    } catch (error) {
-      console.error("Error dispensing prescription:", error);
-      toast.error("An error occurred while dispensing prescription");
-    } finally {
-      setIsProcessing(false);
-    }
-  };
+    // Get pharmacy queue information
+    const pharmacyQueue = await db.pharmacyQueue.findUnique({
+      where: {
+        medicalRecordId: medicalRecord.id,
+      },
+    });
 
-  if (loading) {
-    return <LoadingState />;
+    return NextResponse.json({
+      success: true,
+      medicalRecord,
+      patient,
+      screening,
+      prescriptions,
+      pharmacyQueue, // Include pharmacy queue information in the response
+    });
+  } catch (error) {
+    console.error("Error fetching medical record:", error);
+    return NextResponse.json(
+      { success: false, message: "Failed to fetch medical record" },
+      { status: 500 }
+    );
   }
-
-  if (error) {
-    return <ErrorState error={error} router={router} />;
-  }
-
-  if (!prescription) {
-    return <NotFoundState router={router} />;
-  }
-
-  return (
-    <div className="max-w-6xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
-      {/* Back button */}
-      <div className="mb-6">
-        <Link
-          href="/apotek/antrian-resep"
-          className="inline-flex items-center text-blue-600 hover:text-blue-800 transition-colors font-medium"
-        >
-          <ChevronLeft className="h-5 w-5" />
-          <span>Kembali ke Antrian Farmasi</span>
-        </Link>
-      </div>
-
-      {/* Main content */}
-      <div className="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
-        <PrescriptionHeader prescription={prescription} />
-        <PatientInfo prescription={prescription} />
-        <PrescriptionList prescriptions={prescription.prescriptions} />
-        <ActionButtons
-          router={router}
-          prescription={prescription}
-          isProcessing={isProcessing}
-          handleMarkAsReady={handleMarkAsReady}
-          handleDispense={handleDispense}
-        />
-      </div>
-    </div>
-  );
 }
-
-
