@@ -43,21 +43,21 @@ const menuCategories = [
       },
     ],
   },
-  {
-    category: "Laboratorium", // Kategori baru untuk Laboratorium
-    items: [
-      {
-        title: "Pemeriksaan Lab",
-        icon: <Microscope size={20} />,
-        href: "/laboratorium",
-      },
-      // {
-      //   title: "Hasil Lab",
-      //   icon: <FileSpreadsheet size={20} />,
-      //   href: "/laboratorium/",
-      // },
-    ],
-  },
+  // {
+  //   category: "Laboratorium", // Kategori baru untuk Laboratorium
+  //   items: [
+  //     {
+  //       title: "Pemeriksaan Lab",
+  //       icon: <Microscope size={20} />,
+  //       href: "/laboratorium",
+  //     },
+  //     // {
+  //     //   title: "Hasil Lab",
+  //     //   icon: <FileSpreadsheet size={20} />,
+  //     //   href: "/laboratorium/",
+  //     // },
+  //   ],
+  // },
   {
     category: "Apotek",
     items: [
