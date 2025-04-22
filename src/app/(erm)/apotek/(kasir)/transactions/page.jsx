@@ -85,13 +85,13 @@ export default function TransactionsPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Transactions</h1>
-        <Link
+        <h1 className="text-2xl font-bold">Riwayat Penjualan</h1>
+        {/* <Link
           href="/apotek/cashier"
           className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
         >
           New Transaction
-        </Link>
+        </Link> */}
       </div>
 
       {error && (
