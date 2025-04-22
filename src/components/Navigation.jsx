@@ -17,7 +17,6 @@ export default function Navigation() {
   const [isOpen, setIsOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [mountTimeout, setMountTimeout] = useState(false);
-  const [isNavigating, setIsNavigating] = useState(false);
   const [userData, setUserData] = useState(null);
   const [isLoadingUser, setIsLoadingUser] = useState(true);
   const pathname = usePathname();
@@ -71,37 +70,6 @@ export default function Navigation() {
     };
   }, [mounted]);
 
-  // Handle navigation state
-  useEffect(() => {
-    if (!mounted) return;
-
-    // Create event listeners for route change events
-    const handleRouteChangeStart = () => {
-      setIsNavigating(true);
-    };
-
-    const handleRouteChangeComplete = () => {
-      setIsNavigating(false);
-    };
-
-    // In Next.js App Router, we need to handle this differently
-    // This is a simplified approach - for a complete solution consider using next/router events
-    // or a custom solution with router.events if available
-
-    // For demonstration, we'll simulate route change end after a timeout
-    // when the pathname changes
-    const handlePathnameChange = () => {
-      setIsNavigating(false);
-    };
-
-    window.addEventListener("popstate", handleRouteChangeStart);
-
-    // Clean up event listeners
-    return () => {
-      window.removeEventListener("popstate", handleRouteChangeStart);
-    };
-  }, [mounted, pathname]);
-
   const handleToggle = (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -115,11 +83,10 @@ export default function Navigation() {
     window.location.reload();
   };
 
-  // Custom navigation handler to show loading state
+  // Custom navigation handler
   const handleNavigation = (href) => {
-    // Only set loading state and navigate if it's not the current page
+    // Only navigate if it's not the current page
     if (href !== pathname) {
-      setIsNavigating(true);
       router.push(href);
     }
     close();
@@ -150,15 +117,11 @@ export default function Navigation() {
     if (!isDesktop) {
       close();
     }
-
-    // When pathname changes, we know navigation is complete
-    setIsNavigating(false);
   }, [pathname, mounted]);
 
   // Handle logout functionality
   const handleLogout = async () => {
     try {
-      setIsNavigating(true);
       const response = await fetch("/api/auth/logout", {
         method: "POST",
         headers: {
@@ -178,8 +141,6 @@ export default function Navigation() {
       }
     } catch (error) {
       console.error("Error during logout:", error);
-    } finally {
-      setIsNavigating(false);
     }
   };
 
@@ -257,16 +218,6 @@ export default function Navigation() {
           )}
         </div>
       </header>
-
-      {/* Navigation Loading Overlay */}
-      {isNavigating && (
-        <div className="fixed inset-0 bg-white/70 z-[60] flex flex-col items-center justify-center">
-          <Loader2 className="w-12 h-12 text-blue-600 animate-spin" />
-          <p className="mt-4 text-blue-600 font-medium">
-            Sedang memuat halaman...
-          </p>
-        </div>
-      )}
 
       {/* Overlay untuk mobile */}
       {isOpen && (
