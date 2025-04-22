@@ -9,7 +9,7 @@ import {
   Microscope,
   Car,
   Database,
-  Receipt,
+  Store,
 } from "lucide-react";
 
 const menuCategories = [
@@ -67,11 +67,6 @@ const menuCategories = [
         href: "/apotek/antrian-resep",
       },
       {
-        title: "Transaksi",
-        icon: <Receipt size={20} />, // cocok untuk transaksi atau pembayaran
-        href: "/apotek/dashboard",
-      },
-      {
         title: "Data Obat & Produk",
         icon: <Package size={20} />,
         href: "/apotek/produk",
@@ -80,6 +75,11 @@ const menuCategories = [
         title: "Data Supplier",
         icon: <Car size={20} />,
         href: "/apotek/supplier",
+      },
+      {
+        title: "Manajemen Apotek",
+        icon: <Store size={20} />,
+        href: "/apotek/dashboard",
       },
     ],
   },

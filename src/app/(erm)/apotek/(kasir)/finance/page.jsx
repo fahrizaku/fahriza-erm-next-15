@@ -29,7 +29,7 @@ export default function FinancePage() {
     type: "",
   });
 
-  // Categories for financial records
+  // Kategori untuk catatan keuangan
   const categories = {
     INCOME: ["SALES", "REFUND", "INVESTMENT", "OTHER_INCOME"],
     EXPENSE: [
@@ -41,6 +41,27 @@ export default function FinancePage() {
       "MAINTENANCE",
       "OTHER_EXPENSE",
     ],
+  };
+
+  // Terjemahan kategori
+  const categoryTranslations = {
+    SALES: "Penjualan",
+    REFUND: "Pengembalian",
+    INVESTMENT: "Investasi",
+    OTHER_INCOME: "Pendapatan Lain",
+    INVENTORY_PURCHASE: "Pembelian Persediaan",
+    OPERATIONAL: "Operasional",
+    SALARY: "Gaji",
+    RENT: "Sewa",
+    UTILITY: "Utilitas",
+    MAINTENANCE: "Pemeliharaan",
+    OTHER_EXPENSE: "Pengeluaran Lain",
+  };
+
+  // Terjemahan tipe
+  const typeTranslations = {
+    INCOME: "Pemasukan",
+    EXPENSE: "Pengeluaran",
   };
 
   useEffect(() => {
@@ -65,10 +86,10 @@ export default function FinancePage() {
         setTotalPages(data.meta.totalPages);
         setSummary(data.meta.summary);
       } else {
-        setError(data.error || "Failed to fetch financial records");
+        setError(data.error || "Gagal mengambil catatan keuangan");
       }
     } catch (err) {
-      setError("Error loading financial data");
+      setError("Error memuat data keuangan");
       console.error(err);
     } finally {
       setLoading(false);
@@ -114,7 +135,7 @@ export default function FinancePage() {
     e.preventDefault();
 
     if (!newRecord.amount || parseFloat(newRecord.amount) <= 0) {
-      showNotification("Please enter a valid amount", "error");
+      showNotification("Harap masukkan jumlah yang valid", "error");
       return;
     }
 
@@ -135,7 +156,7 @@ export default function FinancePage() {
       const result = await response.json();
 
       if (response.ok) {
-        showNotification("Financial record added successfully", "success");
+        showNotification("Catatan keuangan berhasil ditambahkan", "success");
         setNewRecord({
           type: "EXPENSE",
           category: "OPERATIONAL",
@@ -147,17 +168,17 @@ export default function FinancePage() {
         fetchRecords();
       } else {
         showNotification(
-          result.error || "Failed to add financial record",
+          result.error || "Gagal menambahkan catatan keuangan",
           "error"
         );
       }
     } catch (error) {
-      console.error("Error adding financial record:", error);
-      showNotification("Error processing your request", "error");
+      console.error("Error menambahkan catatan keuangan:", error);
+      showNotification("Error memproses permintaan Anda", "error");
     }
   };
 
-  // Show notification
+  // Tampilkan notifikasi
   const showNotification = (message, type) => {
     setNotification({ show: true, message, type });
     setTimeout(
@@ -169,16 +190,16 @@ export default function FinancePage() {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Financial Management</h1>
+        <h1 className="text-2xl font-bold">Manajemen Keuangan</h1>
         <button
           onClick={() => setShowForm(!showForm)}
           className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
         >
-          {showForm ? "Cancel" : "Add Financial Record"}
+          {showForm ? "Batal" : "Tambah Catatan Keuangan"}
         </button>
       </div>
 
-      {/* Notification */}
+      {/* Notifikasi */}
       {notification.show && (
         <div
           className={`p-4 mb-4 rounded-md ${
@@ -195,24 +216,24 @@ export default function FinancePage() {
         <div className="bg-red-100 text-red-700 p-4 rounded mb-4">{error}</div>
       )}
 
-      {/* Financial Summary */}
+      {/* Ringkasan Keuangan */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <div className="bg-white rounded-lg shadow p-4">
-          <h3 className="text-lg font-medium mb-2 text-green-600">Income</h3>
+          <h3 className="text-lg font-medium mb-2 text-green-600">Pemasukan</h3>
           <p className="text-2xl font-bold">
-            Rp {parseFloat(summary.income).toLocaleString()}
+            Rp {parseFloat(summary.income).toLocaleString("id-ID")}
           </p>
         </div>
 
         <div className="bg-white rounded-lg shadow p-4">
-          <h3 className="text-lg font-medium mb-2 text-red-600">Expense</h3>
+          <h3 className="text-lg font-medium mb-2 text-red-600">Pengeluaran</h3>
           <p className="text-2xl font-bold">
-            Rp {parseFloat(summary.expense).toLocaleString()}
+            Rp {parseFloat(summary.expense).toLocaleString("id-ID")}
           </p>
         </div>
 
         <div className="bg-white rounded-lg shadow p-4">
-          <h3 className="text-lg font-medium mb-2 text-blue-600">Balance</h3>
+          <h3 className="text-lg font-medium mb-2 text-blue-600">Saldo</h3>
           <p
             className={`text-2xl font-bold ${
               parseFloat(summary.balance) < 0
@@ -220,33 +241,33 @@ export default function FinancePage() {
                 : "text-green-500"
             }`}
           >
-            Rp {parseFloat(summary.balance).toLocaleString()}
+            Rp {parseFloat(summary.balance).toLocaleString("id-ID")}
           </p>
         </div>
       </div>
 
-      {/* New Record Form */}
+      {/* Form Catatan Baru */}
       {showForm && (
         <div className="bg-white rounded-lg shadow p-4 mb-6">
-          <h2 className="font-bold text-lg mb-4">Add Financial Record</h2>
+          <h2 className="font-bold text-lg mb-4">Tambah Catatan Keuangan</h2>
 
           <form onSubmit={handleSubmit}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div>
-                <label className="block mb-1 font-medium">Type</label>
+                <label className="block mb-1 font-medium">Tipe</label>
                 <select
                   name="type"
                   value={newRecord.type}
                   onChange={handleTypeChange}
                   className="w-full p-2 border border-gray-300 rounded"
                 >
-                  <option value="INCOME">Income</option>
-                  <option value="EXPENSE">Expense</option>
+                  <option value="INCOME">Pemasukan</option>
+                  <option value="EXPENSE">Pengeluaran</option>
                 </select>
               </div>
 
               <div>
-                <label className="block mb-1 font-medium">Category</label>
+                <label className="block mb-1 font-medium">Kategori</label>
                 <select
                   name="category"
                   value={newRecord.category}
@@ -255,7 +276,7 @@ export default function FinancePage() {
                 >
                   {categories[newRecord.type].map((category) => (
                     <option key={category} value={category}>
-                      {category.replace("_", " ")}
+                      {categoryTranslations[category]}
                     </option>
                   ))}
                 </select>
@@ -263,28 +284,28 @@ export default function FinancePage() {
             </div>
 
             <div className="mb-4">
-              <label className="block mb-1 font-medium">Amount</label>
+              <label className="block mb-1 font-medium">Jumlah</label>
               <input
                 type="number"
                 name="amount"
                 value={newRecord.amount}
                 onChange={handleInputChange}
                 className="w-full p-2 border border-gray-300 rounded"
-                placeholder="Enter amount"
+                placeholder="Masukkan jumlah"
                 step="0.01"
                 min="0"
               />
             </div>
 
             <div className="mb-4">
-              <label className="block mb-1 font-medium">Description</label>
+              <label className="block mb-1 font-medium">Keterangan</label>
               <textarea
                 name="description"
                 value={newRecord.description}
                 onChange={handleInputChange}
                 className="w-full p-2 border border-gray-300 rounded"
                 rows="3"
-                placeholder="Enter description"
+                placeholder="Masukkan keterangan"
               ></textarea>
             </div>
 
@@ -293,19 +314,19 @@ export default function FinancePage() {
                 type="submit"
                 className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
               >
-                Save Record
+                Simpan Catatan
               </button>
             </div>
           </form>
         </div>
       )}
 
-      {/* Filters */}
+      {/* Filter */}
       <div className="bg-white rounded-lg shadow p-4 mb-6">
-        <h2 className="font-bold mb-3">Filters</h2>
+        <h2 className="font-bold mb-3">Filter</h2>
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           <div>
-            <label className="block mb-1 text-sm">Type</label>
+            <label className="block mb-1 text-sm">Tipe</label>
             <select
               value={filterType}
               onChange={(e) => {
@@ -315,14 +336,14 @@ export default function FinancePage() {
               }}
               className="w-full p-2 border border-gray-300 rounded"
             >
-              <option value="">All Types</option>
-              <option value="INCOME">Income</option>
-              <option value="EXPENSE">Expense</option>
+              <option value="">Semua Tipe</option>
+              <option value="INCOME">Pemasukan</option>
+              <option value="EXPENSE">Pengeluaran</option>
             </select>
           </div>
 
           <div>
-            <label className="block mb-1 text-sm">Category</label>
+            <label className="block mb-1 text-sm">Kategori</label>
             <select
               value={filterCategory}
               onChange={(e) => {
@@ -332,18 +353,18 @@ export default function FinancePage() {
               className="w-full p-2 border border-gray-300 rounded"
               disabled={!filterType}
             >
-              <option value="">All Categories</option>
+              <option value="">Semua Kategori</option>
               {filterType &&
                 categories[filterType].map((category) => (
                   <option key={category} value={category}>
-                    {category.replace("_", " ")}
+                    {categoryTranslations[category]}
                   </option>
                 ))}
             </select>
           </div>
 
           <div>
-            <label className="block mb-1 text-sm">Start Date</label>
+            <label className="block mb-1 text-sm">Tanggal Mulai</label>
             <input
               type="date"
               value={startDate}
@@ -356,7 +377,7 @@ export default function FinancePage() {
           </div>
 
           <div>
-            <label className="block mb-1 text-sm">End Date</label>
+            <label className="block mb-1 text-sm">Tanggal Akhir</label>
             <input
               type="date"
               value={endDate}
@@ -373,16 +394,16 @@ export default function FinancePage() {
               onClick={resetFilters}
               className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-100"
             >
-              Reset Filters
+              Reset Filter
             </button>
           </div>
         </div>
       </div>
 
-      {/* Financial Records List */}
+      {/* Daftar Catatan Keuangan */}
       {loading ? (
         <div className="text-center py-8">
-          <p>Loading financial records...</p>
+          <p>Memuat catatan keuangan...</p>
         </div>
       ) : (
         <>
@@ -390,11 +411,11 @@ export default function FinancePage() {
             <table className="min-w-full">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="py-3 px-4 text-left">Date</th>
-                  <th className="py-3 px-4 text-left">Type</th>
-                  <th className="py-3 px-4 text-left">Category</th>
-                  <th className="py-3 px-4 text-right">Amount</th>
-                  <th className="py-3 px-4 text-left">Description</th>
+                  <th className="py-3 px-4 text-left">Tanggal</th>
+                  <th className="py-3 px-4 text-left">Tipe</th>
+                  <th className="py-3 px-4 text-left">Kategori</th>
+                  <th className="py-3 px-4 text-right">Jumlah</th>
+                  <th className="py-3 px-4 text-left">Keterangan</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
@@ -410,11 +431,11 @@ export default function FinancePage() {
                               : "bg-red-100 text-red-800"
                           }`}
                         >
-                          {record.type}
+                          {typeTranslations[record.type]}
                         </span>
                       </td>
                       <td className="py-3 px-4">
-                        {record.category.replace("_", " ")}
+                        {categoryTranslations[record.category]}
                       </td>
                       <td className="py-3 px-4 text-right">
                         <span
@@ -424,7 +445,7 @@ export default function FinancePage() {
                               : "text-red-600"
                           }
                         >
-                          Rp {parseFloat(record.amount).toLocaleString()}
+                          Rp {parseFloat(record.amount).toLocaleString("id-ID")}
                         </span>
                       </td>
                       <td className="py-3 px-4">{record.description || "-"}</td>
@@ -433,7 +454,7 @@ export default function FinancePage() {
                 ) : (
                   <tr>
                     <td colSpan="5" className="py-6 text-center text-gray-500">
-                      No financial records found
+                      Tidak ada catatan keuangan ditemukan
                     </td>
                   </tr>
                 )}
@@ -453,10 +474,10 @@ export default function FinancePage() {
                     : "bg-blue-500 text-white hover:bg-blue-600"
                 }`}
               >
-                Previous
+                Sebelumnya
               </button>
               <span className="mx-2 px-3 py-1">
-                Page {page} of {totalPages}
+                Halaman {page} dari {totalPages}
               </span>
               <button
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
@@ -467,7 +488,7 @@ export default function FinancePage() {
                     : "bg-blue-500 text-white hover:bg-blue-600"
                 }`}
               >
-                Next
+                Selanjutnya
               </button>
             </div>
           )}
@@ -479,7 +500,7 @@ export default function FinancePage() {
           href="/apotek/dashboard"
           className="text-blue-500 hover:text-blue-700"
         >
-          ← Back to Dashboard
+          ← Kembali ke Dashboard
         </Link>
       </div>
     </div>

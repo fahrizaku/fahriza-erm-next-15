@@ -108,8 +108,8 @@ export default function DashboardPage() {
           href="/apotek/produk"
           className="bg-green-500 hover:bg-green-600 text-white rounded-lg p-4 text-center"
         >
-          <h2 className="text-lg font-medium">Produk</h2>
-          <p className="text-sm mt-1">Kelola inventaris</p>
+          <h2 className="text-lg font-medium">Obat & Produk</h2>
+          <p className="text-sm mt-1">Data Obat & Produk</p>
         </Link>
 
         <Link
