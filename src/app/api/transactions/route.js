@@ -77,63 +77,68 @@ export async function POST(request) {
       );
     }
 
-    // Create transaction with items in a single database transaction
-    const transaction = await db.$transaction(async (tx) => {
-      // 1. Create the transaction record
-      const createdTransaction = await tx.transaction.create({
-        data: {
-          transactionCode: generateTransactionCode(),
-          totalAmount,
-          paid,
-          change,
-          notes,
-          items: {
-            create: items.map((item) => ({
-              productId: item.productId,
-              quantity: item.quantity,
-              price: item.price,
-              subtotal: item.price * item.quantity,
-            })),
+    // Create transaction with items in a single database transaction with increased timeout
+    const transaction = await db.$transaction(
+      async (tx) => {
+        // 1. Create the transaction record
+        const createdTransaction = await tx.transaction.create({
+          data: {
+            transactionCode: generateTransactionCode(),
+            totalAmount,
+            paid,
+            change,
+            notes,
+            items: {
+              create: items.map((item) => ({
+                productId: item.productId,
+                quantity: item.quantity,
+                price: item.price,
+                subtotal: item.price * item.quantity,
+              })),
+            },
           },
-        },
-        include: {
-          items: true,
-        },
-      });
-
-      // 2. Update product stock
-      for (const item of items) {
-        // Reduce product stock
-        await tx.drugStoreProduct.update({
-          where: { id: item.productId },
-          data: { stock: { decrement: item.quantity } },
+          include: {
+            items: true,
+          },
         });
 
-        // Record inventory movement
-        await tx.inventoryMovement.create({
+        // 2. Update product stock and record inventory movements
+        for (const item of items) {
+          // Reduce product stock
+          await tx.drugStoreProduct.update({
+            where: { id: item.productId },
+            data: { stock: { decrement: item.quantity } },
+          });
+
+          // Record inventory movement
+          await tx.inventoryMovement.create({
+            data: {
+              productId: item.productId,
+              type: "OUT",
+              quantity: item.quantity,
+              reason: "SALE",
+              referenceId: createdTransaction.id.toString(),
+            },
+          });
+        }
+
+        // 3. Create financial record for this sale
+        await tx.financialRecord.create({
           data: {
-            productId: item.productId,
-            type: "OUT",
-            quantity: item.quantity,
-            reason: "SALE",
+            type: "INCOME",
+            category: "SALES",
+            amount: totalAmount,
+            description: `Sale transaction ${createdTransaction.transactionCode}`,
             referenceId: createdTransaction.id.toString(),
           },
         });
+
+        return createdTransaction;
+      },
+      {
+        timeout: 15000, // Increase timeout to 15 seconds
       }
-
-      // 3. Create financial record for this sale
-      await tx.financialRecord.create({
-        data: {
-          type: "INCOME",
-          category: "SALES",
-          amount: totalAmount,
-          description: `Sale transaction ${createdTransaction.transactionCode}`,
-          referenceId: createdTransaction.id.toString(),
-        },
-      });
-
-      return createdTransaction;
-    });
+    );
 
     return NextResponse.json({ data: transaction }, { status: 201 });
   } catch (error) {

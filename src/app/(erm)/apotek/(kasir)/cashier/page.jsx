@@ -1,4 +1,4 @@
-// app/cashier/page.js
+// app/apotek/cashier/page.js
 "use client";
 
 import { useState, useEffect } from "react";
@@ -182,7 +182,7 @@ export default function CashierPage() {
         fetchProducts();
 
         // Redirect to receipt page
-        router.push(`/cashier/receipt/${result.data.id}`);
+        router.push(`/apotek/cashier/receipt/${result.data.id}`);
       } else {
         showNotification(
           result.error || "Failed to complete transaction",
@@ -417,13 +417,13 @@ export default function CashierPage() {
 
           <div className="flex justify-between">
             <Link
-              href="/dashboard"
+              href="/apotek/dashboard"
               className="text-blue-500 hover:text-blue-700"
             >
               ← Back to Dashboard
             </Link>
             <Link
-              href="/inventory"
+              href="/apotek/inventory"
               className="text-blue-500 hover:text-blue-700"
             >
               Manage Inventory →

@@ -5,7 +5,9 @@ import { db } from "@/lib/db";
 // GET transaction by ID
 export async function GET(request, { params }) {
   try {
-    const id = parseInt(params.id);
+    // Await params before accessing id
+    const { id: idParam } = await params;
+    const id = parseInt(idParam);
 
     const transaction = await db.transaction.findUnique({
       where: { id },
@@ -38,7 +40,9 @@ export async function GET(request, { params }) {
 // DELETE transaction (Cancel)
 export async function DELETE(request, { params }) {
   try {
-    const id = parseInt(params.id);
+    // Await params before accessing id
+    const { id: idParam } = await params;
+    const id = parseInt(idParam);
 
     // Get transaction with items before cancelling
     const transaction = await db.transaction.findUnique({
