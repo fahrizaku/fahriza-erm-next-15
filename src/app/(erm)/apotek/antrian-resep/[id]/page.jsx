@@ -8,6 +8,7 @@ import { toast } from "react-toastify";
 import { LoadingState, ErrorState, NotFoundState } from "./_components/UIState";
 import PrescriptionHeader from "./_components/PrescriptionHeader";
 import PatientInfo from "./_components/PatientInfo";
+import PatientAllergies from "./_components/PatientAllergies";
 import PrescriptionList from "./_components/PrescriptionList";
 import ActionButtons from "./_components/ActionButtons";
 
@@ -17,6 +18,7 @@ export default function PrescriptionDetailsPage({ params }) {
 
   const [loading, setLoading] = useState(true);
   const [prescription, setPrescription] = useState(null);
+  const [allergies, setAllergies] = useState([]);
   const [error, setError] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -34,6 +36,11 @@ export default function PrescriptionDetailsPage({ params }) {
 
         if (data.success) {
           setPrescription(data.prescription);
+
+          // Once we have the prescription data with patient ID, fetch allergies
+          if (data.prescription?.patient?.id) {
+            fetchPatientAllergies(data.prescription.patient.id);
+          }
         } else {
           setError(data.message || "Failed to fetch prescription details");
           toast.error(data.message || "Failed to fetch prescription details");
@@ -44,6 +51,28 @@ export default function PrescriptionDetailsPage({ params }) {
         toast.error("An error occurred while fetching prescription details");
       } finally {
         setLoading(false);
+      }
+    }
+
+    async function fetchPatientAllergies(patientId) {
+      try {
+        // Using your existing API endpoint
+        const response = await fetch(`/api/patients/${patientId}/allergies`);
+
+        if (!response.ok) {
+          console.error(`Failed to fetch allergies: ${response.status}`);
+          return;
+        }
+
+        const data = await response.json();
+
+        if (data.success) {
+          setAllergies(data.allergies);
+        } else {
+          console.error("Failed to fetch allergies:", data.message);
+        }
+      } catch (error) {
+        console.error("Error fetching patient allergies:", error);
       }
     }
 
@@ -153,6 +182,7 @@ export default function PrescriptionDetailsPage({ params }) {
       <div className="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
         <PrescriptionHeader prescription={prescription} />
         <PatientInfo prescription={prescription} />
+        <PatientAllergies allergies={allergies} />
         <PrescriptionList prescriptions={prescription.prescriptions} />
         <ActionButtons
           router={router}
