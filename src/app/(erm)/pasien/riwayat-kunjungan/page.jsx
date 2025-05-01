@@ -15,6 +15,9 @@ import {
   RefreshCw,
   Stethoscope,
   Building,
+  CreditCard,
+  Shield,
+  Bed,
 } from "lucide-react";
 import { toast } from "react-toastify";
 
@@ -110,8 +113,41 @@ const MedicalRecordCard = ({ record }) => {
     }
   };
 
+  // Get payment type information and styling
+  const getPaymentTypeInfo = () => {
+    // Check if BPJS is active for this screening
+    const isBPJSActive = record.screening?.isBPJSActive;
+
+    if (isBPJSActive === true) {
+      return {
+        label: "BPJS",
+        bgColor: "bg-green-100",
+        textColor: "text-green-700",
+        Icon: Shield,
+      };
+    } else if (isBPJSActive === false) {
+      return {
+        label: "Umum",
+        bgColor: "bg-amber-100",
+        textColor: "text-amber-700",
+        Icon: CreditCard,
+      };
+    } else {
+      // If isBPJSActive is null or undefined
+      return {
+        label: "Belum Terverifikasi",
+        bgColor: "bg-gray-100",
+        textColor: "text-gray-700",
+        Icon: CreditCard,
+      };
+    }
+  };
+
   const visitTypeStyles = getVisitTypeStyles(record.visitType);
   const VisitTypeIcon = visitTypeStyles.Icon;
+
+  const paymentInfo = getPaymentTypeInfo();
+  const PaymentIcon = paymentInfo.Icon;
 
   return (
     <Link href={`/rekam-medis/${record.id}`} className="block">
@@ -151,11 +187,22 @@ const MedicalRecordCard = ({ record }) => {
               </h3>
             </div>
 
-            <div
-              className={`flex items-center gap-1 px-2 py-1 ${visitTypeStyles.bgColor} ${visitTypeStyles.textColor} rounded-full text-xs mt-1 md:mt-0`}
-            >
-              <VisitTypeIcon className="h-3 w-3" />
-              <span>{getVisitTypeLabel(record.visitType)}</span>
+            <div className="flex items-center gap-2 mt-1 md:mt-0">
+              {/* Payment Type Badge */}
+              <div
+                className={`flex items-center gap-1 px-2 py-1 ${paymentInfo.bgColor} ${paymentInfo.textColor} rounded-full text-xs`}
+              >
+                <PaymentIcon className="h-3 w-3" />
+                <span>{paymentInfo.label}</span>
+              </div>
+
+              {/* Visit Type Badge */}
+              <div
+                className={`flex items-center gap-1 px-2 py-1 ${visitTypeStyles.bgColor} ${visitTypeStyles.textColor} rounded-full text-xs`}
+              >
+                <VisitTypeIcon className="h-3 w-3" />
+                <span>{getVisitTypeLabel(record.visitType)}</span>
+              </div>
             </div>
           </div>
 
@@ -397,6 +444,8 @@ export default function MedicalRecordsHistory() {
         </h1>
         <p className="text-gray-600">Riwayat rekam medis pasien</p>
       </div>
+
+      {/* Search form could be added here */}
 
       {/* Loading State */}
       {loading && (

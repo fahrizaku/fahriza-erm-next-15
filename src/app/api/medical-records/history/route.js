@@ -54,6 +54,7 @@ export async function GET(request) {
         screening: {
           select: {
             complaints: true,
+            isBPJSActive: true,
           },
         },
       },

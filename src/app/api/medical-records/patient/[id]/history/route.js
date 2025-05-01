@@ -5,7 +5,8 @@ import { db } from "@/lib/db";
 export async function GET(request, { params }) {
   try {
     // Get the patientId from route params
-    const patientId = parseInt(params.id);
+    const resolvedParams = await params;
+    const patientId = parseInt(resolvedParams.id);
 
     if (isNaN(patientId)) {
       return NextResponse.json(
