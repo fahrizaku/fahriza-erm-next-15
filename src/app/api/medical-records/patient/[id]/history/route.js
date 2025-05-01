@@ -39,6 +39,7 @@ export async function GET(request, { params }) {
               {
                 screening: {
                   complaints: { contains: search, mode: "insensitive" },
+                  isBPJSActive: { contains: search, mode: "insensitive" },
                 },
               },
             ],

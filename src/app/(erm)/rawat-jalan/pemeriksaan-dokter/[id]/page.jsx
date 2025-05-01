@@ -66,8 +66,29 @@ export default function DoctorExaminationPage({ params }) {
     setFormError(null);
 
     try {
+      // Parse diagnoses array if it exists
+      let hasDiagnosis = false;
+
+      try {
+        if (
+          medicalRecord.diagnosis &&
+          medicalRecord.diagnosis.startsWith("[")
+        ) {
+          const diagnosesArray = JSON.parse(medicalRecord.diagnosis);
+          // Check if at least one diagnosis has content
+          hasDiagnosis = diagnosesArray.some(
+            (diag) =>
+              (diag.icdCode && diag.icdCode.trim() !== "") ||
+              (diag.description && diag.description.trim() !== "")
+          );
+        }
+      } catch (error) {
+        // If parsing fails, check the regular fields
+        hasDiagnosis = !!(medicalRecord.icdCode || medicalRecord.diagnosis);
+      }
+
       // Updated validation: Either ICD code or manual diagnosis must be provided
-      if (!medicalRecord.icdCode && !medicalRecord.diagnosis) {
+      if (!hasDiagnosis) {
         throw new Error("Diagnosis pasien harus diisi (ICD code atau manual)");
       }
 

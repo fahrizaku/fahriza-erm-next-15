@@ -18,13 +18,35 @@ export async function POST(request) {
       );
     }
 
+    // Handle multiple diagnoses format
+    let diagnosisText = data.diagnosis;
+    let icdCode = data.icdCode || null;
+
+    // Check if diagnosis is in JSON format (multiple diagnoses)
+    try {
+      if (data.diagnosis && data.diagnosis.startsWith("[")) {
+        const diagnosesArray = JSON.parse(data.diagnosis);
+        if (Array.isArray(diagnosesArray) && diagnosesArray.length > 0) {
+          // For the database diagnosis field, we'll store the JSON array as a string
+          // This maintains the multiple diagnoses while using the existing schema
+          diagnosisText = data.diagnosis; // keep as JSON string
+
+          // For backward compatibility, use the first diagnosis for the icdCode field
+          icdCode = diagnosesArray[0]?.icdCode || null;
+        }
+      }
+    } catch (error) {
+      // If parsing fails, use the diagnosis field as-is
+      console.error("Error parsing diagnoses JSON:", error);
+    }
+
     // Create medical record first
     const medicalRecord = await db.medicalRecord.create({
       data: {
         patientId: data.patientId,
         screeningId: data.screeningId,
-        diagnosis: data.diagnosis,
-        icdCode: data.icdCode || null,
+        diagnosis: diagnosisText,
+        icdCode: icdCode,
         clinicalNotes: data.clinicalNotes || null,
         doctorName: data.doctorName,
         visitType: "outpatient",
@@ -221,7 +243,7 @@ export async function POST(request) {
   }
 }
 
-// GET endpoint for retrieving all medical records - updated to include dosage field
+// GET endpoint for retrieving all medical records - updated to include multiple diagnoses
 export async function GET(request) {
   try {
     // Membaca query parameters
@@ -311,8 +333,39 @@ export async function GET(request) {
       take: limit,
     });
 
+    // Process medical records to handle multiple diagnoses format
+    const processedRecords = medicalRecords.map((record) => {
+      // Try to parse diagnosis field as JSON for multiple diagnoses
+      try {
+        if (record.diagnosis && record.diagnosis.startsWith("[")) {
+          const parsedDiagnoses = JSON.parse(record.diagnosis);
+          if (Array.isArray(parsedDiagnoses)) {
+            // Add a new field for the UI to use
+            return {
+              ...record,
+              diagnosesArray: parsedDiagnoses,
+              // Keep original fields for backward compatibility
+            };
+          }
+        }
+      } catch (e) {
+        // If parsing fails, it's not in JSON format
+      }
+
+      // For records with traditional single diagnosis format
+      return {
+        ...record,
+        diagnosesArray: [
+          {
+            icdCode: record.icdCode || "",
+            description: record.diagnosis || "",
+          },
+        ],
+      };
+    });
+
     return NextResponse.json({
-      data: medicalRecords,
+      data: processedRecords,
       meta: {
         total: totalCount,
         page,

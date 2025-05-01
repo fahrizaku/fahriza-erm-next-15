@@ -26,6 +26,31 @@ export default function PatientInfo({ prescription }) {
     return "";
   };
 
+  // Parse diagnoses array from the prescription
+  const getDiagnosesArray = () => {
+    try {
+      // Try to parse the diagnosis field as JSON
+      if (prescription.diagnosis && prescription.diagnosis.startsWith("[")) {
+        const parsed = JSON.parse(prescription.diagnosis);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      }
+    } catch (e) {
+      // If parsing fails, it's not in the new format
+    }
+
+    // Fallback to legacy format
+    return [
+      {
+        icdCode: prescription.icdCode || "",
+        description: prescription.diagnosis || "",
+      },
+    ];
+  };
+
+  const diagnoses = getDiagnosesArray();
+
   return (
     <div className="px-4 sm:px-6 py-4 border-b border-gray-200">
       <h2 className="text-lg font-medium text-gray-900 mb-3">
@@ -82,7 +107,21 @@ export default function PatientInfo({ prescription }) {
             <FileText className="h-5 w-5 text-gray-500 mr-2 mt-0.5 flex-shrink-0" />
             <div>
               <p className="text-sm text-gray-500">Diagnosis</p>
-              <p className="font-medium">{prescription.diagnosis}</p>
+              <div className="space-y-1 mt-1">
+                {diagnoses.map((diagnosis, index) => (
+                  <div
+                    key={index}
+                    className="flex flex-wrap items-baseline gap-1"
+                  >
+                    {diagnosis.icdCode && (
+                      <span className="bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded text-xs font-mono">
+                        {diagnosis.icdCode}
+                      </span>
+                    )}
+                    <span className="font-medium">{diagnosis.description}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
           <div className="flex items-center">

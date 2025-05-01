@@ -6,7 +6,6 @@ import {
   CheckCircle,
   Package,
   CreditCard,
-  FileText,
   Beaker,
   Loader2,
   ArrowRight,
@@ -17,6 +16,8 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { PHARMACIST_SUGGESTIONS } from "@/data/petugas-farmasi";
+// Import the PharmacyDiagnosisDisplay component
+import PharmacyDiagnosisDisplay from "./PharmacyDiagnosisDisplay";
 
 export default function PharmacyQueueCards({
   queueData,
@@ -354,7 +355,7 @@ export default function PharmacyQueueCards({
             </div>
 
             <div className="p-3">
-              <div className="space-y-2 text-sm">
+              <div className="space-y-3 text-sm">
                 <div className="flex items-center">
                   <User className="h-4 w-4 text-gray-500 mr-2" />
                   <p>
@@ -368,12 +369,8 @@ export default function PharmacyQueueCards({
                   <p>{getVisitTypeLabel(item.visitType)}</p>
                 </div>
 
-                <div className="flex items-center">
-                  <FileText className="h-4 w-4 text-gray-500 mr-2" />
-                  <p className="line-clamp-2">
-                    Diagnosis: {item.diagnosis || "N/A"}
-                  </p>
-                </div>
+                {/* Replace the old diagnosis display with the new component */}
+                <PharmacyDiagnosisDisplay medicalRecord={item} />
 
                 <div className="flex items-center">
                   <Pill className="h-4 w-4 text-gray-500 mr-2" />

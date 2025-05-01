@@ -114,6 +114,34 @@ const MedicalRecordCard = ({ record }) => {
     }
   };
 
+  // Parse diagnoses array from the medical record
+  const getDiagnosesArray = () => {
+    try {
+      // Try to parse the diagnosis field as JSON
+      if (record.diagnosis && record.diagnosis.startsWith("[")) {
+        const parsed = JSON.parse(record.diagnosis);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      }
+    } catch (e) {
+      // If parsing fails, it's not in the new format
+    }
+
+    // Fallback to legacy format
+    return [
+      {
+        icdCode: record.icdCode || "",
+        description: record.diagnosis || "",
+      },
+    ];
+  };
+
+  const diagnoses = getDiagnosesArray();
+  const primaryDiagnosis = diagnoses[0] || { icdCode: "", description: "" };
+  const hasDiagnosis = primaryDiagnosis.icdCode || primaryDiagnosis.description;
+  const hasMultipleDiagnoses = diagnoses.length > 1;
+
   const visitTypeStyles = getVisitTypeStyles(record.visitType);
   const VisitTypeIcon = visitTypeStyles.Icon;
 
@@ -163,19 +191,28 @@ const MedicalRecordCard = ({ record }) => {
             </div>
           </div>
 
-          {record.icdCode && (
-            <div className="mb-2 flex items-center">
-              <Stethoscope className="h-4 w-4 text-gray-500 mr-2" />
+          {hasDiagnosis && (
+            <div className="mb-2 flex items-start">
+              <Stethoscope className="h-4 w-4 text-gray-500 mr-2 mt-0.5" />
               <div>
                 <span className="text-xs font-medium text-gray-500 mr-1">
                   Diagnosis:
                 </span>
-                <span className="text-sm">
-                  {truncateText(record.diagnosis, 60)}
-                </span>
-                <span className="ml-1 bg-blue-100 text-blue-800 px-1 py-0.5 rounded text-xs font-mono">
-                  {record.icdCode}
-                </span>
+                <div className="flex flex-wrap items-center gap-1">
+                  {primaryDiagnosis.icdCode && (
+                    <span className="bg-blue-100 text-blue-800 px-1 py-0.5 rounded text-xs font-mono">
+                      {primaryDiagnosis.icdCode}
+                    </span>
+                  )}
+                  <span className="text-sm">
+                    {truncateText(primaryDiagnosis.description, 60)}
+                  </span>
+                  {hasMultipleDiagnoses && (
+                    <span className="bg-gray-100 text-gray-700 px-1.5 py-0.5 rounded-full text-xs ml-1">
+                      +{diagnoses.length - 1}
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
           )}
