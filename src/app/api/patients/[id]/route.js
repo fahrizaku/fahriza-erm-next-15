@@ -75,7 +75,56 @@ export async function PUT(request, { params }) {
       );
     }
 
-    // Update patient
+    // Check if NIK is already used by another patient
+    if (nik) {
+      const existingNIK = await db.patient.findFirst({
+        where: {
+          nik: nik,
+          NOT: {
+            id: parseInt(id),
+          },
+        },
+      });
+
+      if (existingNIK) {
+        return NextResponse.json(
+          { success: false, message: "NIK sudah terdaftar pada pasien lain" },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Check if no_bpjs is already used by another patient (only if patient is BPJS)
+    if (body.isBPJS && body.no_bpjs) {
+      const existingBPJS = await db.patient.findFirst({
+        where: {
+          no_bpjs: body.no_bpjs,
+          NOT: {
+            id: parseInt(id),
+          },
+        },
+      });
+
+      if (existingBPJS) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "Nomor BPJS sudah terdaftar pada pasien lain",
+          },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Validate BPJS number requirement
+    if (body.isBPJS && !body.no_bpjs) {
+      return NextResponse.json(
+        { success: false, message: "Nomor BPJS wajib diisi untuk pasien BPJS" },
+        { status: 400 }
+      );
+    }
+
+    // Update patient with new data including isBPJS status
     const updatedPatient = await db.patient.update({
       where: { id: parseInt(id) },
       data: {
@@ -83,12 +132,10 @@ export async function PUT(request, { params }) {
         gender: body.gender,
         birthDate: body.birthDate ? new Date(body.birthDate) : null,
         address: body.address,
-        // Keep the existing isBPJS status
-        isBPJS: existingPatient.isBPJS,
-        // Only update no_bpjs if patient is BPJS
-        no_bpjs: existingPatient.isBPJS
-          ? body.no_bpjs
-          : existingPatient.no_bpjs,
+        // Update isBPJS based on the request body
+        isBPJS: body.isBPJS,
+        // Update no_bpjs based on isBPJS status
+        no_bpjs: body.isBPJS ? body.no_bpjs : null,
         nik: nik,
         phoneNumber: body.phoneNumber || null,
       },
