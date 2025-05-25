@@ -278,17 +278,6 @@ export default function PharmacyQueuePage() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
-      {/* Back button */}
-      <div className="mb-6">
-        <Link
-          href="/rawat-jalan"
-          className="inline-flex items-center text-blue-600 hover:text-blue-800 transition-colors font-medium"
-        >
-          <ChevronLeft className="h-5 w-5" />
-          <span>Kembali ke Rawat Jalan</span>
-        </Link>
-      </div>
-
       {/* Main content */}
       <div className="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
         {/* Header */}
