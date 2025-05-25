@@ -27,7 +27,13 @@ export default function FileManagement() {
       }
 
       const data = await response.json();
-      setFiles(data.files);
+
+      // Sort files by createdAt date (newest first)
+      const sortedFiles = data.files.sort((a, b) => {
+        return new Date(b.createdAt) - new Date(a.createdAt);
+      });
+
+      setFiles(sortedFiles);
     } catch (error) {
       console.error("Error fetching files:", error);
       setError("Gagal memuat daftar file");
@@ -114,8 +120,9 @@ export default function FileManagement() {
           throw new Error("Gagal menghapus file");
         }
 
-        // Update file list
-        setFiles(files.filter((f) => f.id !== fileId));
+        // Update file list (maintain sorting)
+        const updatedFiles = files.filter((f) => f.id !== fileId);
+        setFiles(updatedFiles);
       } catch (error) {
         console.error("Error deleting file:", error);
         alert("Gagal menghapus file");
