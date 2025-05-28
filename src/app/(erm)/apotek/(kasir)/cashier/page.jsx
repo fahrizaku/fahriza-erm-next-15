@@ -13,6 +13,9 @@ export default function CashierPage() {
   const [cart, setCart] = useState([]);
   const [payment, setPayment] = useState("");
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
   const [notification, setNotification] = useState({
     show: false,
     message: "",
@@ -21,7 +24,7 @@ export default function CashierPage() {
 
   // Memuat produk saat halaman dimuat
   useEffect(() => {
-    fetchProducts();
+    fetchProducts(1, true);
   }, []);
 
   // Filter produk berdasarkan kata kunci pencarian
@@ -40,18 +43,43 @@ export default function CashierPage() {
   }, [searchTerm, products]);
 
   // Mengambil produk dari API
-  const fetchProducts = async () => {
+  const fetchProducts = async (page = 1, reset = false) => {
     try {
-      const response = await fetch("/api/products?limit=1000");
+      if (page === 1) setLoading(true);
+      else setLoadingMore(true);
+
+      const response = await fetch(`/api/products?limit=20&page=${page}`);
       const data = await response.json();
+
       if (data.data) {
         // Hanya tampilkan produk dengan stok > 0
-        setProducts(data.data.filter((p) => p.stock > 0));
-        setFilteredProducts(data.data.filter((p) => p.stock > 0));
+        const availableProducts = data.data.filter((p) => p.stock > 0);
+
+        if (reset) {
+          setProducts(availableProducts);
+          setFilteredProducts(availableProducts);
+        } else {
+          setProducts((prev) => [...prev, ...availableProducts]);
+          setFilteredProducts((prev) => [...prev, ...availableProducts]);
+        }
+
+        // Check if there are more pages
+        setHasMore(data.pagination.currentPage < data.pagination.totalPages);
+        setCurrentPage(page);
       }
     } catch (error) {
       console.error("Error fetching products:", error);
       showNotification("Gagal memuat produk", "error");
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
+    }
+  };
+
+  // Load more products
+  const loadMoreProducts = () => {
+    if (!loadingMore && hasMore) {
+      fetchProducts(currentPage + 1, false);
     }
   };
 
@@ -171,7 +199,7 @@ export default function CashierPage() {
         setPayment("");
 
         // Refresh produk untuk update stok
-        fetchProducts();
+        fetchProducts(1, true);
 
         // Redirect ke halaman struk
         router.push(`/apotek/cashier/receipt/${result.data.id}`);
@@ -199,13 +227,13 @@ export default function CashierPage() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold mb-6">Kasir</h1>
+    <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-8">
+      <h1 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Kasir</h1>
 
       {/* Notifikasi */}
       {notification.show && (
         <div
-          className={`p-4 mb-4 rounded-md ${
+          className={`p-3 sm:p-4 mb-4 rounded-md ${
             notification.type === "error"
               ? "bg-red-100 text-red-700"
               : "bg-green-100 text-green-700"
@@ -215,76 +243,101 @@ export default function CashierPage() {
         </div>
       )}
 
-      <div className="flex flex-col md:flex-row gap-6">
+      <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
         {/* Sisi kiri - Pemilihan produk */}
-        <div className="w-full md:w-3/5">
-          <div className="bg-white rounded-lg shadow p-4 mb-4">
+        <div className="w-full lg:w-3/5 order-2 lg:order-1">
+          <div className="bg-white rounded-lg shadow p-3 sm:p-4 mb-4">
             <input
               type="text"
               placeholder="Cari produk berdasarkan nama atau kategori..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded mb-4"
+              className="w-full p-2 sm:p-3 border border-gray-300 rounded mb-4 text-sm sm:text-base"
             />
 
-            <div className="h-[500px] overflow-y-auto">
-              <div className="flex flex-col gap-2">
-                {filteredProducts.map((product) => (
-                  <div
-                    key={product.id}
-                    className="bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-md p-3 cursor-pointer"
-                    onClick={() => addToCart(product)}
-                  >
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <h3 className="font-medium text-sm">{product.name}</h3>
-                        <p className="text-xs text-gray-500">
-                          {product.category}
-                        </p>
-                      </div>
-                      <div className="ml-4 text-right">
-                        <span className="text-sm font-bold block">
-                          Rp {parseFloat(product.price).toLocaleString()}
-                        </span>
-                        <span className="text-xs text-gray-500">
-                          Stok: {product.stock}
-                        </span>
+            <div className="h-[400px] sm:h-[500px] overflow-y-auto">
+              {loading ? (
+                <div className="flex justify-center items-center h-full">
+                  <div className="text-gray-500">Memuat produk...</div>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  {filteredProducts.map((product) => (
+                    <div
+                      key={product.id}
+                      className="bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-md p-3 cursor-pointer transition-colors"
+                      onClick={() => addToCart(product)}
+                    >
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1 pr-2">
+                          <h3 className="font-medium text-sm sm:text-base leading-tight">
+                            {product.name}
+                          </h3>
+                          <p className="text-xs sm:text-sm text-gray-500 mt-1">
+                            {product.category}
+                          </p>
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          <span className="text-sm sm:text-base font-bold block">
+                            Rp {parseFloat(product.price).toLocaleString()}
+                          </span>
+                          <span className="text-xs text-gray-500">
+                            Stok: {product.stock}
+                          </span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
 
-                {filteredProducts.length === 0 && (
-                  <div className="py-8 text-center text-gray-500">
-                    Produk tidak ditemukan
-                  </div>
-                )}
-              </div>
+                  {filteredProducts.length === 0 && !loading && (
+                    <div className="py-8 text-center text-gray-500">
+                      Produk tidak ditemukan
+                    </div>
+                  )}
+
+                  {/* Load More Button */}
+                  {!searchTerm && hasMore && filteredProducts.length > 0 && (
+                    <div className="pt-4">
+                      <button
+                        onClick={loadMoreProducts}
+                        disabled={loadingMore}
+                        className="w-full py-2 px-4 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-md text-sm sm:text-base font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {loadingMore ? "Memuat..." : "Muat Lebih Banyak"}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>
 
         {/* Sisi kanan - Keranjang dan Pembayaran */}
-        <div className="w-full md:w-2/5">
-          <div className="bg-white rounded-lg shadow p-4 mb-4">
-            <h2 className="font-bold text-lg mb-3">Keranjang</h2>
+        <div className="w-full lg:w-2/5 order-1 lg:order-2">
+          <div className="bg-white rounded-lg shadow p-3 sm:p-4 mb-4">
+            <h2 className="font-bold text-lg mb-3">
+              Keranjang {cart.length > 0 && `(${cart.length})`}
+            </h2>
 
             {cart.length > 0 ? (
               <>
-                <div className="max-h-[400px] overflow-y-auto mb-4 space-y-3">
+                <div className="max-h-[300px] sm:max-h-[400px] overflow-y-auto mb-4 space-y-3">
                   {cart.map((item) => (
                     <div
                       key={item.productId}
-                      className={`bg-gray-50 border rounded-lg p-4 relative ${
+                      className={`bg-gray-50 border rounded-lg p-3 sm:p-4 relative ${
                         item.quantity === 0
                           ? "border-red-300 bg-red-50"
                           : "border-gray-200"
                       }`}
                     >
-                      <div className="flex justify-between items-start mb-2">
-                        <div>
-                          <h3 className="font-medium">{item.name}</h3>
-                          <p className="text-sm text-gray-600">
+                      <div className="flex justify-between items-start mb-2 pr-6">
+                        <div className="flex-1">
+                          <h3 className="font-medium text-sm sm:text-base leading-tight">
+                            {item.name}
+                          </h3>
+                          <p className="text-xs sm:text-sm text-gray-600 mt-1">
                             Rp {item.price.toLocaleString()} x {item.quantity}{" "}
                             {item.unit}
                           </p>
@@ -296,17 +349,17 @@ export default function CashierPage() {
                         </div>
                         <button
                           onClick={() => removeFromCart(item.productId)}
-                          className="text-red-500 hover:text-red-700 absolute top-2 right-2"
+                          className="text-red-500 hover:text-red-700 absolute top-2 right-2 w-6 h-6 flex items-center justify-center text-lg"
                         >
                           ✕
                         </button>
                       </div>
 
                       <div className="flex items-center justify-between mt-3">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1 sm:gap-2 flex-wrap">
                           <div className="flex gap-1">
                             <button
-                              className="px-2 py-1 bg-red-100 hover:bg-red-200 text-red-700 rounded text-sm"
+                              className="px-1 sm:px-2 py-1 bg-red-100 hover:bg-red-200 text-red-700 rounded text-xs sm:text-sm"
                               onClick={() =>
                                 updateQuantity(
                                   item.productId,
@@ -318,7 +371,7 @@ export default function CashierPage() {
                               -10
                             </button>
                             <button
-                              className="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded"
+                              className="px-2 sm:px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded text-xs sm:text-sm"
                               onClick={() =>
                                 updateQuantity(
                                   item.productId,
@@ -342,12 +395,12 @@ export default function CashierPage() {
                                 parseInt(e.target.value) || 0
                               )
                             }
-                            className="w-16 text-center border rounded p-1"
+                            className="w-12 sm:w-16 text-center border rounded p-1 text-xs sm:text-sm"
                           />
 
                           <div className="flex gap-1">
                             <button
-                              className="px-2 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded text-sm"
+                              className="px-1 sm:px-2 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded text-xs sm:text-sm"
                               onClick={() =>
                                 updateQuantity(
                                   item.productId,
@@ -358,7 +411,7 @@ export default function CashierPage() {
                               +1
                             </button>
                             <button
-                              className="px-2 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded text-sm"
+                              className="px-1 sm:px-2 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded text-xs sm:text-sm"
                               onClick={() =>
                                 updateQuantity(
                                   item.productId,
@@ -369,7 +422,7 @@ export default function CashierPage() {
                               +4
                             </button>
                             <button
-                              className="px-2 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded text-sm"
+                              className="px-1 sm:px-2 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded text-xs sm:text-sm"
                               onClick={() =>
                                 updateQuantity(
                                   item.productId,
@@ -380,7 +433,7 @@ export default function CashierPage() {
                               +6
                             </button>
                             <button
-                              className="px-2 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded text-sm"
+                              className="px-1 sm:px-2 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded text-xs sm:text-sm"
                               onClick={() =>
                                 updateQuantity(
                                   item.productId,
@@ -395,8 +448,10 @@ export default function CashierPage() {
                       </div>
 
                       <div className="flex justify-between items-center mt-3 pt-3 border-t border-gray-200">
-                        <span className="text-sm text-gray-600">Subtotal:</span>
-                        <span className="font-medium">
+                        <span className="text-xs sm:text-sm text-gray-600">
+                          Subtotal:
+                        </span>
+                        <span className="font-medium text-sm sm:text-base">
                           Rp {item.subtotal.toLocaleString()}
                         </span>
                       </div>
@@ -406,7 +461,7 @@ export default function CashierPage() {
 
                 {/* Tambahkan peringatan jika ada item dengan quantity 0 */}
                 {cart.some((item) => item.quantity === 0) && (
-                  <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-2 rounded mb-4 text-sm">
+                  <div className="bg-red-50 border border-red-200 text-red-700 px-3 sm:px-4 py-2 rounded mb-4 text-xs sm:text-sm">
                     Tidak dapat memproses transaksi karena ada item dengan
                     jumlah 0. Harap tambah jumlah atau hapus item tersebut.
                   </div>
@@ -414,27 +469,29 @@ export default function CashierPage() {
 
                 <div className="border-t pt-4">
                   <div className="flex justify-between mb-2">
-                    <span className="font-bold">Total:</span>
-                    <span className="font-bold">
+                    <span className="font-bold text-base sm:text-lg">
+                      Total:
+                    </span>
+                    <span className="font-bold text-base sm:text-lg">
                       Rp {totalAmount.toLocaleString()}
                     </span>
                   </div>
 
                   <div className="mb-4">
-                    <label className="block mb-1 font-medium">
+                    <label className="block mb-1 font-medium text-sm sm:text-base">
                       Jumlah Pembayaran
                     </label>
                     <input
                       type="number"
                       value={payment}
                       onChange={(e) => setPayment(e.target.value)}
-                      className="w-full p-2 border border-gray-300 rounded"
+                      className="w-full p-2 sm:p-3 border border-gray-300 rounded text-sm sm:text-base"
                       placeholder="Masukkan jumlah pembayaran"
                     />
                   </div>
 
                   {payment && (
-                    <div className="flex justify-between mb-4 text-lg">
+                    <div className="flex justify-between mb-4 text-base sm:text-lg">
                       <span className="font-bold">Kembalian:</span>
                       <span
                         className={`font-bold ${
@@ -457,7 +514,7 @@ export default function CashierPage() {
                       parseFloat(payment) < totalAmount ||
                       cart.some((item) => item.quantity === 0)
                     }
-                    className={`w-full py-2 px-4 rounded font-bold ${
+                    className={`w-full py-2 sm:py-3 px-4 rounded font-bold text-sm sm:text-base ${
                       loading ||
                       cart.length === 0 ||
                       !payment ||
@@ -472,25 +529,19 @@ export default function CashierPage() {
                 </div>
               </>
             ) : (
-              <div className="py-8 text-center text-gray-500">
+              <div className="py-8 text-center text-gray-500 text-sm sm:text-base">
                 Keranjang kosong. Tambahkan produk dengan mengkliknya.
               </div>
             )}
           </div>
 
-          <div className="flex justify-between">
+          <div className="flex flex-col sm:flex-row justify-between gap-2">
             <Link
               href="/apotek/dashboard"
-              className="text-blue-500 hover:text-blue-700"
+              className="text-blue-500 hover:text-blue-700 text-sm sm:text-base text-center sm:text-left"
             >
               ← Kembali ke Dashboard
             </Link>
-            {/* <Link
-              href="/apotek/inventory"
-              className="text-blue-500 hover:text-blue-700"
-            >
-              Kelola Inventaris →
-            </Link> */}
           </div>
         </div>
       </div>
