@@ -18,6 +18,7 @@ export async function GET(request) {
 
     // Build filter conditions
     let where = {};
+    let orderBy = { name: "asc" }; // Default ordering
 
     if (categoryParam) {
       where.category = {
@@ -59,22 +60,96 @@ export async function GET(request) {
     // Count total products with applied filters
     const totalCount = await db.drugStoreProduct.count({ where });
 
-    // Get products with pagination
-    const products = await db.drugStoreProduct.findMany({
-      where,
-      skip,
-      take: pageSize,
-      orderBy: {
-        name: "asc",
-      },
-      include: {
-        supplier: {
-          select: {
-            name: true,
+    let products;
+
+    // If there's a search term, we need to prioritize by name match
+    if (searchParam) {
+      // First, get products that match by name (highest priority)
+      const nameMatches = await db.drugStoreProduct.findMany({
+        where: {
+          ...where,
+          OR: undefined, // Remove the OR condition
+          name: {
+            contains: searchParam,
+            mode: "insensitive",
           },
         },
-      },
-    });
+        skip,
+        take: pageSize,
+        orderBy: {
+          name: "asc",
+        },
+        include: {
+          supplier: {
+            select: {
+              name: true,
+            },
+          },
+        },
+      });
+
+      // Calculate how many more products we need
+      const remainingSlots = pageSize - nameMatches.length;
+
+      if (remainingSlots > 0 && skip === 0) {
+        // Only for first page, get additional matches from ingredients/manufacturer
+        // but exclude products already found by name
+        const nameMatchIds = nameMatches.map((p) => p.id);
+
+        const otherMatches = await db.drugStoreProduct.findMany({
+          where: {
+            ...where,
+            OR: [
+              {
+                ingredients: {
+                  contains: searchParam,
+                  mode: "insensitive",
+                },
+              },
+              {
+                manufacturer: {
+                  contains: searchParam,
+                  mode: "insensitive",
+                },
+              },
+            ],
+            id: {
+              notIn: nameMatchIds, // Exclude products already matched by name
+            },
+          },
+          take: remainingSlots,
+          orderBy: {
+            name: "asc",
+          },
+          include: {
+            supplier: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        });
+
+        products = [...nameMatches, ...otherMatches];
+      } else {
+        products = nameMatches;
+      }
+    } else {
+      // Normal query without search
+      products = await db.drugStoreProduct.findMany({
+        where,
+        skip,
+        take: pageSize,
+        orderBy,
+        include: {
+          supplier: {
+            select: {
+              name: true,
+            },
+          },
+        },
+      });
+    }
 
     // Return data in format expected by dashboard
     return NextResponse.json({

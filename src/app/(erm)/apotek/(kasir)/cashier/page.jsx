@@ -9,7 +9,6 @@ export default function CashierPage() {
   const router = useRouter();
   const [products, setProducts] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [filteredProducts, setFilteredProducts] = useState([]);
   const [cart, setCart] = useState([]);
   const [payment, setPayment] = useState("");
   const [loading, setLoading] = useState(false);
@@ -27,28 +26,25 @@ export default function CashierPage() {
     fetchProducts(1, true);
   }, []);
 
-  // Filter produk berdasarkan kata kunci pencarian
+  // Fetch products berdasarkan search term
   useEffect(() => {
-    if (searchTerm) {
-      const filtered = products.filter(
-        (product) =>
-          product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          (product.category &&
-            product.category.toLowerCase().includes(searchTerm.toLowerCase()))
-      );
-      setFilteredProducts(filtered);
-    } else {
-      setFilteredProducts(products);
-    }
-  }, [searchTerm, products]);
+    // Reset ke halaman 1 dan fetch ulang ketika search term berubah
+    fetchProducts(1, true, searchTerm);
+  }, [searchTerm]);
 
   // Mengambil produk dari API
-  const fetchProducts = async (page = 1, reset = false) => {
+  const fetchProducts = async (page = 1, reset = false, search = "") => {
     try {
       if (page === 1) setLoading(true);
       else setLoadingMore(true);
 
-      const response = await fetch(`/api/products?limit=20&page=${page}`);
+      // Build URL dengan parameter search jika ada
+      let url = `/api/products?limit=20&page=${page}`;
+      if (search) {
+        url += `&search=${encodeURIComponent(search)}`;
+      }
+
+      const response = await fetch(url);
       const data = await response.json();
 
       if (data.data) {
@@ -57,15 +53,16 @@ export default function CashierPage() {
 
         if (reset) {
           setProducts(availableProducts);
-          setFilteredProducts(availableProducts);
+          setCurrentPage(1);
         } else {
           setProducts((prev) => [...prev, ...availableProducts]);
-          setFilteredProducts((prev) => [...prev, ...availableProducts]);
         }
 
         // Check if there are more pages
         setHasMore(data.pagination.currentPage < data.pagination.totalPages);
-        setCurrentPage(page);
+        if (!reset) {
+          setCurrentPage(page);
+        }
       }
     } catch (error) {
       console.error("Error fetching products:", error);
@@ -79,7 +76,7 @@ export default function CashierPage() {
   // Load more products
   const loadMoreProducts = () => {
     if (!loadingMore && hasMore) {
-      fetchProducts(currentPage + 1, false);
+      fetchProducts(currentPage + 1, false, searchTerm);
     }
   };
 
@@ -199,7 +196,7 @@ export default function CashierPage() {
         setPayment("");
 
         // Refresh produk untuk update stok
-        fetchProducts(1, true);
+        fetchProducts(1, true, searchTerm);
 
         // Redirect ke halaman struk
         router.push(`/apotek/cashier/receipt/${result.data.id}`);
@@ -262,7 +259,7 @@ export default function CashierPage() {
                 </div>
               ) : (
                 <div className="flex flex-col gap-2">
-                  {filteredProducts.map((product) => (
+                  {products.map((product) => (
                     <div
                       key={product.id}
                       className="bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-md p-3 cursor-pointer transition-colors"
@@ -289,14 +286,16 @@ export default function CashierPage() {
                     </div>
                   ))}
 
-                  {filteredProducts.length === 0 && !loading && (
+                  {products.length === 0 && !loading && (
                     <div className="py-8 text-center text-gray-500">
-                      Produk tidak ditemukan
+                      {searchTerm
+                        ? "Produk tidak ditemukan"
+                        : "Tidak ada produk tersedia"}
                     </div>
                   )}
 
-                  {/* Load More Button */}
-                  {!searchTerm && hasMore && filteredProducts.length > 0 && (
+                  {/* Load More Button - hanya tampil jika tidak sedang search */}
+                  {hasMore && products.length > 0 && (
                     <div className="pt-4">
                       <button
                         onClick={loadMoreProducts}
