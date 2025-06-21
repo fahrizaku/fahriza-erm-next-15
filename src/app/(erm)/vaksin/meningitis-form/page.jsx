@@ -2,7 +2,7 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronRight, AlertCircle } from "lucide-react";
+import { ChevronRight, AlertCircle, Calendar } from "lucide-react";
 import { toast } from "react-toastify";
 
 export default function Home() {
@@ -35,6 +35,85 @@ export default function Home() {
     }
   };
 
+  // Handle custom date input dengan format dd/mm/yyyy
+  const handleDateChange = (name, value) => {
+    // Jika input kosong, set empty
+    if (value === '') {
+      setFormData({ ...formData, [name]: '' });
+      if (name === "tanggalLahir") {
+        setFormData((prevData) => ({
+          ...prevData,
+          [name]: '',
+          umur: '',
+        }));
+      }
+      return;
+    }
+
+    // Ambil nilai sebelumnya untuk deteksi penghapusan
+    const previousValue = formData[name];
+    
+    // Jika user menghapus karakter (panjang input berkurang)
+    if (value.length < previousValue.length) {
+      // Jika menghapus di posisi slash, hapus juga digit sebelumnya
+      if (previousValue.charAt(value.length) === '/') {
+        // Hapus sampai digit terakhir sebelum slash
+        const newValue = previousValue.substring(0, value.length - 1);
+        setFormData({ ...formData, [name]: newValue });
+        
+        if (name === "tanggalLahir") {
+          const age = calculateAgeFromDDMMYYYY(newValue);
+          setFormData((prevData) => ({
+            ...prevData,
+            [name]: newValue,
+            umur: age,
+          }));
+        }
+        return;
+      } else {
+        // Penghapusan normal
+        setFormData({ ...formData, [name]: value });
+        if (name === "tanggalLahir") {
+          const age = calculateAgeFromDDMMYYYY(value);
+          setFormData((prevData) => ({
+            ...prevData,
+            [name]: value,
+            umur: age,
+          }));
+        }
+        return;
+      }
+    }
+
+    // Format input untuk penambahan karakter
+    let formattedValue = value.replace(/\D/g, '');
+    
+    // Batasi maksimal 8 digit (ddmmyyyy)
+    if (formattedValue.length > 8) {
+      formattedValue = formattedValue.substring(0, 8);
+    }
+    
+    // Tambahkan slash otomatis
+    if (formattedValue.length >= 2) {
+      formattedValue = formattedValue.substring(0, 2) + '/' + formattedValue.substring(2);
+    }
+    if (formattedValue.length >= 5) {
+      formattedValue = formattedValue.substring(0, 5) + '/' + formattedValue.substring(5, 9);
+    }
+    
+    setFormData({ ...formData, [name]: formattedValue });
+
+    // Jika tanggal lahir diubah, hitung umur
+    if (name === "tanggalLahir") {
+      const age = calculateAgeFromDDMMYYYY(formattedValue);
+      setFormData((prevData) => ({
+        ...prevData,
+        [name]: formattedValue,
+        umur: age,
+      }));
+    }
+  };
+
   const calculateAge = (birthDate) => {
     if (!birthDate) return "";
 
@@ -59,9 +138,67 @@ export default function Home() {
     }
   };
 
+  const calculateAgeFromDDMMYYYY = (dateString) => {
+    if (!dateString || dateString.length !== 10) return "";
+
+    try {
+      const [day, month, year] = dateString.split('/');
+      if (!day || !month || !year) return "";
+      
+      const birthDateObj = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+      const today = new Date();
+      let age = today.getFullYear() - birthDateObj.getFullYear();
+      const monthDifference = today.getMonth() - birthDateObj.getMonth();
+
+      if (
+        monthDifference < 0 ||
+        (monthDifference === 0 && today.getDate() < birthDateObj.getDate())
+      ) {
+        age--;
+      }
+
+      setError(""); // Hapus pesan kesalahan
+      return age.toString();
+    } catch (err) {
+      setError("Format tanggal tidak valid");
+      return "";
+    }
+  };
+
+  // Validasi format tanggal dd/mm/yyyy
+  const isValidDate = (dateString) => {
+    if (!dateString || dateString.length !== 10) return false;
+    
+    const [day, month, year] = dateString.split('/');
+    const dayNum = parseInt(day);
+    const monthNum = parseInt(month);
+    const yearNum = parseInt(year);
+    
+    if (dayNum < 1 || dayNum > 31) return false;
+    if (monthNum < 1 || monthNum > 12) return false;
+    if (yearNum < 1900 || yearNum > new Date().getFullYear()) return false;
+    
+    // Check if date is valid
+    const date = new Date(yearNum, monthNum - 1, dayNum);
+    return date.getDate() === dayNum && 
+           date.getMonth() === monthNum - 1 && 
+           date.getFullYear() === yearNum;
+  };
+
   const generateWordDocument = async (e) => {
     e.preventDefault();
     setError(""); // Reset pesan error
+
+    // Validasi tanggal sebelum submit
+    if (formData.tanggalLahir && !isValidDate(formData.tanggalLahir)) {
+      setError("Format tanggal lahir tidak valid. Gunakan format dd/mm/yyyy");
+      return;
+    }
+    
+    if (formData.tanggalKeberangkatan && !isValidDate(formData.tanggalKeberangkatan)) {
+      setError("Format tanggal keberangkatan tidak valid. Gunakan format dd/mm/yyyy");
+      return;
+    }
 
     try {
       // Tampilkan loading state
@@ -70,7 +207,7 @@ export default function Home() {
       const response = await fetch("/api/generate-docx", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(formData), // Data sudah dalam format dd/mm/yyyy
       });
 
       if (!response.ok) {
@@ -143,16 +280,20 @@ export default function Home() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Tanggal Lahir
                 </label>
-                <div className="relative mt-1">
+                <div className="relative">
                   <input
-                    type="date"
+                    type="text"
                     name="tanggalLahir"
                     value={formData.tanggalLahir}
-                    onChange={handleChange}
-                    className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 focus:outline-none focus:border-green-400 focus:ring-2 focus:ring-green-400"
+                    onChange={(e) => handleDateChange("tanggalLahir", e.target.value)}
+                    placeholder="dd/mm/yyyy"
+                    maxLength="10"
+                    className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 pr-10 focus:outline-none focus:border-green-400 focus:ring-2 focus:ring-green-400"
                     required
                   />
+                  <Calendar className="absolute right-3 top-2.5 h-4 w-4 text-gray-400" />
                 </div>
+                <p className="text-xs text-gray-500 mt-1">Format: dd/mm/yyyy (contoh: 25/12/1990)</p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">
@@ -243,15 +384,19 @@ export default function Home() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Tanggal Keberangkatan
                 </label>
-                <div className="relative mt-1">
+                <div className="relative">
                   <input
-                    type="date"
+                    type="text"
                     name="tanggalKeberangkatan"
                     value={formData.tanggalKeberangkatan}
-                    onChange={handleChange}
-                    className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 focus:outline-none focus:border-green-400 focus:ring-2 focus:ring-green-400"
+                    onChange={(e) => handleDateChange("tanggalKeberangkatan", e.target.value)}
+                    placeholder="dd/mm/yyyy"
+                    maxLength="10"
+                    className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 pr-10 focus:outline-none focus:border-green-400 focus:ring-2 focus:ring-green-400"
                   />
+                  <Calendar className="absolute right-3 top-2.5 h-4 w-4 text-gray-400" />
                 </div>
+                <p className="text-xs text-gray-500 mt-1">Format: dd/mm/yyyy</p>
               </div>
             </div>
 
