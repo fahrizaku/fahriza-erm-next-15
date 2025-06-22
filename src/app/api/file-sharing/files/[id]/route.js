@@ -1,21 +1,21 @@
 // app/api/files/[id]/route.js
 import { NextResponse } from "next/server";
-import { readFile, writeFile, unlink } from "fs/promises";
-import { join } from "path";
+import { unlink } from "fs/promises";
+import fs from "fs";
+
+import { db } from "@/lib/db";
 
 export async function DELETE(request, { params }) {
   try {
     const resolvedParams = await params;
     const id = resolvedParams.id;
-    const dbPath = join(process.cwd(), "uploads", "db.json");
 
-    // Baca database
-    const dbContent = await readFile(dbPath, "utf-8");
-    let db = JSON.parse(dbContent);
+    // Cari file di database
+    const file = await db.generatedDocument.findUnique({
+      where: { id: id },
+    });
 
-    // Cari file
-    const fileIndex = db.files.findIndex((file) => file.id === id);
-    if (fileIndex === -1) {
+    if (!file) {
       return NextResponse.json(
         { message: "File tidak ditemukan" },
         { status: 404 }
@@ -23,16 +23,19 @@ export async function DELETE(request, { params }) {
     }
 
     // Hapus file dari sistem
-    const filePath = db.files[fileIndex].path;
+    const filePath = file.filePath;
     try {
-      await unlink(filePath);
+      if (fs.existsSync(filePath)) {
+        await unlink(filePath);
+      }
     } catch (error) {
       console.error("Error deleting file from filesystem:", error);
     }
 
     // Hapus dari database
-    db.files.splice(fileIndex, 1);
-    await writeFile(dbPath, JSON.stringify(db, null, 2));
+    await db.generatedDocument.delete({
+      where: { id: id },
+    });
 
     return NextResponse.json({ message: "File berhasil dihapus" });
   } catch (error) {
@@ -41,5 +44,7 @@ export async function DELETE(request, { params }) {
       { message: "Terjadi kesalahan saat menghapus file" },
       { status: 500 }
     );
+  } finally {
+    await db.$disconnect();
   }
 }

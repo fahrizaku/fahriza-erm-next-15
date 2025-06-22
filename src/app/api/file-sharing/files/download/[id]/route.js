@@ -1,21 +1,18 @@
 // app/api/files/download/[id]/route.js
 import { NextResponse } from "next/server";
 import { readFile } from "fs/promises";
-import { join } from "path";
-import { createReadStream } from "fs";
+import { db } from "@/lib/db";
 
 export async function GET(request, { params }) {
   try {
     const resolvedParams = await params;
     const id = resolvedParams.id;
-    const dbPath = join(process.cwd(), "uploads", "db.json");
 
-    // Baca database
-    const dbContent = await readFile(dbPath, "utf-8");
-    let db = JSON.parse(dbContent);
+    // Cari file di database
+    const file = await db.generatedDocument.findUnique({
+      where: { id: id },
+    });
 
-    // Cari file
-    const file = db.files.find((file) => file.id === id);
     if (!file) {
       return NextResponse.json(
         { message: "File tidak ditemukan" },
@@ -24,7 +21,7 @@ export async function GET(request, { params }) {
     }
 
     // Baca file
-    const fileBuffer = await readFile(file.path);
+    const fileBuffer = await readFile(file.filePath);
 
     // Buat response dengan headers yang tepat
     const response = new NextResponse(fileBuffer);
@@ -32,7 +29,7 @@ export async function GET(request, { params }) {
     // Set header untuk download
     response.headers.set(
       "Content-Disposition",
-      `attachment; filename="${file.name}"`
+      `attachment; filename="${file.fileName}"`
     );
     response.headers.set("Content-Type", "application/octet-stream");
 
@@ -43,5 +40,7 @@ export async function GET(request, { params }) {
       { message: "Terjadi kesalahan saat mendownload file" },
       { status: 500 }
     );
+  } finally {
+    await db.$disconnect();
   }
 }

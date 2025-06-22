@@ -1,26 +1,17 @@
 // app/api/file-sharing/files/bulk-delete/route.js
 import { NextResponse } from "next/server";
-import { readFile, writeFile, unlink, readdir, access } from "fs/promises";
+import { unlink, readdir, access } from "fs/promises";
 import { join } from "path";
+import { db } from "@/lib/db";
 
 export async function DELETE() {
   try {
-    const dbPath = join(process.cwd(), "uploads", "db.json");
     const uploadsDir = join(process.cwd(), "uploads");
 
-    let db = { files: [] };
+    // Ambil semua file dari database
+    const dbFiles = await db.generatedDocument.findMany();
 
-    try {
-      const dbContent = await readFile(dbPath, "utf-8");
-      db = JSON.parse(dbContent);
-    } catch (error) {
-      return NextResponse.json(
-        { message: "Database tidak ditemukan" },
-        { status: 404 }
-      );
-    }
-
-    if (db.files.length === 0) {
+    if (dbFiles.length === 0) {
       return NextResponse.json(
         { message: "Tidak ada file untuk dihapus" },
         { status: 400 }
@@ -37,12 +28,12 @@ export async function DELETE() {
     }
 
     // Debug: Log struktur database
-    console.log("Database files:", db.files);
+    console.log("Database files:", dbFiles);
 
     const deleteResults = [];
 
     // Hapus file satu per satu dengan logging yang detail
-    for (const file of db.files) {
+    for (const file of dbFiles) {
       const result = {
         file: file,
         filename: null,
@@ -56,12 +47,12 @@ export async function DELETE() {
         // Extract filename dari path atau buat dari id + name
         let filename;
 
-        if (file.path) {
+        if (file.filePath) {
           // Extract filename dari absolute path
-          filename = file.path.split("\\").pop().split("/").pop();
-        } else if (file.id && file.name) {
+          filename = file.filePath.split("\\").pop().split("/").pop();
+        } else if (file.id && file.fileName) {
           // Buat filename dari pattern id_name
-          filename = `${file.id}_${file.name}`;
+          filename = `${file.id}_${file.fileName}`;
         } else {
           result.error = "Cannot determine filename from file object";
           deleteResults.push(result);
@@ -96,9 +87,8 @@ export async function DELETE() {
       deleteResults.push(result);
     }
 
-    // Kosongkan database
-    db.files = [];
-    await writeFile(dbPath, JSON.stringify(db, null, 2));
+    // Hapus semua record dari database
+    await db.generatedDocument.deleteMany();
 
     // Hitung statistik
     const totalFiles = deleteResults.length;
@@ -131,5 +121,7 @@ export async function DELETE() {
       },
       { status: 500 }
     );
+  } finally {
+    await db.$disconnect();
   }
 }

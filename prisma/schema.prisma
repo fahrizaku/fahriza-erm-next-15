@@ -345,3 +345,52 @@ model IcdCode {
   @@index([code])
 }
 
+model VaksinData {
+  id                    String   @id @default(cuid())
+  nama                  String
+  noTelp                String   @map("no_telp")
+  alamat                String
+  kotaKelahiran         String   @map("kota_kelahiran")
+  tanggalLahir          String   @map("tanggal_lahir")
+  umur                  String
+  jenisKelamin          String   @map("jenis_kelamin")
+  namaTravel            String   @map("nama_travel")
+  tanggalKeberangkatan  String   @map("tanggal_keberangkatan")
+  asalTravel            String   @map("asal_travel")
+  nomorAntrian          String   @map("nomor_antrian")
+  tanggalAntrian        String   @map("tanggal_antrian")
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+
+  // Relasi ke dokumen yang dihasilkan
+  documents GeneratedDocument[]
+
+  @@map("vaksin_data")
+}
+
+model GeneratedDocument {
+  id                      String    @id @default(cuid())
+  fileName                String    @map("file_name")
+  filePath                String    @map("file_path")
+  fileType                String    @default("document") @map("file_type")
+  queueNumber             Int       @map("queue_number")
+  formattedQueueNumber    String    @map("formatted_queue_number")
+  queueDate               String    @map("queue_date")
+  createdAt               DateTime  @default(now()) @map("created_at")
+  
+  // Foreign key ke VaksinData
+  vaksinDataId            String    @map("vaksin_data_id")
+  vaksinData              VaksinData @relation(fields: [vaksinDataId], references: [id], onDelete: Cascade)
+
+  @@map("generated_documents")
+}
+
+model QueueTracker {
+  id                String   @id @default(cuid())
+  queueNumber       Int      @unique @map("queue_number")
+  formattedNumber   String   @map("formatted_number")
+  date              String
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  @@map("queue_tracker")
+}
