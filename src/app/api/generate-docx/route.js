@@ -13,14 +13,20 @@ export async function POST(req) {
     const formData = await req.json();
     console.log("Received form data:", formData);
 
-    // **1. Simpan data ke JSON terlebih dahulu**
+    // **1. Tambahkan createdAt ke formData sebelum disimpan**
+    const formDataWithTimestamp = {
+      ...formData,
+      createdAt: new Date().toISOString(),
+    };
+
+    // **2. Simpan data ke JSON terlebih dahulu**
     try {
       const response = await fetch(
         `${req.headers.origin || "http://localhost:3000"}/api/data-vaksin`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(formData),
+          body: JSON.stringify(formDataWithTimestamp),
         }
       );
 
@@ -97,7 +103,7 @@ export async function POST(req) {
     // Simpan file
     await writeFile(filePath, docBuffer);
 
-    // Simpan metadata file ke JSON (sebagai contoh, bisa diganti dengan database)
+    // Simpan metadata file ke JSON (sudah ada createdAt)
     const dbPath = path.join(process.cwd(), "uploads", "db.json");
     let db = { files: [] };
 
@@ -108,13 +114,14 @@ export async function POST(req) {
       // File db.json mungkin belum ada
     }
 
-    // Tambahkan file baru
+    // Tambahkan file baru dengan createdAt
     db.files.push({
       id,
       name: fileName,
       path: filePath,
       type: "document",
-      createdAt: new Date().toISOString(),
+      createdAt: new Date().toISOString(), // Sudah ada di kode asli
+      formData: formDataWithTimestamp, // Opsional: simpan juga data form di metadata
     });
 
     // Simpan kembali ke JSON
@@ -127,6 +134,7 @@ export async function POST(req) {
       fileId: id,
       fileName: fileName,
       filePath: filePath.replace(process.cwd(), ""),
+      createdAt: formDataWithTimestamp.createdAt, // Return timestamp
     });
   } catch (error) {
     console.error("Error generating document:", error);

@@ -59,11 +59,15 @@ export async function POST(req) {
     const formData = await req.json();
     const jsonData = await readData();
 
+    // Cek apakah createdAt sudah ada dari generate-docx API
+    const currentTime = new Date().toISOString();
+
     const newRecord = {
       id: uuidv4(),
       ...formData,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      // Gunakan createdAt dari formData jika ada, jika tidak buat baru
+      createdAt: formData.createdAt || currentTime,
+      updatedAt: currentTime,
     };
 
     jsonData.data.push(newRecord);

@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Edit, Trash2, Plus, Search, Save, X } from "lucide-react";
+import { Edit, Trash2, Plus, Search, Save, X, Calendar } from "lucide-react";
 
 export default function KelolaData() {
   const [data, setData] = useState([]);
@@ -43,6 +43,23 @@ export default function KelolaData() {
     }
   };
 
+  // Format tanggal untuk tampilan
+  const formatDateTime = (dateString) => {
+    if (!dateString) return "-";
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleString("id-ID", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    } catch (error) {
+      return dateString;
+    }
+  };
+
   // Filter data berdasarkan pencarian
   const filteredData = data.filter(
     (item) =>
@@ -51,6 +68,13 @@ export default function KelolaData() {
       item.alamat?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.namaTravel?.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // Sort data berdasarkan createdAt (terbaru dulu)
+  const sortedData = filteredData.sort((a, b) => {
+    const dateA = new Date(a.createdAt || 0);
+    const dateB = new Date(b.createdAt || 0);
+    return dateB - dateA;
+  });
 
   // Handle tambah data baru
   const handleAdd = async (e) => {
@@ -316,7 +340,7 @@ export default function KelolaData() {
 
           {/* Data Table */}
           <div className="overflow-x-auto">
-            {filteredData.length === 0 ? (
+            {sortedData.length === 0 ? (
               <div className="text-center py-12">
                 <p className="text-gray-500">
                   {searchTerm
@@ -328,6 +352,12 @@ export default function KelolaData() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-gray-200">
+                    <th className="text-left py-3 px-4 font-medium text-gray-700">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="w-4 h-4" />
+                        Tanggal Input
+                      </div>
+                    </th>
                     <th className="text-left py-3 px-4 font-medium text-gray-700">
                       Nama
                     </th>
@@ -352,13 +382,13 @@ export default function KelolaData() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredData.map((item) => (
+                  {sortedData.map((item) => (
                     <tr
                       key={item.id}
                       className="border-b border-gray-100 hover:bg-gray-50"
                     >
                       {editingId === item.id ? (
-                        <td colSpan="7" className="py-4 px-4">
+                        <td colSpan="8" className="py-4 px-4">
                           <form onSubmit={handleUpdate} className="space-y-3">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                               <input
@@ -494,6 +524,19 @@ export default function KelolaData() {
                         </td>
                       ) : (
                         <>
+                          <td className="py-3 px-4">
+                            <div className="text-sm">
+                              <div className="text-gray-700 font-medium">
+                                {formatDateTime(item.createdAt)}
+                              </div>
+                              {item.updatedAt &&
+                                item.updatedAt !== item.createdAt && (
+                                  <div className="text-gray-500 text-xs mt-1">
+                                    Diupdate: {formatDateTime(item.updatedAt)}
+                                  </div>
+                                )}
+                            </div>
+                          </td>
                           <td className="py-3 px-4 font-medium">{item.nama}</td>
                           <td className="py-3 px-4">{item.no_telp || "-"}</td>
                           <td className="py-3 px-4">
@@ -566,7 +609,7 @@ export default function KelolaData() {
               <span>Total: {data.length} data</span>
               {searchTerm && (
                 <span className="ml-4">
-                  Ditampilkan: {filteredData.length} data
+                  Ditampilkan: {sortedData.length} data
                 </span>
               )}
             </div>
