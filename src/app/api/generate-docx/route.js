@@ -7,11 +7,32 @@ import { v4 as uuidv4 } from "uuid";
 import { mkdir, writeFile } from "fs/promises";
 
 export async function POST(req) {
-  console.log("API /api/generate-word dipanggil");
+  console.log("API /api/generate-docx dipanggil");
 
   try {
     const formData = await req.json();
     console.log("Received form data:", formData);
+
+    // **1. Simpan data ke JSON terlebih dahulu**
+    try {
+      const response = await fetch(
+        `${req.headers.origin || "http://localhost:3000"}/api/data-vaksin`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(formData),
+        }
+      );
+
+      if (!response.ok) {
+        console.error("Gagal menyimpan data ke JSON");
+      } else {
+        console.log("Data berhasil disimpan ke JSON");
+      }
+    } catch (error) {
+      console.error("Error saving to JSON:", error);
+      // Lanjutkan proses meski gagal simpan ke JSON
+    }
 
     // **Pastikan file template ada**
     const templatePath = path.join(
@@ -39,6 +60,7 @@ export async function POST(req) {
       // Render template dengan data dari form
       doc.render({
         nama: formData.nama || "", // String kosong jika tidak ada data
+        no_telp: formData.no_telp || "", // Tambahan field no_telp
         alamat: formData.alamat || "",
         kotaKelahiran: formData.kotaKelahiran || "",
         tanggalLahir: formData.tanggalLahir || "",

@@ -10,6 +10,7 @@ import {
   Car,
   Database,
   Store,
+  Syringe,
 } from "lucide-react";
 
 const menuCategories = [
@@ -84,13 +85,8 @@ const menuCategories = [
     ],
   },
   {
-    category: "Lain-lain",
+    category: "Vaksin",
     items: [
-      {
-        title: "ICD-10 Search",
-        icon: <Database size={20} />,
-        href: "/icd-search",
-      },
       {
         title: "Form Meningitis",
         icon: <FileText size={20} />,
@@ -100,6 +96,21 @@ const menuCategories = [
         title: "Files",
         icon: <Folder size={20} />,
         href: "/file-sharing",
+      },
+      {
+        title: "Data Vaksin",
+        icon: <Syringe size={20} />,
+        href: "/vaksin/kelola-data",
+      },
+    ],
+  },
+  {
+    category: "Lain-lain",
+    items: [
+      {
+        title: "ICD-10 Search",
+        icon: <Database size={20} />,
+        href: "/icd-search",
       },
     ],
   },
