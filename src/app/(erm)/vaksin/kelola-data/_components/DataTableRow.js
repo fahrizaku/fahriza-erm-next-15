@@ -57,7 +57,7 @@ export default function DataTableRow({
         </div>
       </td>
       <td className="py-3 px-4 font-medium">{item.nama}</td>
-      <td className="py-3 px-4">{item.no_telp || "-"}</td>
+      <td className="py-3 px-4">{item.noTelp || "-"}</td>
       <td className="py-3 px-4">
         {item.tanggalLahir ? (
           <div>

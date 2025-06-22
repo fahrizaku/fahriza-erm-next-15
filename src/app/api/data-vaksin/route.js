@@ -1,6 +1,6 @@
 // /api/data-vaksin/route.js
 import { NextResponse } from "next/server";
-import { db } from "@/lib/db"; // Pastikan prisma sudah di-setup
+import { db } from "@/lib/db"; // Pastikan db sudah di-setup
 
 // GET - Ambil semua data vaksin
 export async function GET(req) {
@@ -222,7 +222,7 @@ export async function DELETE(req) {
     }
 
     // Hapus data dari database (cascade delete akan menghapus documents terkait)
-    await prisma.vaksinData.delete({
+    await db.vaksinData.delete({
       where: { id },
     });
 
@@ -237,6 +237,6 @@ export async function DELETE(req) {
       { status: 500 }
     );
   } finally {
-    await prisma.$disconnect();
+    await db.$disconnect();
   }
 }

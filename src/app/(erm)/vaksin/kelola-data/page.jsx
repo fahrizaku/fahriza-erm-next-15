@@ -53,7 +53,7 @@ export default function KelolaData() {
   const filteredData = data.filter(
     (item) =>
       item.nama?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.no_telp?.includes(searchTerm) ||
+      item.noTelp?.includes(searchTerm) ||
       item.alamat?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.namaTravel?.toLowerCase().includes(searchTerm.toLowerCase())
   );

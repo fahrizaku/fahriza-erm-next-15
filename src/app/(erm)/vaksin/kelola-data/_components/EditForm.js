@@ -27,11 +27,11 @@ export default function EditForm({
           <input
             type="tel"
             placeholder="Nomor Telepon"
-            value={editForm.no_telp || ""}
+            value={editForm.noTelp || ""}
             onChange={(e) =>
               setEditForm({
                 ...editForm,
-                no_telp: e.target.value,
+                noTelp: e.target.value,
               })
             }
             className="px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-green-400"
