@@ -5,6 +5,8 @@ import fs from "fs";
 import path from "path";
 import { v4 as uuidv4 } from "uuid";
 import { mkdir, writeFile } from "fs/promises";
+// Import fungsi queue manager
+import { getNextQueueNumber, addToQueue } from "@/utils/queueManager";
 
 export async function POST(req) {
   console.log("API /api/generate-docx dipanggil");
@@ -13,20 +15,34 @@ export async function POST(req) {
     const formData = await req.json();
     console.log("Received form data:", formData);
 
-    // **1. Tambahkan createdAt ke formData sebelum disimpan**
-    const formDataWithTimestamp = {
+    // **1. Generate nomor antrian**
+    const queueInfo = getNextQueueNumber();
+    console.log("Generated queue info:", queueInfo);
+
+    // **2. Tambahkan nomor antrian dan timestamp ke formData**
+    const formDataWithQueueAndTimestamp = {
       ...formData,
+      nomorAntrian: queueInfo.formattedNumber, // Format: 001, 002, dst
+      tanggalAntrian: queueInfo.date,
       createdAt: new Date().toISOString(),
     };
 
-    // **2. Simpan data ke JSON terlebih dahulu**
+    // **3. Tambahkan ke tracking antrian**
+    try {
+      addToQueue(formData, queueInfo);
+    } catch (error) {
+      console.error("Error adding to queue tracking:", error);
+      // Lanjutkan proses meski gagal tracking
+    }
+
+    // **4. Simpan data ke JSON terlebih dahulu**
     try {
       const response = await fetch(
         `${req.headers.origin || "http://localhost:3000"}/api/data-vaksin`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(formDataWithTimestamp),
+          body: JSON.stringify(formDataWithQueueAndTimestamp),
         }
       );
 
@@ -40,7 +56,7 @@ export async function POST(req) {
       // Lanjutkan proses meski gagal simpan ke JSON
     }
 
-    // **Pastikan file template ada**
+    // **5. Pastikan file template ada**
     const templatePath = path.join(
       process.cwd(),
       "src",
@@ -63,18 +79,23 @@ export async function POST(req) {
     });
 
     try {
-      // Render template dengan data dari form
+      // **6. Render template dengan data dari form + nomor antrian**
       doc.render({
-        nama: formData.nama || "", // String kosong jika tidak ada data
-        no_telp: formData.no_telp || "", // Tambahan field no_telp
+        nama: formData.nama || "",
+        no_telp: formData.no_telp || "",
         alamat: formData.alamat || "",
         kotaKelahiran: formData.kotaKelahiran || "",
         tanggalLahir: formData.tanggalLahir || "",
         umur: formData.umur || "",
-        jenisKelamin: formData.jenisKelamin || "", // String kosong jika tidak ada data
+        jenisKelamin: formData.jenisKelamin || "",
         namaTravel: formData.namaTravel || "",
         tanggalKeberangkatan: formData.tanggalKeberangkatan || "",
         asalTravel: formData.asalTravel || "",
+        // Tambahan field nomor antrian
+        nomorAntrian: queueInfo.formattedNumber,
+        tanggalAntrian: formatIndonesianDate(queueInfo.date),
+        // Tambahan field untuk template
+        waktuDaftar: formatIndonesianDateTime(new Date()),
       });
     } catch (error) {
       console.error("Template rendering error:", error);
@@ -95,15 +116,17 @@ export async function POST(req) {
       // Direktori mungkin sudah ada
     }
 
-    // Buat ID unik untuk file
+    // Buat ID unik untuk file dengan nomor antrian
     const id = uuidv4();
-    const fileName = `${formData.nama || "Dokumen"}_vaksin_meningitis.docx`;
+    const fileName = `${queueInfo.formattedNumber}_${
+      formData.nama || "Dokumen"
+    }_vaksin_meningitis.docx`;
     const filePath = path.join(uploadDir, id + "_" + fileName);
 
     // Simpan file
     await writeFile(filePath, docBuffer);
 
-    // Simpan metadata file ke JSON (sudah ada createdAt)
+    // Simpan metadata file ke JSON
     const dbPath = path.join(process.cwd(), "uploads", "db.json");
     let db = { files: [] };
 
@@ -114,30 +137,87 @@ export async function POST(req) {
       // File db.json mungkin belum ada
     }
 
-    // Tambahkan file baru dengan createdAt
+    // Tambahkan file baru dengan nomor antrian
     db.files.push({
       id,
       name: fileName,
       path: filePath,
       type: "document",
-      createdAt: new Date().toISOString(), // Sudah ada di kode asli
-      formData: formDataWithTimestamp, // Opsional: simpan juga data form di metadata
+      queueNumber: queueInfo.queueNumber,
+      formattedQueueNumber: queueInfo.formattedNumber,
+      queueDate: queueInfo.date,
+      createdAt: new Date().toISOString(),
+      formData: formDataWithQueueAndTimestamp,
     });
 
     // Simpan kembali ke JSON
     await writeFile(dbPath, JSON.stringify(db, null, 2));
 
-    // Hanya mengembalikan informasi bahwa dokumen berhasil disimpan
+    // Return response dengan informasi nomor antrian
     return NextResponse.json({
       success: true,
-      message: "Dokumen berhasil dibuat dan disimpan",
+      message: `Dokumen berhasil dibuat dan disimpan dengan nomor antrian ${queueInfo.formattedNumber}`,
       fileId: id,
       fileName: fileName,
       filePath: filePath.replace(process.cwd(), ""),
-      createdAt: formDataWithTimestamp.createdAt, // Return timestamp
+      queueNumber: queueInfo.queueNumber,
+      formattedQueueNumber: queueInfo.formattedNumber,
+      queueDate: queueInfo.date,
+      createdAt: formDataWithQueueAndTimestamp.createdAt,
     });
   } catch (error) {
     console.error("Error generating document:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
+}
+
+// Helper function untuk format tanggal Indonesia
+function formatIndonesianDate(dateString) {
+  const months = [
+    "Januari",
+    "Februari",
+    "Maret",
+    "April",
+    "Mei",
+    "Juni",
+    "Juli",
+    "Agustus",
+    "September",
+    "Oktober",
+    "November",
+    "Desember",
+  ];
+
+  const date = new Date(dateString);
+  const day = date.getDate();
+  const month = months[date.getMonth()];
+  const year = date.getFullYear();
+
+  return `${day} ${month} ${year}`;
+}
+
+// Helper function untuk format tanggal dan waktu Indonesia
+function formatIndonesianDateTime(date) {
+  const months = [
+    "Januari",
+    "Februari",
+    "Maret",
+    "April",
+    "Mei",
+    "Juni",
+    "Juli",
+    "Agustus",
+    "September",
+    "Oktober",
+    "November",
+    "Desember",
+  ];
+
+  const day = date.getDate();
+  const month = months[date.getMonth()];
+  const year = date.getFullYear();
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+
+  return `${day} ${month} ${year} pukul ${hours}:${minutes} WIB`;
 }
