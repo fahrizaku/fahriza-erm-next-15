@@ -82,9 +82,16 @@ export async function POST(req) {
     const jenisVaksinDisplay = formatVaccineType(formData.jenisVaksin);
     const ppTestDisplay = formData.ppTest ? "Ya" : "Tidak";
 
+    // Format nama dengan gelar
+    const namaWithTitle = formatNameWithTitle(
+      formData.nama || "",
+      formData.jenisKelamin || "",
+      parseInt(formData.umur) || 0
+    );
+
     try {
       doc.render({
-        nama: formData.nama || "",
+        nama: namaWithTitle,
         no_telp: formData.no_telp || "",
         alamat: formData.alamat || "",
         kotaKelahiran: formData.kotaKelahiran || "",
@@ -114,7 +121,7 @@ export async function POST(req) {
 
     // **4. Generate PDF Kwitansi**
     const receiptBuffer = generateReceiptJsPDF({
-      nama: formData.nama || "",
+      nama: namaWithTitle,
       jumlah: formData.totalHarga || 0,
       penggunaan: `Vaksin ${jenisVaksinDisplay}${
         formData.ppTest ? " + PP Test" : ""
@@ -212,6 +219,35 @@ export async function POST(req) {
   }
 }
 
+// **Helper function untuk format nama dengan gelar**
+function formatNameWithTitle(nama, jenisKelamin, umur) {
+  if (!nama) return "";
+
+  let title = "";
+
+  if (
+    jenisKelamin.toLowerCase() === "laki-laki" ||
+    jenisKelamin.toLowerCase() === "pria"
+  ) {
+    if (umur < 30) {
+      title = "Sdr. "; // Saudara
+    } else {
+      title = "Tn. "; // Tuan
+    }
+  } else if (
+    jenisKelamin.toLowerCase() === "perempuan" ||
+    jenisKelamin.toLowerCase() === "wanita"
+  ) {
+    if (umur < 30) {
+      title = "Sdri. "; // Saudari
+    } else {
+      title = "Ny. "; // Nyonya
+    }
+  }
+
+  return title + nama;
+}
+
 // **Helper function untuk format jenis vaksin**
 function formatVaccineType(jenisVaksin) {
   if (!jenisVaksin) return "";
@@ -233,13 +269,9 @@ function formatVaccineType(jenisVaksin) {
   return vaccineTypes[jenisVaksin] || jenisVaksin;
 }
 
-// **Helper function untuk format currency**
+// **Helper function untuk format currency (tanpa Rp)**
 function formatCurrency(amount) {
-  return new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    minimumFractionDigits: 0,
-  }).format(amount);
+  return amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 }
 
 // **Fungsi untuk generate PDF Kwitansi dengan jsPDF - Format Baru**
@@ -280,7 +312,13 @@ function generateReceiptJsPDF(data) {
   return pdfBuffer;
 }
 
-// **Fungsi konversi angka ke huruf (Indonesia)**
+// **Helper function untuk capitalize string**
+function capitalizeFirstLetter(str) {
+  if (!str) return str;
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+// **Fungsi konversi angka ke huruf (Indonesia) - FIXED VERSION**
 function numberToWords(num) {
   const ones = [
     "",
@@ -319,105 +357,115 @@ function numberToWords(num) {
     "sembilan puluh",
   ];
 
-  if (num === 0) return "nol";
+  if (num === 0) return "Nol";
 
   // Handle millions
   if (num >= 1000000) {
     const millions = Math.floor(num / 1000000);
     const remainder = num % 1000000;
-    let result = ones[millions] + " juta";
+    let result =
+      (millions === 1 ? "Satu" : capitalizeFirstLetter(ones[millions])) +
+      " juta";
     if (remainder > 0) {
-      result += " " + numberToWords(remainder);
+      result += " " + numberToWords(remainder).toLowerCase();
     }
     return result;
   }
 
-  // Handle hundred thousands
-  if (num >= 100000) {
-    const hundreds = Math.floor(num / 100000);
-    const remainder = num % 100000;
-    let result = "";
-
-    if (hundreds === 1) {
-      result = "seratus ribu";
-    } else {
-      result = ones[hundreds] + " ratus ribu";
-    }
-
-    if (remainder > 0) {
-      result += " " + numberToWords(remainder);
-    }
-
-    return result;
-  }
-
-  // Handle ten thousands
-  if (num >= 10000) {
-    const tenThousands = Math.floor(num / 10000);
-    const remainder = num % 10000;
-    let result = ones[tenThousands] + " puluh ribu";
-    if (remainder > 0) {
-      result += " " + numberToWords(remainder);
-    }
-    return result;
-  }
-
-  // Handle thousands
+  // Handle thousands (1000-999999)
   if (num >= 1000) {
     const thousands = Math.floor(num / 1000);
     const remainder = num % 1000;
     let result = "";
 
     if (thousands === 1) {
-      result = "seribu";
+      result = "Seribu";
+    } else if (thousands < 20) {
+      if (thousands >= 10) {
+        result = capitalizeFirstLetter(teens[thousands - 10]) + " ribu";
+      } else {
+        result = capitalizeFirstLetter(ones[thousands]) + " ribu";
+      }
+    } else if (thousands < 100) {
+      const tensDigit = Math.floor(thousands / 10);
+      const onesDigit = thousands % 10;
+      result = capitalizeFirstLetter(tens[tensDigit]);
+      if (onesDigit > 0) {
+        result += " " + ones[onesDigit];
+      }
+      result += " ribu";
     } else {
-      result = ones[thousands] + " ribu";
+      // Handle hundreds of thousands (100000-999999)
+      const hundreds = Math.floor(thousands / 100);
+      const remainderThousands = thousands % 100;
+
+      if (hundreds === 1) {
+        result = "Seratus";
+      } else {
+        result = capitalizeFirstLetter(ones[hundreds]) + " ratus";
+      }
+
+      if (remainderThousands > 0) {
+        if (remainderThousands < 10) {
+          result += " " + ones[remainderThousands];
+        } else if (remainderThousands < 20) {
+          result += " " + teens[remainderThousands - 10];
+        } else {
+          const tensDigit = Math.floor(remainderThousands / 10);
+          const onesDigit = remainderThousands % 10;
+          result += " " + tens[tensDigit];
+          if (onesDigit > 0) {
+            result += " " + ones[onesDigit];
+          }
+        }
+      }
+      result += " ribu";
     }
 
     if (remainder > 0) {
-      result += " " + numberToWords(remainder);
+      result += " " + numberToWords(remainder).toLowerCase();
     }
 
     return result;
   }
 
-  // Handle hundreds
+  // Handle hundreds (100-999)
   if (num >= 100) {
     const hundreds = Math.floor(num / 100);
     const remainder = num % 100;
     let result = "";
 
     if (hundreds === 1) {
-      result = "seratus";
+      result = "Seratus";
     } else {
-      result = ones[hundreds] + " ratus";
+      result = capitalizeFirstLetter(ones[hundreds]) + " ratus";
     }
 
     if (remainder > 0) {
-      result += " " + numberToWords(remainder);
+      result += " " + numberToWords(remainder).toLowerCase();
     }
 
     return result;
   }
 
-  // Handle tens
+  // Handle tens (20-99)
   if (num >= 20) {
     const tensDigit = Math.floor(num / 10);
     const remainder = num % 10;
-    let result = tens[tensDigit];
+    let result = capitalizeFirstLetter(tens[tensDigit]);
     if (remainder > 0) {
       result += " " + ones[remainder];
     }
     return result;
   }
 
-  // Handle teens
+  // Handle teens (10-19)
   if (num >= 10) {
-    return teens[num - 10];
+    return capitalizeFirstLetter(teens[num - 10]);
   }
 
-  // Handle ones
-  return ones[num];
+  // Handle ones (1-9)
+  return capitalizeFirstLetter(ones[num]);
 }
 
 // Helper function untuk format tanggal Indonesia

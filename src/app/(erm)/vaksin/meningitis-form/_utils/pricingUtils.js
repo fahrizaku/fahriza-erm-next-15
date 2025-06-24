@@ -68,16 +68,12 @@ export function getVaccinePriceInfo(vaccine, selectedVaccines = []) {
 }
 
 /**
- * Format currency to Indonesian Rupiah
+ * Format currency to Indonesian Rupiah (without Rp symbol)
  * @param {number} amount - Amount to format
- * @returns {string} Formatted currency string
+ * @returns {string} Formatted currency string without Rp symbol
  */
 export function formatCurrency(amount) {
-  return new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    minimumFractionDigits: 0,
-  }).format(amount);
+  return amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 }
 
 /**
