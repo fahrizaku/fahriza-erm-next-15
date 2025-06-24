@@ -18,7 +18,6 @@ import {
 } from "./_utils/dateUtils";
 import { validateFormDates } from "./_utils/validationUtils";
 import { capitalizeFormData } from "./_utils/textUtils";
-import { calculateTotalPrice } from "./_utils/pricingUtils";
 
 export default function Home() {
   const [formData, setFormData] = useState({
@@ -33,7 +32,7 @@ export default function Home() {
     tanggalKeberangkatan: "",
     asalTravel: "",
     // Tambahan fields untuk vaksin
-    jenisVaksin: "",
+    selectedVaccines: [], // Array untuk multiple vaccine selection
     ppTest: false,
   });
 
@@ -59,8 +58,31 @@ export default function Home() {
   };
 
   const handleCheckboxChange = (e) => {
-    const { name, checked } = e.target;
-    setFormData({ ...formData, [name]: checked });
+    const { name, value, checked } = e.target;
+
+    if (name === "selectedVaccines") {
+      // Handle multiple vaccine selection
+      setFormData((prevData) => {
+        const currentVaccines = prevData.selectedVaccines || [];
+        let newVaccines;
+
+        if (checked) {
+          // Add vaccine to selection
+          newVaccines = [...currentVaccines, value];
+        } else {
+          // Remove vaccine from selection
+          newVaccines = currentVaccines.filter((vaccine) => vaccine !== value);
+        }
+
+        return {
+          ...prevData,
+          selectedVaccines: newVaccines,
+        };
+      });
+    } else {
+      // Handle other checkboxes (like ppTest)
+      setFormData({ ...formData, [name]: checked });
+    }
   };
 
   const handleDateChange = (name, value) => {
@@ -136,21 +158,70 @@ export default function Home() {
     }
   };
 
+  // Helper function to calculate total price
+  const calculateTotalPrice = () => {
+    let total = 0;
+    const selectedVaccines = formData.selectedVaccines || [];
+
+    // Calculate vaccine prices
+    selectedVaccines.forEach((vaccine) => {
+      switch (vaccine) {
+        case "meningitis":
+          total += 350000;
+          break;
+        case "polio":
+          total += 250000;
+          break;
+        case "influenza":
+          // Apply discount if meningitis is also selected
+          if (selectedVaccines.includes("meningitis")) {
+            total += 200000; // Discounted price
+          } else {
+            total += 220000; // Regular price
+          }
+          break;
+      }
+    });
+
+    // Add PP test price
+    if (formData.ppTest) {
+      total += 20000;
+    }
+
+    return total;
+  };
+
+  // Helper function to format vaccine selection for backend
+  const formatVaccineSelection = () => {
+    const selectedVaccines = formData.selectedVaccines || [];
+    if (selectedVaccines.length === 0) return "";
+
+    // Sort vaccines for consistent formatting
+    const sortedVaccines = [...selectedVaccines].sort();
+    return sortedVaccines.join("+");
+  };
+
   const generateWordDocument = async (e) => {
     e.preventDefault();
     setError("");
 
-    // Validate form dates using utils
+    // Validate form dates using utils (now only validates nama as required)
     const validation = validateFormDates(formData);
     if (!validation.isValid) {
       setError(validation.error);
       return;
     }
 
-    // Validate vaccine selection
-    if (!formData.jenisVaksin) {
-      setError("Silakan pilih jenis vaksin");
-      return;
+    // Validate vaccine selection - not required anymore, but validate if selected
+    const selectedVaccines = formData.selectedVaccines || [];
+    if (selectedVaccines.length > 0) {
+      const validTypes = ["meningitis", "polio", "influenza"];
+      for (const vaccine of selectedVaccines) {
+        if (!validTypes.includes(vaccine)) {
+          setError(`Jenis vaksin "${vaccine}" tidak valid`);
+          return;
+        }
+      }
     }
 
     try {
@@ -159,15 +230,14 @@ export default function Home() {
       // Capitalize form data using utils
       const capitalizedFormData = capitalizeFormData(formData);
 
-      // Calculate total price
-      const totalHarga = calculateTotalPrice(
-        formData.jenisVaksin,
-        formData.ppTest
-      );
+      // Calculate total price and format vaccine selection
+      const totalHarga = calculateTotalPrice();
+      const jenisVaksin = formatVaccineSelection();
 
       // Add pricing info to form data
       const formDataWithPricing = {
         ...capitalizedFormData,
+        jenisVaksin, // Convert array to string format for backend
         totalHarga,
       };
 
@@ -198,7 +268,7 @@ export default function Home() {
         namaTravel: "",
         tanggalKeberangkatan: "",
         asalTravel: "",
-        jenisVaksin: "",
+        selectedVaccines: [],
         ppTest: false,
       });
     } catch (error) {
@@ -234,7 +304,6 @@ export default function Home() {
 
             <VaccineInfoSection
               formData={formData}
-              handleChange={handleChange}
               handleCheckboxChange={handleCheckboxChange}
             />
 

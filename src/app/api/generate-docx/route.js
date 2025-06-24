@@ -1,4 +1,4 @@
-// /api/generate-docx/route.js - Updated with vaccine types
+// /api/generate-docx/route.js - Updated with new receipt format
 import { NextResponse } from "next/server";
 import PizZip from "pizzip";
 import Docxtemplater from "docxtemplater";
@@ -214,12 +214,21 @@ export async function POST(req) {
 
 // **Helper function untuk format jenis vaksin**
 function formatVaccineType(jenisVaksin) {
+  if (!jenisVaksin) return "";
+
   const vaccineTypes = {
     meningitis: "Meningitis",
     polio: "Polio",
     influenza: "Influenza",
-    "meningitis+influenza": "Meningitis + Influenza",
   };
+
+  // Handle combination vaccines (e.g., "meningitis+influenza")
+  if (jenisVaksin.includes("+")) {
+    const vaccines = jenisVaksin.split("+").map((vaccine) => {
+      return vaccineTypes[vaccine.trim()] || vaccine.trim();
+    });
+    return vaccines.join(" + ");
+  }
 
   return vaccineTypes[jenisVaksin] || jenisVaksin;
 }
@@ -233,11 +242,11 @@ function formatCurrency(amount) {
   }).format(amount);
 }
 
-// **Fungsi untuk generate PDF Kwitansi dengan jsPDF**
+// **Fungsi untuk generate PDF Kwitansi dengan jsPDF - Format Baru**
 function generateReceiptJsPDF(data) {
-  // Konversi cm ke mm untuk jsPDF
-  const widthMM = 75; // 7.5 cm
-  const heightMM = 215; // 21.5 cm
+  // Ukuran kertas baru: 20.83 x 10.8 cm (landscape)
+  const widthMM = 208.3; // 20.83 cm
+  const heightMM = 108; // 10.8 cm
 
   const pdf = new jsPDF({
     orientation: "landscape",
@@ -245,39 +254,26 @@ function generateReceiptJsPDF(data) {
     format: [widthMM, heightMM],
   });
 
-  // Posisi awal (konversi dari cm ke mm)
-  const startX = 30; // 3 cm = 30 mm
-  const startY = 20; // 2 cm = 20 mm
-  const lineSpacing = 10; // 1 cm = 10 mm
-
   // Set font size
   pdf.setFontSize(10);
 
-  let currentY = startY;
+  // Koordinat sesuai spesifikasi (konversi cm ke mm):
+  // 1. Nama: x=6.64 cm, y=4.3 cm → x=66.4 mm, y=43 mm
+  pdf.text(data.nama, 66.4, 43);
 
-  // 1. Nama
-  pdf.text(`Nama: ${data.nama}`, startX, currentY);
-  currentY += lineSpacing;
-
-  // 2. Jumlah uang dalam huruf
+  // 2. Jumlah dalam huruf: x=6.85 cm, y=5.1 cm → x=68.5 mm, y=51 mm
   const jumlahHuruf = numberToWords(data.jumlah);
-  pdf.text(`Jumlah: ${jumlahHuruf} rupiah`, startX, currentY);
-  currentY += lineSpacing;
+  pdf.text(`${jumlahHuruf} rupiah`, 68.5, 51);
 
-  // 3. Penggunaan
-  pdf.text(`Untuk: ${data.penggunaan}`, startX, currentY);
-  currentY += lineSpacing;
+  // 3. Untuk (penggunaan): x=10.4 cm, y=5.8 cm → x=104 mm, y=58 mm
+  pdf.text(data.penggunaan, 104, 58);
 
-  // 4. Jumlah uang dalam angka
+  // 4. Sebesar (jumlah angka): x=5 cm, y=9.5 cm → x=50 mm, y=95 mm
   const jumlahAngka = formatCurrency(data.jumlah);
-  pdf.text(`Sebesar: ${jumlahAngka}`, startX, currentY);
-  currentY += lineSpacing;
+  pdf.text(jumlahAngka, 50, 95);
 
-  // 5. Info tambahan
-  pdf.text(`Tanggal: ${data.tanggal}`, startX, currentY);
-  currentY += lineSpacing;
-
-  pdf.text(`No. Antrian: ${data.nomorAntrian}`, startX, currentY);
+  // 5. Tanggal: x=15.6 cm, y=8.3 cm → x=156 mm, y=83 mm
+  pdf.text(data.tanggal, 156, 83);
 
   // Return sebagai Buffer
   const pdfBuffer = Buffer.from(pdf.output("arraybuffer"));

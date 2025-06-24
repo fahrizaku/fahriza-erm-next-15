@@ -4,36 +4,66 @@ export const VACCINE_PRICES = {
   meningitis: 350000,
   polio: 250000,
   influenza: 220000,
-  "meningitis+influenza": 550000, // 350000 + 200000 (discounted influenza)
+  influenza_with_meningitis: 200000, // Discounted price when combined with meningitis
 };
 
 export const PP_TEST_PRICE = 20000;
 
 /**
- * Calculate total price based on vaccine type and PP test
- * @param {string} jenisVaksin - Type of vaccine
+ * Calculate total price based on selected vaccines and PP test
+ * @param {Array} selectedVaccines - Array of selected vaccine types
  * @param {boolean} ppTest - Whether PP test is included
  * @returns {number} Total price
  */
-export function calculateTotalPrice(jenisVaksin, ppTest = false) {
-  const basePrice = VACCINE_PRICES[jenisVaksin] || 0;
+export function calculateTotalPrice(selectedVaccines = [], ppTest = false) {
+  let total = 0;
+
+  // Calculate vaccine prices
+  selectedVaccines.forEach((vaccine) => {
+    switch (vaccine) {
+      case "meningitis":
+        total += VACCINE_PRICES.meningitis;
+        break;
+      case "polio":
+        total += VACCINE_PRICES.polio;
+        break;
+      case "influenza":
+        // Apply discount if meningitis is also selected
+        if (selectedVaccines.includes("meningitis")) {
+          total += VACCINE_PRICES.influenza_with_meningitis;
+        } else {
+          total += VACCINE_PRICES.influenza;
+        }
+        break;
+    }
+  });
+
+  // Add PP test price
   const ppTestPrice = ppTest ? PP_TEST_PRICE : 0;
-  return basePrice + ppTestPrice;
+  return total + ppTestPrice;
 }
 
 /**
  * Get vaccine price info for display
- * @param {string} jenisVaksin - Type of vaccine
+ * @param {string} vaccine - Type of vaccine
+ * @param {Array} selectedVaccines - Currently selected vaccines
  * @returns {object} Price information
  */
-export function getVaccinePriceInfo(jenisVaksin) {
-  const basePrice = VACCINE_PRICES[jenisVaksin] || 0;
+export function getVaccinePriceInfo(vaccine, selectedVaccines = []) {
+  let basePrice = VACCINE_PRICES[vaccine] || 0;
+
+  // Apply discount for influenza if meningitis is selected
+  if (vaccine === "influenza" && selectedVaccines.includes("meningitis")) {
+    basePrice = VACCINE_PRICES.influenza_with_meningitis;
+  }
 
   return {
     basePrice,
     formattedPrice: formatCurrency(basePrice),
     ppTestPrice: PP_TEST_PRICE,
     formattedPpTestPrice: formatCurrency(PP_TEST_PRICE),
+    hasDiscount:
+      vaccine === "influenza" && selectedVaccines.includes("meningitis"),
   };
 }
 
@@ -63,11 +93,32 @@ export function getVaccineOptions() {
     },
     { value: "polio", label: "Polio", price: VACCINE_PRICES.polio },
     { value: "influenza", label: "Influenza", price: VACCINE_PRICES.influenza },
-    {
-      value: "meningitis+influenza",
-      label: "Meningitis + Influenza",
-      price: VACCINE_PRICES["meningitis+influenza"],
-      note: "Diskon khusus untuk kombinasi",
-    },
   ];
+}
+
+/**
+ * Format vaccine selection array to string for backend
+ * @param {Array} selectedVaccines - Array of selected vaccines
+ * @returns {string} Formatted vaccine string
+ */
+export function formatVaccineSelectionForBackend(selectedVaccines = []) {
+  if (selectedVaccines.length === 0) return "";
+
+  // Sort vaccines for consistent formatting
+  const sortedVaccines = [...selectedVaccines].sort();
+  return sortedVaccines.join("+");
+}
+
+/**
+ * Parse vaccine string from backend to array
+ * @param {string} vaccineString - Vaccine string from backend
+ * @returns {Array} Array of vaccines
+ */
+export function parseVaccineStringToArray(vaccineString) {
+  if (!vaccineString || vaccineString.trim() === "") return [];
+
+  return vaccineString
+    .split("+")
+    .map((v) => v.trim())
+    .filter((v) => v !== "");
 }
