@@ -7,6 +7,7 @@ import { toast } from "react-toastify";
 import { ErrorMessage } from "./_components/ErrorMessage";
 import { PersonalInfoSection } from "./_components/PersonalInfoSection";
 import { TravelInfoSection } from "./_components/TravelInfoSection";
+import { VaccineInfoSection } from "./_components/VaccineInfoSection";
 import { SubmitButton } from "./_components/SubmitButton";
 
 // Import utils
@@ -17,6 +18,7 @@ import {
 } from "./_utils/dateUtils";
 import { validateFormDates } from "./_utils/validationUtils";
 import { capitalizeFormData } from "./_utils/textUtils";
+import { calculateTotalPrice } from "./_utils/pricingUtils";
 
 export default function Home() {
   const [formData, setFormData] = useState({
@@ -30,6 +32,9 @@ export default function Home() {
     namaTravel: "",
     tanggalKeberangkatan: "",
     asalTravel: "",
+    // Tambahan fields untuk vaksin
+    jenisVaksin: "",
+    ppTest: false,
   });
 
   const [error, setError] = useState("");
@@ -51,6 +56,11 @@ export default function Home() {
         setError(err.message);
       }
     }
+  };
+
+  const handleCheckboxChange = (e) => {
+    const { name, checked } = e.target;
+    setFormData({ ...formData, [name]: checked });
   };
 
   const handleDateChange = (name, value) => {
@@ -137,16 +147,34 @@ export default function Home() {
       return;
     }
 
+    // Validate vaccine selection
+    if (!formData.jenisVaksin) {
+      setError("Silakan pilih jenis vaksin");
+      return;
+    }
+
     try {
       setIsLoading(true);
 
       // Capitalize form data using utils
       const capitalizedFormData = capitalizeFormData(formData);
 
+      // Calculate total price
+      const totalHarga = calculateTotalPrice(
+        formData.jenisVaksin,
+        formData.ppTest
+      );
+
+      // Add pricing info to form data
+      const formDataWithPricing = {
+        ...capitalizedFormData,
+        totalHarga,
+      };
+
       const response = await fetch("/api/generate-docx", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(capitalizedFormData),
+        body: JSON.stringify(formDataWithPricing),
       });
 
       if (!response.ok) {
@@ -170,6 +198,8 @@ export default function Home() {
         namaTravel: "",
         tanggalKeberangkatan: "",
         asalTravel: "",
+        jenisVaksin: "",
+        ppTest: false,
       });
     } catch (error) {
       console.error("Error:", error);
@@ -184,7 +214,7 @@ export default function Home() {
       <div className="bg-white rounded-xl shadow-md border border-gray-200">
         <div className="p-4 sm:p-6">
           <h1 className="text-xl sm:text-2xl font-semibold text-gray-800 mb-4">
-            Form Persetujuan dan Permohonan Vaksin Meningitis
+            Form Persetujuan dan Permohonan Vaksin
           </h1>
 
           <ErrorMessage message={error} />
@@ -200,6 +230,12 @@ export default function Home() {
               formData={formData}
               handleChange={handleChange}
               handleDateChange={handleDateChange}
+            />
+
+            <VaccineInfoSection
+              formData={formData}
+              handleChange={handleChange}
+              handleCheckboxChange={handleCheckboxChange}
             />
 
             <SubmitButton isLoading={isLoading} />

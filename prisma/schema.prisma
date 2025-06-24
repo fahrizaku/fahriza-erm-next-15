@@ -345,6 +345,9 @@ model IcdCode {
   @@index([code])
 }
 
+// ====================== Vaksinasi Module ======================
+// ================================================================
+
 model VaksinData {
   id                    String   @id @default(cuid())
   nama                  String
@@ -357,6 +360,12 @@ model VaksinData {
   namaTravel            String   @map("nama_travel")
   tanggalKeberangkatan  String   @map("tanggal_keberangkatan")
   asalTravel            String   @map("asal_travel")
+  
+  // Tambahan fields untuk jenis vaksin dan PP test
+  jenisVaksin           String   @map("jenis_vaksin") // "meningitis", "polio", "influenza", "meningitis+influenza"
+  ppTest                Boolean  @default(false) @map("pp_test")
+  totalHarga            Int      @map("total_harga") // Total harga berdasarkan jenis vaksin dan PP test
+  
   nomorAntrian          String   @map("nomor_antrian")
   tanggalAntrian        String   @map("tanggal_antrian")
   createdAt             DateTime @default(now()) @map("created_at")

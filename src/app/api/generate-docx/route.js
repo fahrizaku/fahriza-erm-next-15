@@ -1,4 +1,4 @@
-// /api/generate-docx/route.js - Alternative dengan jsPDF
+// /api/generate-docx/route.js - Updated with vaccine types
 import { NextResponse } from "next/server";
 import PizZip from "pizzip";
 import Docxtemplater from "docxtemplater";
@@ -39,6 +39,10 @@ export async function POST(req) {
           namaTravel: formData.namaTravel || "",
           tanggalKeberangkatan: formData.tanggalKeberangkatan || "",
           asalTravel: formData.asalTravel || "",
+          // Tambahan fields vaksin
+          jenisVaksin: formData.jenisVaksin || "",
+          ppTest: formData.ppTest || false,
+          totalHarga: formData.totalHarga || 0,
           nomorAntrian: queueInfo.formattedNumber,
           tanggalAntrian: queueInfo.date,
         },
@@ -74,6 +78,10 @@ export async function POST(req) {
       nullGetter: () => "",
     });
 
+    // Format jenis vaksin untuk tampilan
+    const jenisVaksinDisplay = formatVaccineType(formData.jenisVaksin);
+    const ppTestDisplay = formData.ppTest ? "Ya" : "Tidak";
+
     try {
       doc.render({
         nama: formData.nama || "",
@@ -86,6 +94,10 @@ export async function POST(req) {
         namaTravel: formData.namaTravel || "",
         tanggalKeberangkatan: formData.tanggalKeberangkatan || "",
         asalTravel: formData.asalTravel || "",
+        // Tambahan fields vaksin
+        jenisVaksin: jenisVaksinDisplay,
+        ppTest: ppTestDisplay,
+        totalHarga: formatCurrency(formData.totalHarga || 0),
         nomorAntrian: queueInfo.formattedNumber,
         tanggalAntrian: formatIndonesianDate(queueInfo.date),
         waktuDaftar: formatIndonesianDateTime(new Date()),
@@ -103,8 +115,10 @@ export async function POST(req) {
     // **4. Generate PDF Kwitansi**
     const receiptBuffer = generateReceiptJsPDF({
       nama: formData.nama || "",
-      jumlah: 100000,
-      penggunaan: "Vaksin Meningitis",
+      jumlah: formData.totalHarga || 0,
+      penggunaan: `Vaksin ${jenisVaksinDisplay}${
+        formData.ppTest ? " + PP Test" : ""
+      }`,
       tanggal: formatIndonesianDate(new Date()),
       nomorAntrian: queueInfo.formattedNumber,
     });
@@ -121,7 +135,7 @@ export async function POST(req) {
     const fileId = uuidv4();
     const docxFileName = `${queueInfo.formattedNumber}_${
       formData.nama || "Dokumen"
-    }_vaksin_meningitis.docx`;
+    }_vaksin_${formData.jenisVaksin || "default"}.docx`;
     const docxFilePath = path.join(uploadDir, fileId + "_" + docxFileName);
     await writeFile(docxFilePath, docBuffer);
 
@@ -184,6 +198,10 @@ export async function POST(req) {
       formattedQueueNumber: queueInfo.formattedNumber,
       queueDate: queueInfo.date,
       vaksinDataId: vaksinRecord.id,
+      // Info vaksin
+      jenisVaksin: formData.jenisVaksin,
+      ppTest: formData.ppTest,
+      totalHarga: formData.totalHarga,
       createdAt: vaksinRecord.createdAt,
     });
   } catch (error) {
@@ -192,6 +210,27 @@ export async function POST(req) {
   } finally {
     await db.$disconnect();
   }
+}
+
+// **Helper function untuk format jenis vaksin**
+function formatVaccineType(jenisVaksin) {
+  const vaccineTypes = {
+    meningitis: "Meningitis",
+    polio: "Polio",
+    influenza: "Influenza",
+    "meningitis+influenza": "Meningitis + Influenza",
+  };
+
+  return vaccineTypes[jenisVaksin] || jenisVaksin;
+}
+
+// **Helper function untuk format currency**
+function formatCurrency(amount) {
+  return new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    minimumFractionDigits: 0,
+  }).format(amount);
 }
 
 // **Fungsi untuk generate PDF Kwitansi dengan jsPDF**
@@ -230,10 +269,7 @@ function generateReceiptJsPDF(data) {
   currentY += lineSpacing;
 
   // 4. Jumlah uang dalam angka
-  const jumlahAngka = new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-  }).format(data.jumlah);
+  const jumlahAngka = formatCurrency(data.jumlah);
   pdf.text(`Sebesar: ${jumlahAngka}`, startX, currentY);
   currentY += lineSpacing;
 
@@ -288,9 +324,8 @@ function numberToWords(num) {
   ];
 
   if (num === 0) return "nol";
-  if (num === 100000) return "seratus ribu";
 
-  // Implementasi untuk berbagai rentang angka
+  // Handle millions
   if (num >= 1000000) {
     const millions = Math.floor(num / 1000000);
     const remainder = num % 1000000;
@@ -301,6 +336,7 @@ function numberToWords(num) {
     return result;
   }
 
+  // Handle hundred thousands
   if (num >= 100000) {
     const hundreds = Math.floor(num / 100000);
     const remainder = num % 100000;
@@ -319,6 +355,7 @@ function numberToWords(num) {
     return result;
   }
 
+  // Handle ten thousands
   if (num >= 10000) {
     const tenThousands = Math.floor(num / 10000);
     const remainder = num % 10000;
@@ -329,6 +366,7 @@ function numberToWords(num) {
     return result;
   }
 
+  // Handle thousands
   if (num >= 1000) {
     const thousands = Math.floor(num / 1000);
     const remainder = num % 1000;
@@ -347,6 +385,7 @@ function numberToWords(num) {
     return result;
   }
 
+  // Handle hundreds
   if (num >= 100) {
     const hundreds = Math.floor(num / 100);
     const remainder = num % 100;
@@ -365,6 +404,7 @@ function numberToWords(num) {
     return result;
   }
 
+  // Handle tens
   if (num >= 20) {
     const tensDigit = Math.floor(num / 10);
     const remainder = num % 10;
@@ -375,10 +415,12 @@ function numberToWords(num) {
     return result;
   }
 
+  // Handle teens
   if (num >= 10) {
     return teens[num - 10];
   }
 
+  // Handle ones
   return ones[num];
 }
 
