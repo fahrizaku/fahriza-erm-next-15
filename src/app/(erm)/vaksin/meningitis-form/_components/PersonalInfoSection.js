@@ -6,6 +6,7 @@ export const PersonalInfoSection = ({
   formData,
   handleChange,
   handleDateChange,
+  namaInputRef, // Tambahan prop untuk ref
 }) => {
   const genderOptions = [
     { value: "Laki-laki", label: "Laki-laki" },
@@ -22,6 +23,7 @@ export const PersonalInfoSection = ({
         onChange={handleChange}
         placeholder="Masukkan nama lengkap"
         required
+        ref={namaInputRef} // Pass ref ke FormInput
       />
 
       {/* Nomor Telepon */}

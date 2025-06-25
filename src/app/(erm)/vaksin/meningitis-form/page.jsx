@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { toast } from "react-toastify";
 
 // Import komponen yang sudah dipisah
 import { ErrorMessage } from "./_components/ErrorMessage";
 import { PersonalInfoSection } from "./_components/PersonalInfoSection";
 import { TravelInfoSection } from "./_components/TravelInfoSection";
-import { VaccineInfoSection } from "./_components/VaccineInfoSection";
+// import { VaccineInfoSection } from "./_components/VaccineInfoSection"; // DISABLED
 import { SubmitButton } from "./_components/SubmitButton";
 
 // Import utils
@@ -31,13 +31,21 @@ export default function Home() {
     namaTravel: "",
     tanggalKeberangkatan: "",
     asalTravel: "",
-    // Tambahan fields untuk vaksin
-    selectedVaccines: [], // Array untuk multiple vaccine selection
-    ppTest: false,
+    // Vaccine fields disabled
+    // selectedVaccines: [],
+    // ppTest: false,
   });
 
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const namaInputRef = useRef(null);
+
+  // Focus pada nama input saat component mount (refresh)
+  useEffect(() => {
+    if (namaInputRef.current) {
+      namaInputRef.current.focus();
+    }
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -57,33 +65,11 @@ export default function Home() {
     }
   };
 
-  const handleCheckboxChange = (e) => {
-    const { name, value, checked } = e.target;
-
-    if (name === "selectedVaccines") {
-      // Handle multiple vaccine selection
-      setFormData((prevData) => {
-        const currentVaccines = prevData.selectedVaccines || [];
-        let newVaccines;
-
-        if (checked) {
-          // Add vaccine to selection
-          newVaccines = [...currentVaccines, value];
-        } else {
-          // Remove vaccine from selection
-          newVaccines = currentVaccines.filter((vaccine) => vaccine !== value);
-        }
-
-        return {
-          ...prevData,
-          selectedVaccines: newVaccines,
-        };
-      });
-    } else {
-      // Handle other checkboxes (like ppTest)
-      setFormData({ ...formData, [name]: checked });
-    }
-  };
+  // Disabled vaccine checkbox handler
+  // const handleCheckboxChange = (e) => {
+  //   const { name, value, checked } = e.target;
+  //   // ... vaccine handling code disabled
+  // };
 
   const handleDateChange = (name, value) => {
     if (value === "") {
@@ -158,48 +144,9 @@ export default function Home() {
     }
   };
 
-  // Helper function to calculate total price
-  const calculateTotalPrice = () => {
-    let total = 0;
-    const selectedVaccines = formData.selectedVaccines || [];
-
-    // Calculate vaccine prices
-    selectedVaccines.forEach((vaccine) => {
-      switch (vaccine) {
-        case "meningitis":
-          total += 350000;
-          break;
-        case "polio":
-          total += 250000;
-          break;
-        case "influenza":
-          // Apply discount if meningitis is also selected
-          if (selectedVaccines.includes("meningitis")) {
-            total += 200000; // Discounted price
-          } else {
-            total += 220000; // Regular price
-          }
-          break;
-      }
-    });
-
-    // Add PP test price
-    if (formData.ppTest) {
-      total += 20000;
-    }
-
-    return total;
-  };
-
-  // Helper function to format vaccine selection for backend
-  const formatVaccineSelection = () => {
-    const selectedVaccines = formData.selectedVaccines || [];
-    if (selectedVaccines.length === 0) return "";
-
-    // Sort vaccines for consistent formatting
-    const sortedVaccines = [...selectedVaccines].sort();
-    return sortedVaccines.join("+");
-  };
+  // Disabled pricing functions
+  // const calculateTotalPrice = () => { ... }
+  // const formatVaccineSelection = () => { ... }
 
   const generateWordDocument = async (e) => {
     e.preventDefault();
@@ -212,17 +159,9 @@ export default function Home() {
       return;
     }
 
-    // Validate vaccine selection - not required anymore, but validate if selected
-    const selectedVaccines = formData.selectedVaccines || [];
-    if (selectedVaccines.length > 0) {
-      const validTypes = ["meningitis", "polio", "influenza"];
-      for (const vaccine of selectedVaccines) {
-        if (!validTypes.includes(vaccine)) {
-          setError(`Jenis vaksin "${vaccine}" tidak valid`);
-          return;
-        }
-      }
-    }
+    // Vaccine validation disabled
+    // const selectedVaccines = formData.selectedVaccines || [];
+    // ... vaccine validation code disabled
 
     try {
       setIsLoading(true);
@@ -230,21 +169,21 @@ export default function Home() {
       // Capitalize form data using utils
       const capitalizedFormData = capitalizeFormData(formData);
 
-      // Calculate total price and format vaccine selection
-      const totalHarga = calculateTotalPrice();
-      const jenisVaksin = formatVaccineSelection();
+      // Pricing calculation disabled
+      // const totalHarga = calculateTotalPrice();
+      // const jenisVaksin = formatVaccineSelection();
 
-      // Add pricing info to form data
-      const formDataWithPricing = {
+      // Send basic form data without vaccine/pricing info
+      const formDataToSend = {
         ...capitalizedFormData,
-        jenisVaksin, // Convert array to string format for backend
-        totalHarga,
+        // jenisVaksin: "", // Disabled
+        // totalHarga: 0,   // Disabled
       };
 
       const response = await fetch("/api/generate-docx", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formDataWithPricing),
+        body: JSON.stringify(formDataToSend),
       });
 
       if (!response.ok) {
@@ -268,9 +207,16 @@ export default function Home() {
         namaTravel: "",
         tanggalKeberangkatan: "",
         asalTravel: "",
-        selectedVaccines: [],
-        ppTest: false,
+        // selectedVaccines: [], // Disabled
+        // ppTest: false,        // Disabled
       });
+
+      // Focus kembali ke nama input setelah submit berhasil
+      setTimeout(() => {
+        if (namaInputRef.current) {
+          namaInputRef.current.focus();
+        }
+      }, 100);
     } catch (error) {
       console.error("Error:", error);
       setError("Gagal membuat dokumen: " + error.message);
@@ -294,6 +240,7 @@ export default function Home() {
               formData={formData}
               handleChange={handleChange}
               handleDateChange={handleDateChange}
+              namaInputRef={namaInputRef}
             />
 
             <TravelInfoSection
@@ -302,10 +249,11 @@ export default function Home() {
               handleDateChange={handleDateChange}
             />
 
-            <VaccineInfoSection
+            {/* VaccineInfoSection disabled */}
+            {/* <VaccineInfoSection
               formData={formData}
               handleCheckboxChange={handleCheckboxChange}
-            />
+            /> */}
 
             <SubmitButton isLoading={isLoading} />
           </form>
