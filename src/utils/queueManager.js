@@ -1,48 +1,35 @@
-// utils/queueManager.js - FIXED VERSION
+// utils/queueManager.js - SIMPLE FIX
 import { db } from "@/lib/db";
 
 // Fungsi untuk mendapatkan tanggal hari ini dalam format YYYY-MM-DD (Indonesia timezone)
 function getTodayDateString() {
+  // Set timezone ke Asia/Jakarta
   const today = new Date();
-
-  // Konversi ke timezone Indonesia (WIB/WITA/WIT)
-  const indonesiaTime = new Date(
+  const indonesianDate = new Date(
     today.toLocaleString("en-US", {
-      timeZone: "Asia/Jakarta", // WIB timezone
+      timeZone: "Asia/Jakarta",
     })
   );
 
-  // Format ke YYYY-MM-DD
-  const year = indonesiaTime.getFullYear();
-  const month = String(indonesiaTime.getMonth() + 1).padStart(2, "0");
-  const day = String(indonesiaTime.getDate()).padStart(2, "0");
+  const year = indonesianDate.getFullYear();
+  const month = String(indonesianDate.getMonth() + 1).padStart(2, "0");
+  const day = String(indonesianDate.getDate()).padStart(2, "0");
 
-  return `${year}-${month}-${day}`;
-}
+  const dateString = `${year}-${month}-${day}`;
 
-// Alternative: Menggunakan Intl.DateTimeFormat untuk lebih robust
-function getTodayDateStringAlt() {
-  const formatter = new Intl.DateTimeFormat("sv-SE", {
-    // 'sv-SE' menghasilkan format YYYY-MM-DD
-    timeZone: "Asia/Jakarta",
+  // Log untuk debugging
+  console.log("Timezone debug:", {
+    utc: today.toISOString(),
+    indonesia: indonesianDate.toString(),
+    dateUsed: dateString,
   });
 
-  return formatter.format(new Date());
+  return dateString;
 }
 
 // Fungsi untuk mendapatkan nomor antrian berikutnya
 export async function getNextQueueNumber() {
   const today = getTodayDateString();
-
-  // Log untuk debugging
-  const currentUTC = new Date().toISOString();
-  const currentIndonesia = new Date().toLocaleString("en-US", {
-    timeZone: "Asia/Jakarta",
-  });
-
-  console.log(
-    `Queue generation - UTC: ${currentUTC}, Indonesia: ${currentIndonesia}, Date used: ${today}`
-  );
 
   try {
     // Gunakan transaction untuk memastikan atomicity
@@ -57,15 +44,9 @@ export async function getNextQueueNumber() {
         },
       });
 
-      console.log(`Last queue for ${today}:`, lastQueue);
-
       // Tentukan nomor antrian berikutnya
       const nextQueueNumber = lastQueue ? lastQueue.queueNumber + 1 : 1;
       const formattedNumber = String(nextQueueNumber).padStart(3, "0");
-
-      console.log(
-        `Next queue number: ${nextQueueNumber}, formatted: ${formattedNumber}`
-      );
 
       // Simpan nomor antrian baru
       const newQueue = await tx.queueTracker.create({
@@ -73,11 +54,8 @@ export async function getNextQueueNumber() {
           queueNumber: nextQueueNumber,
           formattedNumber: formattedNumber,
           date: today,
-          createdAt: new Date(), // Tambahkan timestamp untuk tracking
         },
       });
-
-      console.log("New queue created:", newQueue);
 
       return {
         queueNumber: newQueue.queueNumber,
@@ -89,11 +67,6 @@ export async function getNextQueueNumber() {
     return result;
   } catch (error) {
     console.error("Error getting next queue number:", error);
-    console.error("Error details:", {
-      message: error.message,
-      code: error.code,
-      meta: error.meta,
-    });
     throw error;
   }
 }
@@ -130,59 +103,7 @@ export async function getTodayQueueStats() {
   }
 }
 
-// Fungsi untuk reset antrian (opsional - untuk testing atau maintenance)
-export async function resetQueueForDate(dateString = null) {
-  const targetDate = dateString || getTodayDateString();
-
-  try {
-    const result = await db.queueTracker.deleteMany({
-      where: {
-        date: targetDate,
-      },
-    });
-
-    console.log(`Reset queue for ${targetDate}:`, result);
-    return result;
-  } catch (error) {
-    console.error("Error resetting queue:", error);
-    throw error;
-  }
-}
-
-// Fungsi untuk mendapatkan semua antrian dalam rentang tanggal
-export async function getQueueByDateRange(startDate, endDate) {
-  try {
-    const queues = await db.queueTracker.findMany({
-      where: {
-        date: {
-          gte: startDate,
-          lte: endDate,
-        },
-      },
-      orderBy: [{ date: "desc" }, { queueNumber: "desc" }],
-    });
-
-    return queues;
-  } catch (error) {
-    console.error("Error getting queue by date range:", error);
-    throw error;
-  }
-}
-
 // Cleanup function untuk menutup koneksi db
 export async function closeQueueManager() {
   await db.$disconnect();
-}
-
-// Fungsi utility untuk debugging timezone
-export function debugTimezone() {
-  const now = new Date();
-
-  return {
-    utc: now.toISOString(),
-    indonesia: now.toLocaleString("en-US", { timeZone: "Asia/Jakarta" }),
-    dateStringOld: now.toISOString().split("T")[0], // Method lama (bermasalah)
-    dateStringNew: getTodayDateString(), // Method baru (fixed)
-    serverTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-  };
 }
