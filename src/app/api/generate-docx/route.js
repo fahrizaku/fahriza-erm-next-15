@@ -277,8 +277,8 @@ function formatCurrency(amount) {
 // **Fungsi untuk generate PDF Kwitansi dengan jsPDF - Format Baru**
 function generateReceiptJsPDF(data) {
   // Ukuran kertas baru: 20.83 x 10.8 cm (landscape)
-  const widthMM = 208.3; // 20.83 cm
-  const heightMM = 108; // 10.8 cm
+  const widthMM = 208.1; // 20.81 cm
+  const heightMM = 106; // 10.6 cm
 
   const pdf = new jsPDF({
     orientation: "landscape",
