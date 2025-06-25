@@ -1,6 +1,6 @@
-// /api/data-vaksin/route.js
+// /api/data-vaksin/route.js - Updated for Auto Increment ID
 import { NextResponse } from "next/server";
-import { db } from "@/lib/db"; // Pastikan db sudah di-setup
+import { db } from "@/lib/db";
 
 // GET - Ambil semua data vaksin
 export async function GET(req) {
@@ -94,6 +94,9 @@ export async function POST(req) {
         namaTravel: formData.namaTravel || "",
         tanggalKeberangkatan: formData.tanggalKeberangkatan || "",
         asalTravel: formData.asalTravel || "",
+        jenisVaksin: formData.jenisVaksin || "",
+        ppTest: formData.ppTest || false,
+        totalHarga: formData.totalHarga || 0,
         nomorAntrian: formData.nomorAntrian || "",
         tanggalAntrian: formData.tanggalAntrian || "",
       },
@@ -130,9 +133,18 @@ export async function PUT(req) {
       );
     }
 
+    // PENTING: Parse ID menjadi integer
+    const parsedId = parseInt(id);
+    if (isNaN(parsedId)) {
+      return NextResponse.json(
+        { error: "ID harus berupa angka" },
+        { status: 400 }
+      );
+    }
+
     // Cek apakah data exists
     const existingData = await db.vaksinData.findUnique({
-      where: { id },
+      where: { id: parsedId }, // Gunakan integer ID
     });
 
     if (!existingData) {
@@ -143,7 +155,7 @@ export async function PUT(req) {
     }
 
     const updatedRecord = await db.vaksinData.update({
-      where: { id },
+      where: { id: parsedId }, // Gunakan integer ID
       data: {
         nama: updateData.nama,
         noTelp: updateData.no_telp,
@@ -155,6 +167,9 @@ export async function PUT(req) {
         namaTravel: updateData.namaTravel,
         tanggalKeberangkatan: updateData.tanggalKeberangkatan,
         asalTravel: updateData.asalTravel,
+        jenisVaksin: updateData.jenisVaksin,
+        ppTest: updateData.ppTest,
+        totalHarga: updateData.totalHarga,
         nomorAntrian: updateData.nomorAntrian,
         tanggalAntrian: updateData.tanggalAntrian,
       },
@@ -192,9 +207,18 @@ export async function DELETE(req) {
       );
     }
 
+    // PENTING: Parse ID menjadi integer
+    const parsedId = parseInt(id);
+    if (isNaN(parsedId)) {
+      return NextResponse.json(
+        { error: "ID harus berupa angka" },
+        { status: 400 }
+      );
+    }
+
     // Cek apakah data exists
     const existingData = await db.vaksinData.findUnique({
-      where: { id },
+      where: { id: parsedId }, // Gunakan integer ID
       include: {
         documents: true,
       },
@@ -223,7 +247,7 @@ export async function DELETE(req) {
 
     // Hapus data dari database (cascade delete akan menghapus documents terkait)
     await db.vaksinData.delete({
-      where: { id },
+      where: { id: parsedId }, // Gunakan integer ID
     });
 
     return NextResponse.json({
