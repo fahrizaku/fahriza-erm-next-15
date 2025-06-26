@@ -55,6 +55,12 @@ export default function DataTable({
               Travel
             </th>
             <th className="text-left py-3 px-4 font-medium text-gray-700">
+              No. ICV
+            </th>
+            <th className="text-left py-3 px-4 font-medium text-gray-700">
+              No. Passport
+            </th>
+            <th className="text-left py-3 px-4 font-medium text-gray-700">
               Aksi
             </th>
           </tr>

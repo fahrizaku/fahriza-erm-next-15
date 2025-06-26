@@ -1,4 +1,4 @@
-// /api/data-vaksin/route.js - FIXED VERSION
+// /api/data-vaksin/route.js
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 
@@ -14,7 +14,7 @@ export async function GET(req) {
 
     const skip = (page - 1) * limit;
 
-    // Kondisi pencarian
+    // Kondisi pencarian - tambah field noIcv dan noPassport
     const whereCondition = search
       ? {
           OR: [
@@ -23,6 +23,8 @@ export async function GET(req) {
             { alamat: { contains: search, mode: "insensitive" } },
             { namaTravel: { contains: search, mode: "insensitive" } },
             { nomorAntrian: { contains: search, mode: "insensitive" } },
+            { noIcv: { contains: search, mode: "insensitive" } },
+            { noPassport: { contains: search, mode: "insensitive" } },
           ],
         }
       : {};
@@ -85,7 +87,7 @@ export async function POST(req) {
     const newRecord = await db.vaksinData.create({
       data: {
         nama: formData.nama || "",
-        noTelp: formData.noTelp || "", // FIXED: Langsung gunakan noTelp
+        noTelp: formData.noTelp || "",
         alamat: formData.alamat || "",
         kotaKelahiran: formData.kotaKelahiran || "",
         tanggalLahir: formData.tanggalLahir || "",
@@ -97,6 +99,8 @@ export async function POST(req) {
         jenisVaksin: formData.jenisVaksin || "",
         ppTest: formData.ppTest || false,
         totalHarga: formData.totalHarga || 0,
+        noIcv: formData.noIcv || null,
+        noPassport: formData.noPassport || null,
         nomorAntrian: formData.nomorAntrian || "",
         tanggalAntrian: formData.tanggalAntrian || "",
       },
@@ -158,7 +162,7 @@ export async function PUT(req) {
       where: { id: parsedId },
       data: {
         nama: updateData.nama,
-        noTelp: updateData.noTelp, // FIXED: Langsung gunakan noTelp
+        noTelp: updateData.noTelp,
         alamat: updateData.alamat,
         kotaKelahiran: updateData.kotaKelahiran,
         tanggalLahir: updateData.tanggalLahir,
@@ -170,6 +174,8 @@ export async function PUT(req) {
         jenisVaksin: updateData.jenisVaksin,
         ppTest: updateData.ppTest,
         totalHarga: updateData.totalHarga,
+        noIcv: updateData.noIcv || null,
+        noPassport: updateData.noPassport || null,
         nomorAntrian: updateData.nomorAntrian,
         tanggalAntrian: updateData.tanggalAntrian,
       },

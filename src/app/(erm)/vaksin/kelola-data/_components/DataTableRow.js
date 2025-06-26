@@ -91,6 +91,8 @@ export default function DataTableRow({
           "-"
         )}
       </td>
+      <td className="py-3 px-4">{item.noIcv || "-"}</td>
+      <td className="py-3 px-4">{item.noPassport || "-"}</td>
       <td className="py-3 px-4">
         <div className="flex gap-2">
           <button

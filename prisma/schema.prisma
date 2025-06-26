@@ -366,6 +366,10 @@ model VaksinData {
   ppTest                Boolean  @default(false) @map("pp_test")
   totalHarga            Int      @map("total_harga")
   
+  // Field baru untuk No ICV dan No Passport
+  noIcv                 String?  @map("no_icv")
+  noPassport            String?  @map("no_passport")
+  
   nomorAntrian          String   @map("nomor_antrian")
   tanggalAntrian        String   @map("tanggal_antrian")
   createdAt             DateTime @default(now()) @map("created_at")

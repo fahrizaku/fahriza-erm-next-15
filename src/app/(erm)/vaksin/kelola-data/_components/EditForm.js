@@ -8,7 +8,7 @@ export default function EditForm({
   cancelEdit,
 }) {
   return (
-    <td colSpan="8" className="py-4 px-4">
+    <td colSpan="10" className="py-4 px-4">
       <form onSubmit={handleUpdate} className="space-y-3">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <input
@@ -118,6 +118,30 @@ export default function EditForm({
               setEditForm({
                 ...editForm,
                 tanggalKeberangkatan: e.target.value,
+              })
+            }
+            className="px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-green-400"
+          />
+          <input
+            type="text"
+            placeholder="No. ICV (opsional)"
+            value={editForm.noIcv || ""}
+            onChange={(e) =>
+              setEditForm({
+                ...editForm,
+                noIcv: e.target.value,
+              })
+            }
+            className="px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-green-400"
+          />
+          <input
+            type="text"
+            placeholder="No. Passport (opsional)"
+            value={editForm.noPassport || ""}
+            onChange={(e) =>
+              setEditForm({
+                ...editForm,
+                noPassport: e.target.value,
               })
             }
             className="px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-green-400"

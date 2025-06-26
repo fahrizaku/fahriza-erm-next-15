@@ -26,10 +26,8 @@ export default function AddForm({
           <input
             type="tel"
             placeholder="Nomor Telepon"
-            value={newForm.no_telp}
-            onChange={(e) =>
-              setNewForm({ ...newForm, no_telp: e.target.value })
-            }
+            value={newForm.noTelp}
+            onChange={(e) => setNewForm({ ...newForm, noTelp: e.target.value })}
             className="px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-green-400"
           />
           <textarea
@@ -95,6 +93,22 @@ export default function AddForm({
                 ...newForm,
                 tanggalKeberangkatan: e.target.value,
               })
+            }
+            className="px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-green-400"
+          />
+          <input
+            type="text"
+            placeholder="No. ICV (opsional)"
+            value={newForm.noIcv}
+            onChange={(e) => setNewForm({ ...newForm, noIcv: e.target.value })}
+            className="px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-green-400"
+          />
+          <input
+            type="text"
+            placeholder="No. Passport (opsional)"
+            value={newForm.noPassport}
+            onChange={(e) =>
+              setNewForm({ ...newForm, noPassport: e.target.value })
             }
             className="px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-green-400"
           />
