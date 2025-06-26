@@ -1,4 +1,4 @@
-// /api/data-vaksin/route.js - Updated for Auto Increment ID
+// /api/data-vaksin/route.js - FIXED VERSION
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 
@@ -85,7 +85,7 @@ export async function POST(req) {
     const newRecord = await db.vaksinData.create({
       data: {
         nama: formData.nama || "",
-        noTelp: formData.no_telp || "",
+        noTelp: formData.noTelp || "", // FIXED: Langsung gunakan noTelp
         alamat: formData.alamat || "",
         kotaKelahiran: formData.kotaKelahiran || "",
         tanggalLahir: formData.tanggalLahir || "",
@@ -144,7 +144,7 @@ export async function PUT(req) {
 
     // Cek apakah data exists
     const existingData = await db.vaksinData.findUnique({
-      where: { id: parsedId }, // Gunakan integer ID
+      where: { id: parsedId },
     });
 
     if (!existingData) {
@@ -155,10 +155,10 @@ export async function PUT(req) {
     }
 
     const updatedRecord = await db.vaksinData.update({
-      where: { id: parsedId }, // Gunakan integer ID
+      where: { id: parsedId },
       data: {
         nama: updateData.nama,
-        noTelp: updateData.no_telp,
+        noTelp: updateData.noTelp, // FIXED: Langsung gunakan noTelp
         alamat: updateData.alamat,
         kotaKelahiran: updateData.kotaKelahiran,
         tanggalLahir: updateData.tanggalLahir,
@@ -218,7 +218,7 @@ export async function DELETE(req) {
 
     // Cek apakah data exists
     const existingData = await db.vaksinData.findUnique({
-      where: { id: parsedId }, // Gunakan integer ID
+      where: { id: parsedId },
       include: {
         documents: true,
       },
@@ -247,7 +247,7 @@ export async function DELETE(req) {
 
     // Hapus data dari database (cascade delete akan menghapus documents terkait)
     await db.vaksinData.delete({
-      where: { id: parsedId }, // Gunakan integer ID
+      where: { id: parsedId },
     });
 
     return NextResponse.json({

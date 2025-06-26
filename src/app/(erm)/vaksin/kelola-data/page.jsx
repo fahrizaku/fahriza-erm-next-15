@@ -1,4 +1,4 @@
-// /kelola-data/page.js
+// /kelola-data/page.js - FIXED VERSION
 "use client";
 
 import { useState, useEffect } from "react";
@@ -20,7 +20,7 @@ export default function KelolaData() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [newForm, setNewForm] = useState({
     nama: "",
-    no_telp: "",
+    noTelp: "", // FIXED: Konsisten dengan backend
     alamat: "",
     kotaKelahiran: "",
     tanggalLahir: "",
@@ -53,7 +53,7 @@ export default function KelolaData() {
   const filteredData = data.filter(
     (item) =>
       item.nama?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.noTelp?.includes(searchTerm) ||
+      item.noTelp?.includes(searchTerm) || // SUDAH BENAR
       item.alamat?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.namaTravel?.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -76,13 +76,13 @@ export default function KelolaData() {
       const response = await fetch("/api/data-vaksin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newForm),
+        body: JSON.stringify(newForm), // noTelp akan dikirim langsung
       });
 
       if (response.ok) {
         setNewForm({
           nama: "",
-          no_telp: "",
+          noTelp: "", // FIXED: Konsisten
           alamat: "",
           kotaKelahiran: "",
           tanggalLahir: "",
@@ -105,7 +105,7 @@ export default function KelolaData() {
   // Handle edit data
   const startEdit = (item) => {
     setEditingId(item.id);
-    setEditForm({ ...item });
+    setEditForm({ ...item }); // Ini akan menyalin semua field termasuk noTelp
   };
 
   const cancelEdit = () => {
@@ -123,7 +123,7 @@ export default function KelolaData() {
       const response = await fetch("/api/data-vaksin", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(editForm),
+        body: JSON.stringify(editForm), // editForm sudah berisi noTelp yang benar
       });
 
       if (response.ok) {
