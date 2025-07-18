@@ -97,11 +97,11 @@ const menuCategories = [
         icon: <Folder size={20} />,
         href: "/file-sharing",
       },
-      {
-        title: "Data Vaksin",
-        icon: <Syringe size={20} />,
-        href: "/vaksin/kelola-data",
-      },
+      // {
+      //   title: "Data Vaksin",
+      //   icon: <Syringe size={20} />,
+      //   href: "/vaksin/kelola-data",
+      // },
     ],
   },
   {
